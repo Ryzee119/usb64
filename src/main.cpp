@@ -1,4 +1,28 @@
+/* MIT License
+ * 
+ * Copyright (c) [2020] [Ryan Wendland]
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include <Arduino.h>
+#include <string.h>
 #include "USBHost_t36.h"
 #include "ff.h"
 #include "qspi.h"
@@ -6,10 +30,13 @@
 #include "n64_wrapper.h"
 #include "n64_conf.h"
 #include "n64_controller.h"
+#include "n64_transferpak_gbcarts.h"
 #include "n64_virtualpak.h"
+#include "n64_settings.h"
 
-#define hwserial Serial
+#define serial_port Serial
 n64_controller n64_c[MAX_CONTROLLERS];
+gameboycart gb_cart[MAX_CONTROLLERS];
 
 //USB Host Interface
 USBHost usbh;
@@ -21,7 +48,7 @@ JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3, &joy4};
 
 void _putchar(char character)
 {
-    hwserial.write(character);
+    serial_port.write(character);
 }
 
 void n64_controller1_clock_edge()
@@ -40,45 +67,40 @@ void n64_controller4_clock_edge()
 {
     n64_controller_hande_new_edge(&n64_c[3]);
 }
-#if (1)
-FRESULT scan_files (
-    char* path        /* Start node to be scanned (***also used as work area***) */
-)
+
+static int scan_files(const char *path, uint8_t print)
 {
-    FRESULT res;
-    DIR dir;
-    UINT i;
+    FRESULT res; DIR dir; UINT num_files = 0;
     static FILINFO fno;
-    res = f_opendir(&dir, path);                       /* Open the directory */
-    if (res == FR_OK) {
-        for (;;) {
-            res = f_readdir(&dir, &fno);                   /* Read a directory item */
-            if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
-            if (fno.fattrib & AM_DIR) {                    /* It is a directory */
-                i = strlen(path);
-                sprintf(&path[i], "/%s", fno.fname);
-                res = scan_files(path);                    /* Enter the directory */
-                if (res != FR_OK) break;
-                path[i] = 0;
-            } else {                                       /* It is a file. */
-                printf("%s/%s\n", path, fno.fname);
+    res = f_opendir(&dir, path);
+    if (res == FR_OK)
+    {
+        for (;;)
+        {
+            res = f_readdir(&dir, &fno);
+            if (res != FR_OK || fno.fname[0] == 0)
+                break;
+            if (!(fno.fattrib & AM_DIR))
+            {
+                num_files++;
+                if (print)
+                    printf("%s\n", fno.fname);
             }
         }
         f_closedir(&dir);
     }
 
-    return res;
+    return num_files;
 }
-#endif
 
 void setup()
 {
-    hwserial.begin(500000);
-    while(!hwserial);
-    printf("usb64 by Ryzee119\r\n");
+    serial_port.begin(500000);
+    while(!serial_port);
     usbh.begin();
-    n64_init_subsystem(n64_c);
 
+    n64_init_subsystem(n64_c);
+    n64_settings_init();
     n64_c[0].gpio_pin = N64_CONTROLLER_1_PIN;
     n64_c[1].gpio_pin = N64_CONTROLLER_2_PIN;
     n64_c[2].gpio_pin = N64_CONTROLLER_3_PIN;
@@ -86,101 +108,24 @@ void setup()
 
     pinMode(N64_CONTROLLER_1_PIN, INPUT_PULLUP);
     pinMode(N64_CONTROLLER_2_PIN, INPUT_PULLUP);
-    //pinMode(N64_CONTROLLER_3_PIN, INPUT_PULLUP);
-    //pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP);
+    //pinMode(N64_CONTROLLER_3_PIN, INPUT_PULLUP); //TODO MAP
+    //pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP); //TODO MAP
 
     attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_1_PIN), n64_controller1_clock_edge, FALLING);
     //attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_2_PIN), n64_controller2_clock_edge, FALLING);
     //attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_3_PIN), n64_controller3_clock_edge, FALLING);
     //attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_4_PIN), n64_controller4_clock_edge, FALLING);
 
-#if (0) //RAW FLASH ACCESS TESTING
-    qspi_init(NULL, NULL);
-    uint8_t test_buff[32768] = {0};
-    uint32_t k = sizeof(test_buff);
-    //qspi_erase_chip();
-    qspi_erase(0, k);
-    printf("qspi_erased\r\n");
-    qspi_read(0, k, test_buff);
-    for (uint32_t i = 0; i < k; i++)
-    {
-        if (test_buff[i] != 0xFF)
-            printf("%02x ", test_buff[i]);
-    }
-    printf("qspi_read\r\n");
-    memset(test_buff, 0xCC, k);
-    qspi_write(0, k, test_buff);
-    memset(test_buff, 0x00, k);
-    qspi_read(0, k, test_buff);
-    for (uint32_t i = 0; i < k; i++)
-    {
-        if (test_buff[i] != 0xCC)
-            printf("%02x ", test_buff[i]);
-    }
-    printf("Done\r\n");
-    while (1)
-        ;
-#endif
-
-    //qspi_erase_chip();
-    
-    FATFS fs; FIL fil; UINT bw; FRESULT res;
-    //Check that the flash chip is formatted for FAT acess
-    BYTE work[4096];
+    FATFS fs; BYTE work[4096];
+    //Check that the flash chip is formatted for FAT access
     MKFS_PARM defopt = {FM_FAT, 1, 1, 1, 4096}; /* Default parameter */
     qspi_init(NULL, NULL);
     if (f_mount(&fs, "", 1) != FR_OK)
     {
         printf("Error mounting, probably not format correctly\r\n");
-        res = f_mkfs("", &defopt, work, sizeof(work));
+        f_mkfs("", &defopt, work, sizeof(work));
     }
     f_mount(0, "", 0);
-
-#if (0) //ERASE AND FORMAT
-    //qspi_erase_chip();
-    printf("f_mkfs\r\n");
-    if (res != FR_OK)
-    {
-        printf("Error f_mkfs\r\n");
-        while (1)
-            ;
-    }
-#endif
-#if (0) //MOUNT AND WRITE/READ FILE
-    res = f_mount(&fs, "", 0);
-    if (res != FR_OK)
-    {
-        printf("Error f_mount\r\n");
-        while (1)
-            ;
-    }
-    res = f_open(&fil, "hello.txt", FA_CREATE_ALWAYS | FA_WRITE);
-    if (res != FR_OK)
-    {
-        printf("Error f_open\r\n");
-        while (1)
-        {
-            uint8_t buf[32];
-            qspi_read(0, 32, buf);
-            delay(1);
-        }
-    }
-    f_write(&fil, "Hello, World!\r\n", 15, &bw);
-    if (bw != 15)
-    {
-        printf("Error f_write\r\n");
-        while (1)
-            ;
-    }
-    f_close(&fil);
-    f_mount(0, "", 0);
-#endif
-#if (1) //SCAN AND PRINT FILE LIST
-    char buff[256];
-    f_mount(&fs, "", 0);
-    res = scan_files(buff);
-    f_mount(0, "", 0);
-#endif
 }
 
 static bool n64_combo = false;
@@ -242,7 +187,7 @@ void loop()
             if (axis[c][3] > 16000)  n64_c[c].bState.dButtons |= N64_CU;
             if (axis[c][3] < -16000) n64_c[c].bState.dButtons |= N64_CD;
 
-            n64_combo = (usb_buttons[c] & (1 << 5));
+            n64_combo = (usb_buttons[c] & (1 << 5)); //back
 
             break;
 
@@ -275,24 +220,35 @@ void loop()
             if (n64_c[c].current_peripheral == PERI_NONE)
                 break;
 
-            //Changing peripheral, backup mempack RAM to Flash if required
-            if (n64_c[c].current_peripheral == PERI_MEMPCK && n64_c[c].mempack->dirty &&
-                n64_c[c].mempack->data != NULL)
+            //Changing peripheral from MEMPAK
+            if (n64_c[c].current_peripheral == PERI_MEMPCK &&
+                n64_c[c].mempack->dirty &&
+                n64_c[c].mempack->data != NULL &&
+                n64_c[c].mempack->id != VIRTUAL_PAK)
             {
                 uint8_t filename[32];
                 snprintf((char *)filename, sizeof(filename), "MEMPAK%02u.MPK", n64_c[c].mempack->id);
-                uint32_t t = micros();
                 n64_c[c].current_peripheral = NONE;
-                n64hal_backup_sram_to_flash(filename,
+                n64hal_sram_backup_to_file(filename,
                                             n64_c[c].mempack->data,
                                             MEMPAK_SIZE);
                 n64_c[c].mempack->dirty = 0;
-                printf("Time taken to backup %s to flash : %u us ", filename, micros() - t);
             }
 
-            //Changing peripheral, backup gameboy cart RAM to Flash if required
+            //Changing peripheral from VIRTUAL PAK
+            if (n64_c[c].current_peripheral == PERI_MEMPCK &&
+                n64_c[c].mempack->dirty &&
+                n64_c[c].mempack->id == VIRTUAL_PAK)
+            {
+                n64_c[c].current_peripheral = NONE;
+                n64_settings_write();
+                n64_c[c].mempack->dirty = 0;
+            }
+
+            //Changing peripheral from TPAK
             if (n64_c[c].current_peripheral == PERI_TPAK)
             {
+                //Do we need to backup ram?
                 if (n64_c[c].tpak->installedCart != NULL && n64_c[c].tpak->installedCart->dirty)
                 {
                     uint8_t mbc = n64_c[c].tpak->installedCart->mbc;
@@ -303,14 +259,27 @@ void loop()
                         mbc == MBC5_RAM_BAT     || mbc == MBC5_RUM_RAM_BAT)
                     {
                         n64_c[c].current_peripheral = NONE;
-                        n64hal_backup_sram_to_flash(n64_c[c].tpak->installedCart->filename,
-                                                    n64_c[c].tpak->installedCart->ram,
-                                                    n64_c[c].tpak->installedCart->ramsize);
+                        n64hal_sram_backup_to_file(n64_c[c].tpak->installedCart->filename,
+                                                   n64_c[c].tpak->installedCart->ram,
+                                                   n64_c[c].tpak->installedCart->ramsize);
                     }
                 }
+
+                //Clean up
+                if (n64_c[c].tpak->installedCart != NULL)
+                {
+                    n64_c[c].tpak->installedCart->romsize = 0;
+                    n64_c[c].tpak->installedCart->ramsize = 0;
+                    if (n64_c[c].tpak->installedCart->ram)
+                    free(n64_c[c].tpak->installedCart->ram);
+                }
+
+                //Now it's a TPAK with no cart installed
+                n64_c[c].tpak->installedCart = NULL;
+
             }
 
-            //You selected rumblepak
+            //Changing peripheral to RUMBLEPAK
             if (n64_buttons[c] & N64_LB)
             {
                 n64_c[c].current_peripheral = PERI_NONE;
@@ -319,15 +288,53 @@ void loop()
                 printf("Changing controller %u's peripheral to rumblepak\r\n", c);
             }
 
+            //Changing peripheral to TPAK
             if (n64_buttons[c] & N64_RB)
             {
                 n64_c[c].current_peripheral = PERI_NONE;
                 n64_c[c].next_peripheral = PERI_TPAK;
                 timer_peripheral_change = millis();
                 printf("Changing controller %u's peripheral to tpak\r\n", c);
+
+                n64_settings* settings = n64_settings_get();
+                //Find a free gb_cart object
+                int cart = 0;
+                for (; cart < MAX_CONTROLLERS; cart++)
+                {
+                    if (gb_cart[cart].romsize == 0)
+                        break;
+                }
+                //If a free gb_cart has been found
+                if(cart < MAX_CONTROLLERS)
+                {
+                    uint8_t gb_header[0x100];
+                    //Read the ROM header and init the gb_cart struct
+                    strcpy((char*)gb_cart[cart].filename, settings->default_tpak_rom[c]);
+                    if(n64hal_rom_read(&gb_cart[cart], 0x100, gb_header, sizeof(gb_header)))
+                    {
+                        gb_initGameBoyCart(&gb_cart[cart],
+                                           gb_header,
+                                           settings->default_tpak_rom[c]);
+                                if (gb_cart[cart].ramsize > 0)
+                                    gb_cart[cart].ram = (uint8_t*)malloc(gb_cart[cart].ramsize);
+                                else
+                                    gb_cart[cart].ram = NULL;
+                        n64_c[c].tpak->installedCart = &gb_cart[cart];
+                    }
+                    else
+                    {
+                        printf("ERROR: Could not read %s\n", gb_cart[cart].filename);
+                        n64_c[c].tpak->installedCart = NULL;
+                    }
+                }
+                else
+                {
+                    printf("ERROR: No free gb_cart objects found\n");
+                }
+                tpak_reset(n64_c[c].tpak);
             }
 
-            //You selected mempack
+            //Changing peripheral to MEMPAK
             if (n64_buttons[c] & N64_DU || n64_buttons[c] & N64_DD ||
                 n64_buttons[c] & N64_DL || n64_buttons[c] & N64_DR ||
                 n64_buttons[c] & N64_ST)
@@ -369,8 +376,7 @@ void loop()
                 }
                 if (mempak_bank != -1)
                 {
-                    printf("Setting mempak bank %u to controller %u ", mempak_bank, c);
-                    uint32_t t = micros();
+                    printf("Setting mempak bank %u to controller %u\n", mempak_bank, c);
                     n64_c[c].mempack->id = mempak_bank;
                     if (mempak_bank != VIRTUAL_PAK)
                     {
@@ -379,17 +385,14 @@ void loop()
 
                         uint8_t filename[32];
                         snprintf((char *)filename, sizeof(filename), "MEMPAK%02u.MPK", n64_c[c].mempack->id);
-                        n64hal_read_sram_from_flash(filename,
-                                                    n64_c[c].mempack->data,
-                                                    MEMPAK_SIZE);
+                        n64hal_sram_restore_from_file(filename,
+                                                      n64_c[c].mempack->data,
+                                                      MEMPAK_SIZE);
                     }
                     else
                     {
-                        n64_c[c].mempack->virtual_is_active = 1;
-                        n64_c[c].mempack->virtual_selected_row = -1;
-                        n64_c[c].mempack->virtual_update_req = 1;
+                        n64_virtualpak_init(n64_c[c].mempack);
                     }
-                    printf("[Read time: %u us]\r\n", micros() - t);
                     n64_c[c].next_peripheral = PERI_MEMPCK;
                 }
                 timer_peripheral_change = millis();
@@ -404,8 +407,93 @@ void loop()
 
         if (n64_c[c].mempack->virtual_update_req == 1)
         {
-            //n64_virtualpak_update(n64_c[c].mempack);
+            n64_virtualpak_update(n64_c[c].mempack);
         }
 
     } //FOR LOOP
+
+    static char serial_buff[256];
+    static char filename[256];
+    static FATFS *_fs = (FATFS *)malloc(sizeof(FATFS));
+    static FIL fil; static FRESULT res; static UINT br;
+    static String serial_buff_str;
+    static uint32_t sector_size, total_sectors, free_sectors = 0, num_files;
+    int len = 0;
+    if (serial_port.available())
+    {
+        if (_fs->fs_type == 0)
+        {
+            f_mount(_fs, "", 1);
+        }
+        uint8_t c = serial_port.read();
+
+        switch (c)
+        {
+        /* 0xA0: Sends a welcome string */
+        case 0xA0:
+            sprintf(serial_buff, "usb64 by Ryzee119 Build date: %s\n", __DATE__);
+            serial_port.write(serial_buff);
+            break;
+        /* 0xA1: Send a list of files present on the FATFS system memory */
+        case 0xA1:
+            num_files = scan_files("", 0);
+            snprintf(serial_buff, sizeof(serial_buff), "A1,%u\n", num_files);
+            serial_port.write(serial_buff);
+            scan_files("", 1);
+            printf("Sent %u files\n", num_files);
+            break;
+        /* 0xA2: Download a file from the FATFS system to the host */
+        case 0xA2:
+            printf("download\n");
+            break;
+        /* 0xA3: Upload a file from the host and write to the FATFS system */
+        case 0xA3:
+            memset(filename,0x00,sizeof(filename));
+            serial_port.readBytesUntil('\0', filename, sizeof(filename));
+            res = f_open(&fil, (const TCHAR *)filename, FA_WRITE | FA_CREATE_ALWAYS);
+            if (res != FR_OK)
+            {
+                printf("Error opening %s for WRITE\r\n", filename);
+                break;
+            }
+            serial_port.setTimeout(100);
+            len = 0;
+            do {
+                len = serial_port.readBytes(serial_buff, sizeof(serial_buff));
+                res = f_write(&fil, serial_buff, len, &br);
+                if (res != FR_OK)
+                {
+                    printf("Error writing %s\r\n", filename);
+                    break;
+                }
+            } while (len > 0);
+            f_close(&fil);
+            printf("Wrote %s ok\n", filename);
+            break;
+        /* 0xA4: Delete a file from the FATFS system */
+        case 0xA4:
+            serial_buff_str = serial_port.readStringUntil('\0');
+            serial_buff_str.toCharArray(serial_buff, serial_buff_str.length());
+            res = f_unlink(serial_buff);
+            if (res != FR_OK)
+            {
+                printf("Error deleting %s with error: %i\n", serial_buff, res);
+                break;
+            }
+            printf("Delete ok\n");
+            break;
+        /* 0xA5: Send free space and total space of the FATFS system to the host */
+        case 0xA5:
+            qspi_get_flash_properties(&sector_size, NULL);
+            f_getfree("", &free_sectors, &_fs);
+            total_sectors = (_fs->n_fatent - 2);
+            snprintf(serial_buff, sizeof(serial_buff), "A5,%u,%u\n", total_sectors * sector_size,
+                                                                     free_sectors  * sector_size);
+            serial_port.write(serial_buff);
+            break;
+        default:
+            printf("Unknown\n");
+            break;
+        }
+    }
 } // MAIN LOOP

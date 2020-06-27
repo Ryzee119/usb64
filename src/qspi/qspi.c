@@ -1,3 +1,15 @@
+/*
+ * Portions of this software were developed at http://www.pjrc.com/
+ * Those portions licensed under MIT License Agreement, (the "License");
+ * You may not use these files except in compliance with the License.
+ * You may obtain a copy of the License at: http://opensource.org/licenses/MIT
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+*/
+
 #include <stdint.h>
 #include <Arduino.h>
 #include "printf.h"
@@ -81,7 +93,7 @@ static void setupFlexSPI2()
 
     // turn on clock
     //clocks[4] = {396.0f, 720.0f, 664.62f, 528.0f} / CCM_CBCMR_FLEXSPI2_PODF + 1
-    CCM_CBCMR = (CCM_CBCMR & ~(CCM_CBCMR_FLEXSPI2_PODF_MASK | CCM_CBCMR_FLEXSPI2_CLK_SEL_MASK)) | CCM_CBCMR_FLEXSPI2_PODF(7) | CCM_CBCMR_FLEXSPI2_CLK_SEL(0); // 49.5 MHz
+    CCM_CBCMR = (CCM_CBCMR & ~(CCM_CBCMR_FLEXSPI2_PODF_MASK | CCM_CBCMR_FLEXSPI2_CLK_SEL_MASK)) | CCM_CBCMR_FLEXSPI2_PODF(3) | CCM_CBCMR_FLEXSPI2_CLK_SEL(0); // 49.5 MHz
     CCM_CCGR7 |= CCM_CCGR7_FLEXSPI2(CCM_CCGR_ON);
 
     FLEXSPI2_MCR0 |= FLEXSPI_MCR0_MDIS;
@@ -312,8 +324,9 @@ static bool waitFlash(uint32_t timeout)
     uint32_t t = millis();
     FLEXSPI_IPRXFCR = FLEXSPI_IPRXFCR_CLRIPRXF; // clear rx fifo
     do
-    {
+    {   noInterrupts();
         flexspi_ip_read(8, flashBaseAddr, &val, 1);
+        interrupts();
         if (timeout && (millis() - t > timeout))
             return 1;
     } while ((val & 0x01) == 1);
@@ -331,7 +344,7 @@ static void setupFlexSPI2Flash()
 
     flexspi_ip_read(7, flashBaseAddr, flashID, sizeof(flashID));
 
-#if 1
+#if 0
     printf("ID:");
     for (unsigned i = 0; i < sizeof(flashID); i++)
         printf(" %02X", flashID[i]);
@@ -354,8 +367,8 @@ static void setupFlexSPI2Flash()
 
     printStatusRegs();
 
-    flexspi_ip_command(1, flashBaseAddr);  //reset enable
-    flexspi_ip_command(2, flashBaseAddr);  //reset
+    flexspi_ip_command(1, flashBaseAddr); //reset enable
+    flexspi_ip_command(2, flashBaseAddr); //reset
 }
 
 void qspi_erase_chip()
@@ -395,16 +408,15 @@ void qspi_erase_chip()
 #define LOG_PAGE_SIZE 256
 
 //********************************************************************************************************
-static const uint32_t _flashsize = 1024 * 1024 * 8; //16 Mbyte
+static const uint32_t _flashsize = 1024 * 1024 * 16; //16 Mbyte
 static const uint32_t _blocksize = 4096U;
 static const uint32_t _pagesize = 256U;
 
-void qspi_init(uint32_t *block_size, uint32_t *flash_size)
+void qspi_init(uint32_t *sector_size, uint32_t *flash_size)
 {
-    
     spi_bitbang_init();
-    spi_bitbang(0x66, true);  //Reset enable
-    spi_bitbang(0x99, true);  //Reset
+    spi_bitbang(0x66, true); //Reset enable
+    spi_bitbang(0x99, true); //Reset
     delay(50);
     spi_bitbang(0x06, true);  //Write enable
     spi_bitbang(0x31, false); //Write status reg 2 command
@@ -414,16 +426,16 @@ void qspi_init(uint32_t *block_size, uint32_t *flash_size)
     setupFlexSPI2Flash();
     waitFlash(0);
     flexspi_ip_command(11, flashBaseAddr);
-    if (block_size)
-        *block_size = _blocksize;
+    if (sector_size)
+        *sector_size = _blocksize;
     if (flash_size)
         *flash_size = _flashsize;
 }
 
-void qspi_get_flash_properties(uint32_t *block_size, uint32_t *flash_size)
+void qspi_get_flash_properties(uint32_t *sector_size, uint32_t *flash_size)
 {
-    if (block_size)
-        *block_size = _blocksize;
+    if (sector_size)
+        *sector_size = _blocksize;
     if (flash_size)
         *flash_size = _flashsize;
 }
@@ -447,7 +459,7 @@ uint8_t qspi_write(uint32_t addr, uint32_t size, uint8_t *src)
     while (s > 0)
     {
         noInterrupts();
-        flexspi_ip_command(11, flashBaseAddr);      // write enable
+        flexspi_ip_command(11, flashBaseAddr);                      // write enable
         flexspi_ip_write(13, flashBaseAddr + addr, src, _pagesize); // write
         interrupts();
 
@@ -466,9 +478,11 @@ uint8_t qspi_erase(uint32_t addr, uint32_t size)
 {
     int s = size;
     while (s > 0)
-    {                                          //TODO: Is this loop needed, or is size max 4096?
+    {
+        noInterrupts();
         flexspi_ip_command(11, flashBaseAddr); //write enable
         flexspi_ip_command(12, flashBaseAddr + addr);
+        interrupts();
 
 #ifdef FLASH_MEMMAP
         arm_dcache_delete((void *)((uint32_t)extBase + addr), _blocksize);

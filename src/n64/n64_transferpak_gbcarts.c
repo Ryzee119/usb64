@@ -1,6 +1,25 @@
-//
-//
-//
+/* MIT License
+ * 
+ * Copyright (c) [2020] [Ryan Wendland]
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #include <stdint.h>
 #include <string.h>
@@ -12,6 +31,7 @@
 #include "n64_transferpak_gbcarts.h"
 #include "n64_controller.h"
 #include "n64_wrapper.h"
+#include "printf.h"
 
 void tpak_reset(n64_transferpak *tpak)
 {
@@ -35,45 +55,21 @@ uint32_t gb_getRomSize(uint8_t rom_type)
     uint32_t rom_len = 0;
     switch (rom_type)
     {
-    case (KB_32):
-        rom_len = 32768UL;
-        break;
-    case (KB_64):
-        rom_len = 65536UL;
-        break;
-    case (KB_128):
-        rom_len = 131072UL;
-        break;
-    case (KB_256):
-        rom_len = 262144UL;
-        break;
-    case (KB_512):
-        rom_len = 524288UL;
-        break;
-    case (KB_1024):
-        rom_len = 1048576UL;
-        break;
-    case (KB_2048):
-        rom_len = 2097152UL;
-        break;
-    case (KB_4096):
-        rom_len = 4194304UL;
-        break;
-    case (KB_8192):
-        rom_len = 8388608UL;
-        break;
-    case (KB_1152):
-        rom_len = 1179648UL;
-        break;
-    case (KB_1280):
-        rom_len = 1310720UL;
-        break;
-    case (KB_1536):
-        rom_len = 1572864UL;
-        break;
+    case (KB_32):   rom_len = 32768UL;   break;
+    case (KB_64):   rom_len = 65536UL;   break;
+    case (KB_128):  rom_len = 131072UL;  break;
+    case (KB_256):  rom_len = 262144UL;  break;
+    case (KB_512):  rom_len = 524288UL;  break;
+    case (KB_1024): rom_len = 1048576UL; break;
+    case (KB_2048): rom_len = 2097152UL; break;
+    case (KB_4096): rom_len = 4194304UL; break;
+    case (KB_8192): rom_len = 8388608UL; break;
+    case (KB_1152): rom_len = 1179648UL; break;
+    case (KB_1280): rom_len = 1310720UL; break;
+    case (KB_1536): rom_len = 1572864UL; break;
     default:
         rom_len = 32768UL;
-        printf("Error, unknown ROM size. Assuming 32kB ");
+        printf("Error, unknown ROM size. Assuming 32kB\n");
         break;
     }
     return rom_len;
@@ -181,7 +177,7 @@ void gb_writeCartMBC3(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *inBuf
     {
         if (inBuffer[0] == 0x01)
         {
-            //printf("Latch RTC Registers "); //Not required. I always am updating RTC registers in the background
+            //printf("Latch RTC Registers "); 
         }
     }
     //0xA000-0xBFFF Cart RAM Write OR RTC Register Write
@@ -229,7 +225,8 @@ void gb_writeCartMBC3(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *inBuf
     }
     else
     {
-        printf("Error: Bad read at MBC address 0x%04x and ROMBank %u\n", MBCAddress, tpak->currentROMBank);
+        printf("Error: Bad read at MBC address 0x%04x and ROMBank %u\n", MBCAddress,
+                                                                         tpak->currentROMBank);
     }
 }
 
@@ -243,13 +240,13 @@ void gb_readCartMBC3(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuf
     if (MBCAddress >= 0x0000 && MBCAddress <= 0x3FFF)
     {
         cartAddress = MBCAddress;
-        n64hal_flash_read_rom(cart->filename, cartAddress, outBuffer, 32);
+        n64hal_rom_read(cart, cartAddress, outBuffer, 32);
     }
     //4000-7FFF - Cart Flash Access Banked Section.
     else if (MBCAddress >= 0x4000 && MBCAddress <= 0x7FFF)
     {
         cartAddress = (MBCAddress - 0x4000) + (tpak->currentROMBank * 0x4000);
-        n64hal_flash_read_rom(cart->filename, cartAddress, outBuffer, 32);
+        n64hal_rom_read(cart, cartAddress, outBuffer, 32);
     }
     //A000 to BFFF - Cart RAM or RTC Register Access
     else if (MBCAddress >= 0xA000 && MBCAddress <= 0xBFFF)
@@ -299,7 +296,8 @@ void gb_readCartMBC3(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuf
     }
     else
     {
-        printf("Error: Bad read at MBC address 0x%04x and ROMBank %u\n", MBCAddress, tpak->currentROMBank);
+        printf("Error: Bad read at MBC address 0x%04x and ROMBank %u\n", MBCAddress,
+                                                                         tpak->currentROMBank);
     }
 }
 /* END MBC3 */
@@ -341,11 +339,12 @@ void gb_initGameBoyCart(gameboycart *cart, uint8_t *gb_header, char *filename)
         cart->romsize = gb_getRomSize(gb_header[GB_ROMSIZE_OFFSET - 0x100]);
         cart->ramsize = gb_getSramSize(gb_header[GB_RAMSIZE_OFFSET - 0x100], cart->mbc);
         memcpy(cart->filename, filename, sizeof(cart->filename));
-
+        #if (0)
         printf("GB Name: %.15s\r\n", (char *)cart->title);
         printf("ROM Bytes: %lu\r\n", cart->romsize);
         printf("SRAM Bytes: %lu\r\n", cart->ramsize);
         printf("MBC Type: 0x%02x\r\n", cart->mbc);
+        #endif
     }
     else
     {
@@ -391,7 +390,7 @@ void gb_pokemonSetTime(gameboycart *cart)
 
     //uint16_t d;
     //uint8_t h, m, s;
-    //n64hal_read_rtc(&d, &h, &m, &s);
+    //n64hal_rtc_read(&d, &h, &m, &s);
 
     //printf("Actual d:%u h:%u m:%u s:%u\r\n",d,h,m,s);
 }

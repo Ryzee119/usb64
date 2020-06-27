@@ -1,6 +1,25 @@
-//
-//
-//
+/* MIT License
+ * 
+ * Copyright (c) [2020] [Ryan Wendland]
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #include <stdint.h>
 #include <stdio.h>
@@ -21,9 +40,8 @@
 //#define USE_N64_ADDRESS_CRC
 
 n64_rumblepak n64_rpak[4];
-n64_mempack n64_mpack[4]; //mempack data is not allocated now
+n64_mempack n64_mpack[4];
 n64_transferpak n64_tpak[4];
-gameboycart gb_cart[4];
 
 void n64_init_subsystem(n64_controller *controllers)
 {
@@ -41,7 +59,6 @@ void n64_init_subsystem(n64_controller *controllers)
         controllers[i].mempack->data = NULL;
         controllers[i].tpak = &n64_tpak[i];
         controllers[i].tpak->installedCart = NULL;
-        controllers[i].locked = 0;
     }
 
     n64_settings settings;
@@ -109,19 +126,17 @@ static void n64_send_stream(uint8_t *txbuff, uint8_t len, n64_controller *c)
     uint32_t cycle_cnt = 0;
     uint32_t current_byte = 0;
     uint32_t current_bit = 8;
-    uint32_t hs_clock = n64hal_hs_tick_init();
+    uint32_t hs_clock = n64hal_hs_tick_get_speed();
     uint32_t U_SEC = hs_clock / 1000000; //clocks per microsecond
     n64hal_hs_tick_reset();
     cycle_cnt = n64hal_hs_tick_get();
     while (len > 0)
     {
-        while (n64hal_hs_tick_get() < cycle_cnt)
-            ;
-        n64hal_input_swap(c, OUTPUT_PP); //OUTPUT_PP will pull low
+        while (n64hal_hs_tick_get() < cycle_cnt);
+        n64hal_input_swap(c, N64_OUTPUT); //OUTPUT_PP will pull low
         (txbuff[current_byte] & 0x80) ? (cycle_cnt += 1 * U_SEC) : (cycle_cnt += 3 * U_SEC);
-        while (n64hal_hs_tick_get() < cycle_cnt)
-            ;
-        n64hal_input_swap(c, INPUT_PUP);
+        while (n64hal_hs_tick_get() < cycle_cnt);
+        n64hal_input_swap(c, N64_INPUT);
         (txbuff[current_byte] & 0x80) ? (cycle_cnt += 3 * U_SEC) : (cycle_cnt += 1 * U_SEC);
         txbuff[current_byte] = txbuff[current_byte] << 1;
         current_bit--;
@@ -136,13 +151,11 @@ static void n64_send_stream(uint8_t *txbuff, uint8_t len, n64_controller *c)
     }
 
     //Send stop bit. Pull low for 2us, then release.
-    while (n64hal_hs_tick_get() < cycle_cnt)
-        ;
-    n64hal_input_swap(c, OUTPUT_PP);
+    while (n64hal_hs_tick_get() < cycle_cnt);
+    n64hal_input_swap(c, N64_OUTPUT);
     cycle_cnt += 2 * U_SEC;
-    while (n64hal_hs_tick_get() < cycle_cnt)
-        ;
-    n64hal_input_swap(c, INPUT_PUP); //Release bus. We're done
+    while (n64hal_hs_tick_get() < cycle_cnt);
+    n64hal_input_swap(c, N64_INPUT); //Release bus. We're done
 }
 
 static void n64_reset_stream(n64_controller *cont)
@@ -150,26 +163,29 @@ static void n64_reset_stream(n64_controller *cont)
     cont->current_bit = 7;
     cont->current_byte = 0;
     cont->data_buffer[0] = 0;
-    cont->locked = 0;
+}
+
+static void inline n64_wait_micros(uint32_t micros){
+    uint32_t clocks = micros * (n64hal_hs_tick_get_speed() / 1000000);
+    while (n64hal_hs_tick_get() < clocks);
 }
 
 //This function is called in the falling edge of the n64 data bus.
 void n64_controller_hande_new_edge(n64_controller *cont)
 {
-    n64hal_hs_tick_reset();
     static uint16_t peri_address = 0;
     static uint8_t peri_access = 0;
-    cont->locked = 1;
+    static uint32_t bus_timer[MAX_CONTROLLERS] = {0};
 
     //If bus has been idle for 300us, start of a new stream.
-    if (n64hal_micro_tick_get() > 300)
+    if ((n64hal_hs_tick_get() - bus_timer[cont->id]) >
+        (300 *n64hal_hs_tick_get_speed() / 1000000))
     {
-        n64hal_input_swap(&cont[1], OUTPUT_PP);
         n64_reset_stream(cont);
         peri_access = 0;
-        n64hal_input_swap(&cont[1], INPUT_PUP);
     }
-    n64hal_micro_tick_reset();
+    n64hal_hs_tick_reset();
+    bus_timer[cont->id] = n64hal_hs_tick_get();
 
     //If byte has completed, increment buffer for next byte and reset bit counter.
     if (cont->current_bit == -1)
@@ -181,16 +197,12 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             cont->current_byte = 0;
         }
         cont->data_buffer[cont->current_byte] = 0x00;
-        n64hal_input_swap(&cont[1], OUTPUT_PP);
     }
 
     //Wait for 1us to pass since falling edge before reading bit
-    while (n64hal_hs_tick_get() < n64hal_hs_rate() / 1000000)
-        ;
-    n64hal_input_swap(&cont[1], OUTPUT_PP);
+    n64_wait_micros(1);
     cont->data_buffer[cont->current_byte] |= n64hal_input_read(cont) << cont->current_bit;
     cont->current_bit -= 1;
-    n64hal_input_swap(&cont[1], INPUT_PUP);
 
     //If byte 0 has been completed, we need to identify what the command is
     if (cont->current_byte == 1)
@@ -227,15 +239,13 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                     cont->data_buffer[N64_DATA_POS + 2] = 0x04;
                 }
             }
-            while (n64hal_micro_tick_get() < 2)
-                ; //Give console time to accept
+            n64_wait_micros(2);
             n64_send_stream(cont->data_buffer + N64_DATA_POS, 3, cont);
             n64_reset_stream(cont);
             break;
 
         case N64_CONTROLLER_STATUS:
-            while (n64hal_micro_tick_get() < 2)
-                ; //Give console time to accept
+            n64_wait_micros(2);
             n64_send_stream((uint8_t *)&cont->bState, 4, cont);
             n64_reset_stream(cont);
             cont->bState.dButtons = 0x0000;
@@ -346,7 +356,10 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             }
 
             //TPAK ONLY: Access the Gameboy Cart
-            else if (peri_address >= 0xC000 && peri_address <= 0xFFFF && cont->current_peripheral == PERI_TPAK)
+            else if (peri_address >= 0xC000 &&
+                     peri_address <= 0xFFFF &&
+                     cont->current_peripheral == PERI_TPAK &&
+                     cont->tpak->installedCart)
             {
                 uint16_t MBCAddress = tpak_getMBCAddress(peri_address, cont->tpak->currentMBCBank);
                 switch (cont->tpak->installedCart->mbc)
@@ -399,7 +412,10 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             }
 
             //VIRTUAL MEMPAK NOTE TABLE HACKZ
-            if (cont->current_peripheral == PERI_MEMPCK && cont->mempack->virtual_is_active && peri_address >= 0x300 && peri_address < 0x500)
+            if (cont->current_peripheral == PERI_MEMPCK &&
+                cont->mempack->virtual_is_active &&
+                peri_address >= 0x300 &&
+                peri_address < 0x500)
             {
                 /*
                  * When you 'delete' a note from the mempak manager, I can hook the
@@ -434,7 +450,8 @@ void n64_controller_hande_new_edge(n64_controller *cont)
         )
         {
             memset(&cont->data_buffer[N64_DATA_POS], 0x00, 32); //N64 responds with 0x00s unless otherwise set
-            peri_address = (cont->data_buffer[N64_ADDRESS_MSB_POS] << 8 | cont->data_buffer[N64_ADDRESS_LSB_POS]);
+            peri_address = (cont->data_buffer[N64_ADDRESS_MSB_POS] << 8 |
+                            cont->data_buffer[N64_ADDRESS_LSB_POS]);
 
 #ifdef USE_N64_ADDRESS_CRC
             if (!n64_compare_addr_crc(peri_address))
@@ -523,7 +540,10 @@ void n64_controller_hande_new_edge(n64_controller *cont)
 
                 //TPAK ONLY: GAMEBOY MBC ACCESS
             }
-            else if (peri_address >= 0xC000 && peri_address <= 0xFFFF && cont->current_peripheral == PERI_TPAK)
+            else if (peri_address >= 0xC000 &&
+                     peri_address <= 0xFFFF &&
+                     cont->current_peripheral == PERI_TPAK &&
+                     cont->tpak->installedCart)
             {
                 uint16_t MBCAddress = tpak_getMBCAddress(peri_address, cont->tpak->currentMBCBank);
                 switch (cont->tpak->installedCart->mbc)
@@ -578,11 +598,9 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             }
 
 #ifdef USE_N64_ADDRESS_CRC
-            while (n64hal_micro_tick_get() < 5)
-                ;
+            n64_wait_micros(5);
 #else
-            while (n64hal_micro_tick_get() < 30)
-                ;
+            n64_wait_micros(30);
 #endif
             n64_send_stream(&cont->data_buffer[N64_DATA_POS], 33, cont);
 

@@ -1,0 +1,7 @@
+[submodule "src/printf"]
+	path = src/printf
+	url = https://github.com/mpaland/printf
+
+[submodule "lib/USBHost_t36"]
+        path = lib/USBHost_t36
+        url = https://github.com/Ryzee119/USBHost_t36

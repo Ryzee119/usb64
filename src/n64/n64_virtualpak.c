@@ -1,6 +1,30 @@
+/* MIT License
+ * 
+ * Copyright (c) [2020] [Ryan Wendland]
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include "printf.h"
 #include "n64_mempak.h"
 #include "n64_virtualpak.h"
 #include "n64_settings.h"
@@ -8,17 +32,22 @@
 #include "n64_controller.h"
 #include "n64_wrapper.h"
 
-extern n64_transferpak n64_tpak;
-extern gameboycart gb_cart[MAX_GBROMS];
+#define HEADING MENU_LINE1
+#define SUBHEADING MENU_LINE2
 
-#define MENU_TPAK 1
-#define MENU_RTC 2
-#define MENU_USB 3
-#define MENU_SETTINGS1 4
-#define MENU_SETTINGS2 5
+#define MENU_TPAK MENU_LINE4
+#define MENU_CONTROLLER_SETTINGS MENU_LINE5
 
-uint8_t current_menu = MENU_MAIN;
+#define CHANGE_CONTROLLER MENU_LINE15
+#define MENU_MAIN MENU_LINE16
+#define RETURN MENU_MAIN
+
+static uint8_t controller_page = 0;
+static uint8_t current_menu = MENU_MAIN;
 static char buff[64];
+static uint8_t num_roms = 0;
+static char *gbrom_filenames[32] = {NULL}; //Gameboy ROM List
+static char *gbrom_titlenames[32] = {NULL}; //Gameboy ROM List
 
 //First 32 bytes of mempak. First byte must be 0x81. This small section is in RAM as the console writes to it
 uint8_t n64_virtualpak_scratch[0x20] = {
@@ -129,12 +158,14 @@ uint8_t n64_virtualpak_note_table[0x200] = {
 //each line, Set this to one to write to that instead.
 static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
 {
-    static const uint8_t MEMPACK_CHARMAP[52] = {
-        0x00, ' ', '0', '1', '2', '3', '4', '5', '6', '7', '8',
-        '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
-        'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
-        'V', 'W', 'X', 'Y', 'Z', '!', '"', '#', '\'', '*', '+',
-        ',', '-', '.', '/', ':', '=', '?', '@'};
+    static const uint8_t MEMPACK_CHARMAP[] =
+    {
+        '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', 
+        ' ' , '0' , '1' , '2' , '3' , '4' , '5' , '6' , '7' , '8' , '9' ,
+        'A' , 'B' , 'C' , 'D' , 'E' , 'F' , 'G' , 'H' , 'I' , 'J' , 'K' , 'L' , 'M' ,
+        'N' , 'O' , 'P' , 'Q' , 'R' , 'S' , 'T' , 'U' , 'V' , 'W' , 'X' , 'Y' , 'Z' ,
+        '!' , '"' , '#' , '\'', '*' , '+' , ',' , '-' , '.' , '/' , ':' , '=' , '?' , '@'
+    };
 
     uint8_t max_len;
     uint8_t len = 0xFF;
@@ -145,7 +176,7 @@ static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
     {
         uint8_t n64char = 0;
 
-        //If string terminator, pad string
+        //If string terminator, fix length
         if (msg[i] == '\0')
             len = i;
 
@@ -157,32 +188,22 @@ static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
         if (msg[i] == '_')
             msg[i] = '-'; //replace _ with -
 
-        //Pad with spaces if past end of string 1=space
-        //1 = space in MEMPACK_CHARMAP
+        //Find a match in the CHARMAP
+        for (uint8_t j = 0; j < sizeof(MEMPACK_CHARMAP); j++)
+        {
+            if (msg[i] == MEMPACK_CHARMAP[j])
+                n64char = j;
+        }
+
+        //Pad with spaces if past end
         if (i > len)
-        {
             n64char = 1;
-
-
-        }
-        else //Else check for match in the character map
-        {
-            for (uint8_t j = 0; j < sizeof(MEMPACK_CHARMAP); j++)
-            {
-                if (msg[i] == MEMPACK_CHARMAP[j])
-                    n64char = j;
-            }
-        }
 
         //Replace unknown character with a space.
         if (n64char == 0)
-        {
             n64char = 1;
-        }
 
-        //Shift the value. The first char actually starts at '15'
-        n64char += 14;
-
+        //Write to char to the note table
         if (ext)
         {
             n64_virtualpak_note_table[(32 * line) + 12 + i] = n64char;
@@ -197,16 +218,51 @@ static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
 void n64_virtualpak_init(n64_mempack *vpak)
 {
     char alpha[2] = {'A', '\0'};
+    vpak->virtual_is_active = 1;
     vpak->virtual_selected_row = -1;
     vpak->virtual_update_req = 1;
     for (uint8_t i = 0; i < 16; i++)
     {
-        n64_virtualpak_write_string("-", i, MENU_NAME_FIELD);
+        n64_virtualpak_write_string("-",   i, MENU_NAME_FIELD);
         n64_virtualpak_write_string(alpha, i, MENU_EXT_FIELD);
         alpha[0]++;
     }
-    n64_virtualpak_write_string("N360 BY RYZEE119", MENU_LINE1, MENU_NAME_FIELD);
-    n64_virtualpak_write_string("RETURN", MENU_LINE16, MENU_NAME_FIELD);
+    n64_virtualpak_write_string("N360 BY RYZEE119", HEADING,  MENU_NAME_FIELD);
+    n64_virtualpak_write_string("CHANGE CONT",   CHANGE_CONTROLLER, MENU_NAME_FIELD);
+    n64_virtualpak_write_string("RETURN",           RETURN, MENU_NAME_FIELD);
+
+    /* Scan FATFS flash for ROMS and populate an array to list them */
+
+    //Clear up any previous memory allocations
+    for(int i = 0 ; i < 32; i++){
+        if (gbrom_filenames[i] !=NULL)
+        {
+            free(gbrom_filenames[i]);
+        }
+            
+        if (gbrom_titlenames[i] !=NULL)
+        {
+            free(gbrom_titlenames[i]);
+        }
+        gbrom_filenames[i] = NULL;
+        gbrom_titlenames[i] = NULL;
+    }
+
+    num_roms = n64hal_scan_flash_gbroms(gbrom_filenames);
+    for (int i = 0; i < num_roms; i++)
+    {
+        uint8_t gb_header[0x100];
+        gameboycart gb_cart;
+        //Copy the FATFS filename into an array
+        strcpy((char*)gb_cart.filename, gbrom_filenames[i]);
+        if (n64hal_rom_read(&gb_cart, 0x100, gb_header, sizeof(gb_header)))
+        {
+            gb_initGameBoyCart(&gb_cart, gb_header, gbrom_filenames[i]);
+            //Copy the gb cart title (from the rom header into an array)
+            gbrom_titlenames[i] = (char*)malloc(strlen((char*)gb_cart.title) + 1);
+            strcpy(gbrom_titlenames[i], (char*)gb_cart.title);
+        }
+    }
 }
 
 void n64_virtualpak_read32(uint16_t address, uint8_t *rx_buff)
@@ -242,345 +298,81 @@ void n64_virtualpak_write32(uint16_t address, uint8_t *tx_buff)
 
 void n64_virtualpak_update(n64_mempack *vpak)
 {
-    char alpha[2] = {'B', '\0'};
-    uint8_t drawing_menu = 0;
-
-    //printf("Virtual pak update:\r\n");
-    //printf("Current Menu: %u\r\n", current_menu);
-    //printf("Selected Row: %i\r\n", vpak->virtual_selected_row);
+    n64_settings* settings = n64_settings_get();
 
     //PREP VIRTUAL PAK FOR UPDATE
-    for (uint8_t i = 1; i < 15; i++)
+    char alpha[2] = {'B', '\0'};
+    for (uint8_t i = 1; i < 14; i++)
     {
         n64_virtualpak_write_string("-", i, MENU_NAME_FIELD);
         n64_virtualpak_write_string(alpha, i, MENU_EXT_FIELD);
         alpha[0]++;
     }
 
-    if (vpak->virtual_selected_row == MENU_LINE16)
-    {
-        current_menu = MENU_MAIN;
+    //You selected a row, what row?
+    switch(vpak->virtual_selected_row){
+        case RETURN:
+        case HEADING:
+            current_menu = MENU_MAIN;
+            break;
+        case MENU_TPAK:
+            current_menu = MENU_TPAK;
+            break;
+        case MENU_CONTROLLER_SETTINGS:
+            current_menu = MENU_CONTROLLER_SETTINGS;
+            break;
+        case CHANGE_CONTROLLER:
+        case SUBHEADING:
+            controller_page++;
+            if(controller_page >= MAX_CONTROLLERS)
+                controller_page = 0;
+            break;
     }
 
+    //Print the required menu
     if (current_menu == MENU_MAIN)
     {
         switch (vpak->virtual_selected_row)
         {
-        case MENU_LINE4:
+        case MENU_TPAK:
             current_menu = MENU_TPAK;
-            drawing_menu = 1;
             break;
-        case MENU_LINE5:
-            current_menu = MENU_RTC;
-            drawing_menu = 1;
-            break;
-        case MENU_LINE6:
-            current_menu = MENU_USB;
-            break;
-        case MENU_LINE7:
-            current_menu = MENU_SETTINGS1;
-            drawing_menu = 1;
-            break;
-        case MENU_LINE8:
-            current_menu = MENU_SETTINGS2;
-            drawing_menu = 1;
+        case MENU_CONTROLLER_SETTINGS:
+            current_menu = MENU_CONTROLLER_SETTINGS;
             break;
         default:
-            n64_virtualpak_write_string("MAIN PAGE", MENU_LINE2, MENU_NAME_FIELD);
-            n64_virtualpak_write_string("________________", MENU_LINE3, MENU_NAME_FIELD);
-            n64_virtualpak_write_string("TPAK SETTINGS", MENU_LINE4, MENU_NAME_FIELD);
-            n64_virtualpak_write_string("RTC SETTINGS", MENU_LINE5, MENU_NAME_FIELD);
-            n64_virtualpak_write_string("USB INFO", MENU_LINE6, MENU_NAME_FIELD);
-            n64_virtualpak_write_string("CONT 1 SETTINGS", MENU_LINE7, MENU_NAME_FIELD);
-            n64_virtualpak_write_string("CONT 2 SETTINGS", MENU_LINE8, MENU_NAME_FIELD);
+            sprintf(buff,"CONTROLLER %u", controller_page + 1);
+            n64_virtualpak_write_string(buff,               SUBHEADING, MENU_NAME_FIELD);
+            n64_virtualpak_write_string("________________", SUBHEADING + 1, MENU_NAME_FIELD);
+            n64_virtualpak_write_string("TPAK SETTINGS",    MENU_TPAK, MENU_NAME_FIELD);
+            n64_virtualpak_write_string("CONT SETTINGS",    MENU_CONTROLLER_SETTINGS, MENU_NAME_FIELD);
             break;
         }
     }
-
-    if (current_menu == MENU_TPAK)
+    else if (current_menu == MENU_TPAK)
     {
-        n64_virtualpak_write_string("TPAK SETTINGS", MENU_LINE2, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("________________", MENU_LINE3, MENU_NAME_FIELD);
+        sprintf(buff,"CONTROLLER %u", controller_page + 1);
+        n64_virtualpak_write_string(buff,               SUBHEADING, MENU_NAME_FIELD);
+        n64_virtualpak_write_string("________________", SUBHEADING + 1, MENU_NAME_FIELD);
+        n64_virtualpak_write_string("TPAK SETTINGS",    SUBHEADING + 2, MENU_NAME_FIELD);
 
-        uint8_t row = vpak->virtual_selected_row;
-        uint8_t startrow = MENU_LINE4;
-        uint8_t previousRom = n64_tpak.activeRomID;
-        uint8_t currentRom = n64_tpak.activeRomID;
+        for (int i = 0; i < num_roms; i++)
+        {
+            n64_virtualpak_write_string(gbrom_titlenames[i], SUBHEADING + 2 + i, MENU_NAME_FIELD);
+        }
 
-        if (row >= startrow && row < startrow + MAX_GBROMS && !drawing_menu)
-        {
-            if (gb_cart[row - startrow].romsize > 0)
-            {
-                n64_tpak.activeRomID = row - startrow;
-                currentRom = n64_tpak.activeRomID;
-                printf("Active rom: %u\r\n", currentRom);
-            }
-        }
-        drawing_menu = 0;
-
-        for (uint8_t i = 0; i < MAX_GBROMS; i++)
-        {
-            if (gb_cart[i].romsize > 0)
-            {
-                n64_virtualpak_write_string((char *)gb_cart[i].title, startrow + i, MENU_NAME_FIELD);
-                if (n64_tpak.activeRomID == i)
-                {
-                    n64_virtualpak_write_string("****", startrow + i, MENU_EXT_FIELD);
-                }
-                else
-                {
-                    char alpha[] = {'A' + startrow + i, '\0'};
-                    n64_virtualpak_write_string(alpha, startrow + i, MENU_EXT_FIELD);
-                }
-            }
-            else
-            {
-                n64_virtualpak_write_string("-", startrow + i, MENU_NAME_FIELD);
-            }
-        }
-        //n64_tpak[0].activeRomID
-        if (currentRom != previousRom)
-        {
-            printf("New ROM selected\r\n");
-            n64_tpak.installedCart = &gb_cart[currentRom];
-
-            n64_settings settings;
-            n64_settings_read(&settings);
-            settings.default_tpak_rom = currentRom;
-            n64_settings_write(&settings);
-        }
-        else
-        {
-            //printf("You selected an invalid ROM or the same active ROM. No change\r\n");
-        }
+        //List ROMS with the header rom name
+        //Put * next to current default
+        //Write actual filename to settings.default_tpak_rom[controller_page]
+        //Put * next to new default
     }
-    else if (current_menu == MENU_RTC)
+    else if (current_menu == MENU_CONTROLLER_SETTINGS)
     {
-
-        n64_virtualpak_write_string("RTC SETTINGS", MENU_LINE2, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("________________", MENU_LINE3, MENU_NAME_FIELD);
-
-        uint8_t m, h, s;
-        uint16_t d;
-        uint32_t dst;
-
-        n64hal_read_rtc(&d, &h, &m, &s, &dst);
-
-        n64_virtualpak_write_string("CURRENT RTC:", MENU_LINE3, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("DAY+", MENU_LINE6, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("HOUR+6", MENU_LINE7, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("HOUR+1", MENU_LINE8, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("MIN+10", MENU_LINE9, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("MIN+5", MENU_LINE10, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("MIN+1", MENU_LINE11, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("DST ON/OFF", MENU_LINE12, MENU_NAME_FIELD);
-
-        n64_virtualpak_write_string("RTC LOST IF NO", MENU_LINE14, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("BAT IS INSTALLED", MENU_LINE15, MENU_NAME_FIELD);
-
-        uint8_t row = vpak->virtual_selected_row;
-        if (drawing_menu)
-            row = 0;
-        drawing_menu = 0;
-
-        switch (row)
-        {
-        case MENU_LINE6:
-            d += 1;
-            if (d > 6)
-                d -= 7;
-            break;
-        case MENU_LINE7:
-            h += 6;
-            if (h > 23)
-                h -= 24;
-            break;
-        case MENU_LINE8:
-            h += 1;
-            if (h > 23)
-                h -= 24;
-            break;
-        case MENU_LINE9:
-            m += 10;
-            if (m > 59)
-                m -= 60;
-            break;
-        case MENU_LINE10:
-            m += 5;
-            if (m > 59)
-                m -= 60;
-            break;
-        case MENU_LINE11:
-            m += 1;
-            if (m > 59)
-                m -= 60;
-            break;
-        case MENU_LINE12:
-            /*if (dst & RTC_DAYLIGHTSAVING_ADD1H){
-                dst = RTC_DAYLIGHTSAVING_NONE;
-            } else {
-                dst = RTC_DAYLIGHTSAVING_ADD1H;
-            } FIXME*/
-            break;
-        case MENU_LINE15:
-
-            break;
-        }
-
-        n64hal_write_rtc(&d, &h, &m, &s, &dst);
-
-        switch (d)
-        {
-        case 0:
-            snprintf(buff, 16, "Sun ");
-            break;
-        case 1:
-            snprintf(buff, 16, "Mon ");
-            break;
-        case 2:
-            snprintf(buff, 16, "Tue ");
-            break;
-        case 3:
-            snprintf(buff, 16, "Wed ");
-            break;
-        case 4:
-            snprintf(buff, 16, "Thu ");
-            break;
-        case 5:
-            snprintf(buff, 16, "Fri ");
-            break;
-        case 6:
-            snprintf(buff, 16, "Sat ");
-            break;
-        }
-        snprintf(&buff[4], 16, "%02u:%02u:%02u %s", h, m, s, (dst) ? "dst" : "");
-        n64_virtualpak_write_string(buff, MENU_LINE4, MENU_NAME_FIELD);
-    }
-    else if (current_menu == MENU_USB)
-    {
-        n64_virtualpak_write_string("USB INFO", MENU_LINE2, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("________________", MENU_LINE3, MENU_NAME_FIELD);
-
-        /*
-        for(uint8_t i = 0; i < MAX_CONTROLLERS; i++){
-            if(usb_controller[i].connected){
-                snprintf(buff, 16, "%u: %s", i+1, usb_controller[i].Manufacturer);
-            } else {
-                snprintf(buff, 16, "%u: %s", i+1, "No Device");
-            }
-            n64_virtualpak_write_string(buff, MENU_LINE4 + (2*i), MENU_NAME_FIELD);
-
-            if(usb_controller[i].connected){
-                snprintf(buff, 16, "%u: %s", i+1, usb_controller[i].Product);
-            } else {
-                snprintf(buff, 16, "%u: %s", i+1, "");
-            }
-            n64_virtualpak_write_string(buff, MENU_LINE5 + (2*i), MENU_NAME_FIELD);
-
-        }
-        FIXME */
-    }
-    else if (current_menu == MENU_SETTINGS1 ||
-             current_menu == MENU_SETTINGS2)
-    {
-
-#define SENS_PLUS MENU_LINE8
-#define SENS_SUB MENU_LINE9
-#define DEAD_PLUS MENU_LINE12
-#define DEAD_SUB MENU_LINE13
-#define OCTA MENU_LINE4
-#define SNAP MENU_LINE5
-#define APPLY MENU_LINE15
-
-        static uint8_t n64_settings_init = 0;
-        static n64_settings settings;
-
-        if (!n64_settings_init)
-        {
-            n64_settings_read(&settings);
-            n64_settings_init = 1;
-        }
-
-        uint8_t cont = 0;
-        if (current_menu == MENU_SETTINGS2)
-        {
-            n64_virtualpak_write_string("CONT 2 SETTINGS", MENU_LINE2, MENU_NAME_FIELD);
-            cont = 1;
-        }
-        else
-        {
-            n64_virtualpak_write_string("CONT 1 SETTINGS", MENU_LINE2, MENU_NAME_FIELD);
-            cont = 0;
-        }
-
-        n64_virtualpak_write_string("________________", MENU_LINE3, MENU_NAME_FIELD);
-        //Maybe movement curve? linear, halo etc.
-        n64_virtualpak_write_string("OCTA CORRECTION", OCTA, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("SNAP TO ANGLES", SNAP, MENU_NAME_FIELD);
-
-        n64_virtualpak_write_string("SENSITIVITY", MENU_LINE7, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("SENSITIVITY+", SENS_PLUS, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("SENSITIVITY-", SENS_SUB, MENU_NAME_FIELD);
-
-        n64_virtualpak_write_string("DEADZONE", MENU_LINE11, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("DEADZONE+", DEAD_PLUS, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("DEADZONE-", DEAD_SUB, MENU_NAME_FIELD);
-
-        n64_virtualpak_write_string("APPLY", APPLY, MENU_NAME_FIELD);
-
-        uint8_t row = vpak->virtual_selected_row;
-        if (!drawing_menu)
-        {
-            //printf("Selected row %u\r\n",row);
-        }
-        else
-        {
-            row = 0;
-        }
-        drawing_menu = 0;
-
-        switch (row)
-        {
-        case DEAD_PLUS:
-            if (settings.deadzone[cont] < 5)
-                settings.deadzone[cont]++;
-            break;
-        case DEAD_SUB:
-            if (settings.deadzone[cont] > 0)
-                settings.deadzone[cont]--;
-            break;
-        case SENS_PLUS:
-            if (settings.sensitivity[cont] < 10)
-                settings.sensitivity[cont]++;
-            break;
-        case SENS_SUB:
-            if (settings.sensitivity[cont] > 0)
-                settings.sensitivity[cont]--;
-            break;
-        case OCTA:
-            (settings.octa[cont] >= 1) ? (settings.octa[cont] = 0) : (settings.octa[cont] = 1);
-            break;
-        case SNAP:
-            (settings.snap_axis[cont] >= 1) ? (settings.snap_axis[cont] = 0) : (settings.snap_axis[cont] = 1);
-            break;
-        case APPLY:
-            n64_settings_write(&settings);
-            break;
-        }
-
-        snprintf(buff, 16, "*%02u*", settings.octa[cont]);
-        n64_virtualpak_write_string(buff, MENU_LINE4, MENU_EXT_FIELD);
-
-        snprintf(buff, 16, "*%02u*", settings.snap_axis[cont]);
-        n64_virtualpak_write_string(buff, MENU_LINE5, MENU_EXT_FIELD);
-
-        snprintf(buff, 16, "*%02u*", settings.sensitivity[cont]);
-        n64_virtualpak_write_string(buff, MENU_LINE7, MENU_EXT_FIELD);
-
-        snprintf(buff, 16, "*%02u*", settings.deadzone[cont]);
-        n64_virtualpak_write_string(buff, MENU_LINE11, MENU_EXT_FIELD);
+        sprintf(buff,"CONTROLLER %u", controller_page + 1);
+        n64_virtualpak_write_string(buff,               SUBHEADING, MENU_NAME_FIELD);
+        n64_virtualpak_write_string("________________", SUBHEADING + 1, MENU_NAME_FIELD);
+        n64_virtualpak_write_string("CONT SETTINGS",    SUBHEADING + 2, MENU_NAME_FIELD);
     }
     vpak->virtual_update_req = 0;
     vpak->virtual_selected_row = -1;
-    printf("Final Menu: %u\r\n", current_menu);
 }

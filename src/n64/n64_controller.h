@@ -1,4 +1,25 @@
-// n64_controller.h
+/* MIT License
+ * 
+ * Copyright (c) [2020] [Ryan Wendland]
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #ifndef _N64_CONTROLLER_h
 #define _N64_CONTROLLER_h
@@ -20,24 +41,21 @@ typedef struct
 
 typedef struct
 {
-    int id;                    //Controller ID
-    int8_t current_bit;        //The current bit to being received in
-    int8_t current_byte;       //The current byte being received in
-    uint8_t data_buffer[50];   //Controller main tx and rx buffer
-    int8_t current_peripheral; //Peripheral flag, PERI_NONE, PERI_RUMBLE, PERI_MEMPCK, PERI_TPAK
-    int8_t next_peripheral;    //What Peripheral to change to next after timer
-    n64_buttonmap bState;      //N64 controller button and analog stick map
-    uint8_t crc_error;         //Set if the 2 byte address has a CRC error.
-    n64_transferpak *tpak;     //Pointer to installed transferpak
-    n64_rumblepak *rpak;       //Pointer to installed rumblepak
-    n64_mempack *mempack;      //Pointer to installed mempack
-    uint8_t isMouse;           //Set to emulate a n64 mouse
+    int id;                     //Controller ID
+    int8_t current_bit;         //The current bit to being received in
+    int8_t current_byte;        //The current byte being received in
+    uint8_t data_buffer[50];    //Controller main tx and rx buffer
+    int8_t current_peripheral;  //Peripheral flag, PERI_NONE, PERI_RUMBLE, PERI_MEMPCK, PERI_TPAK
+    int8_t next_peripheral;     //What Peripheral to change to next after timer
+    n64_buttonmap bState;       //N64 controller button and analog stick map
+    uint8_t crc_error;          //Set if the 2 byte address has a CRC error.
+    n64_transferpak *tpak;      //Pointer to installed transferpak
+    n64_rumblepak *rpak;        //Pointer to installed rumblepak
+    n64_mempack *mempack;       //Pointer to installed mempack
+    uint8_t isMouse;            //Set to emulate a n64 mouse
 
     uint32_t bus_idle_timer_us; //Timer counter for bus idle timing
-    void *gpio_port;
-    uint16_t gpio_pin;
-
-    uint8_t locked;
+    uint16_t gpio_pin;          //What pin is this controller connected to
 } n64_controller;
 
 //N64 RELATED
