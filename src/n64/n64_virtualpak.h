@@ -1,0 +1,54 @@
+/*
+ * n64_virtualpak.h
+ *
+ *  Created on: 1Dec.,2019
+ *      Author: Ryan
+ */
+
+/*
+#include "n64_controller.h"
+*/
+
+#ifndef N64_VIRTUALPAK_H_
+#define N64_VIRTUALPAK_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define MENU_MAIN 0
+#define MENU_TPAK 1
+#define MENU_RTC 2
+#define MENU_USB 3
+#define MENU_SETTINGS 4
+
+#define MENU_LINE1 0
+#define MENU_LINE2 1
+#define MENU_LINE3 2
+#define MENU_LINE4 3
+#define MENU_LINE5 4
+#define MENU_LINE6 5
+#define MENU_LINE7 6
+#define MENU_LINE8 7
+#define MENU_LINE9 8
+#define MENU_LINE10 9
+#define MENU_LINE11 10
+#define MENU_LINE12 11
+#define MENU_LINE13 12
+#define MENU_LINE14 13
+#define MENU_LINE15 14
+#define MENU_LINE16 15
+
+#define MENU_NAME_FIELD 0
+#define MENU_EXT_FIELD 1
+
+void n64_virtualpak_init(n64_mempack *vpak);
+void n64_virtualpak_update(n64_mempack *vpak);
+void n64_virtualpak_read32(uint16_t address, uint8_t *rx_buff);
+void n64_virtualpak_write32(uint16_t address, uint8_t *tx_buff);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* N64_VIRTUALPAK_H_ */
