@@ -106,6 +106,7 @@ uint8_t n64hal_rom_read(gameboycart *gb_cart, uint32_t address, uint8_t *data, u
     res = f_lseek(&fil, address%4096 == 0 ? address+1 : address);
     if (res != FR_OK){
         printf("Seek error on %s at %08x\r\n", filename, address);
+        strcpy((char *)open_file, "");
         return 0;
     }
     if (data != NULL)

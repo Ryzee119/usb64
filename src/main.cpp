@@ -110,22 +110,21 @@ void setup()
     pinMode(N64_CONTROLLER_2_PIN, INPUT_PULLUP);
     //pinMode(N64_CONTROLLER_3_PIN, INPUT_PULLUP); //TODO MAP
     //pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP); //TODO MAP
-
+    NVIC_SET_PRIORITY(IRQ_GPIO6789, 1);
     attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_1_PIN), n64_controller1_clock_edge, FALLING);
     //attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_2_PIN), n64_controller2_clock_edge, FALLING);
     //attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_3_PIN), n64_controller3_clock_edge, FALLING);
     //attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_4_PIN), n64_controller4_clock_edge, FALLING);
 
-    FATFS fs; BYTE work[4096];
+    extern FATFS fs; BYTE work[4096];
     //Check that the flash chip is formatted for FAT access
-    MKFS_PARM defopt = {FM_FAT, 1, 1, 1, 4096}; /* Default parameter */
+    MKFS_PARM defopt = {FM_FAT, 1, 0, 0, 4096};
     qspi_init(NULL, NULL);
     if (f_mount(&fs, "", 1) != FR_OK)
     {
         printf("Error mounting, probably not format correctly\r\n");
         f_mkfs("", &defopt, work, sizeof(work));
     }
-    f_mount(0, "", 0);
 }
 
 static bool n64_combo = false;
@@ -148,28 +147,29 @@ void loop()
         }
 
         //Map usb controllers to n64 controller
+        n64_buttons[c] = 0x0000;
         switch (gamecontroller[c]->joystickType())
         {
         case JoystickController::XBOX360:
         case JoystickController::XBOX360_WIRED:
             //Digital usb_buttons
-            if (usb_buttons[c] & (1 << 0))  n64_c[c].bState.dButtons |= N64_DU; //DUP
-            if (usb_buttons[c] & (1 << 1))  n64_c[c].bState.dButtons |= N64_DD; //DDOWN
-            if (usb_buttons[c] & (1 << 2))  n64_c[c].bState.dButtons |= N64_DL; //DLEFT
-            if (usb_buttons[c] & (1 << 3))  n64_c[c].bState.dButtons |= N64_DR; //DRIGHT
-            if (usb_buttons[c] & (1 << 4))  n64_c[c].bState.dButtons |= N64_ST; //START
-            if (usb_buttons[c] & (1 << 5))  n64_c[c].bState.dButtons |= 0; //BACK
-            if (usb_buttons[c] & (1 << 6))  n64_c[c].bState.dButtons |= 0; //LS
-            if (usb_buttons[c] & (1 << 7))  n64_c[c].bState.dButtons |= 0; //RS
-            if (usb_buttons[c] & (1 << 8))  n64_c[c].bState.dButtons |= N64_LB; //LB
-            if (usb_buttons[c] & (1 << 9))  n64_c[c].bState.dButtons |= N64_RB; //RB
-            if (usb_buttons[c] & (1 << 10)) n64_c[c].bState.dButtons |= 0; //XBOX BUTTON
-            if (usb_buttons[c] & (1 << 11)) n64_c[c].bState.dButtons |= 0; //XBOX SYNC
-            if (usb_buttons[c] & (1 << 12)) n64_c[c].bState.dButtons |= N64_A; //A
-            if (usb_buttons[c] & (1 << 13)) n64_c[c].bState.dButtons |= N64_B; //B
-            if (usb_buttons[c] & (1 << 14)) n64_c[c].bState.dButtons |= N64_B; //X
-            if (usb_buttons[c] & (1 << 15)) n64_c[c].bState.dButtons |= 0; //Y
-            if (usb_buttons[c] & (1 << 7))  n64_c[c].bState.dButtons |= N64_CU | //RS triggers
+            if (usb_buttons[c] & (1 << 0))  n64_buttons[c] |= N64_DU; //DUP
+            if (usb_buttons[c] & (1 << 1))  n64_buttons[c] |= N64_DD; //DDOWN
+            if (usb_buttons[c] & (1 << 2))  n64_buttons[c] |= N64_DL; //DLEFT
+            if (usb_buttons[c] & (1 << 3))  n64_buttons[c] |= N64_DR; //DRIGHT
+            if (usb_buttons[c] & (1 << 4))  n64_buttons[c] |= N64_ST; //START
+            if (usb_buttons[c] & (1 << 5))  n64_buttons[c] |= 0; //BACK
+            if (usb_buttons[c] & (1 << 6))  n64_buttons[c] |= 0; //LS
+            if (usb_buttons[c] & (1 << 7))  n64_buttons[c] |= 0; //RS
+            if (usb_buttons[c] & (1 << 8))  n64_buttons[c] |= N64_LB; //LB
+            if (usb_buttons[c] & (1 << 9))  n64_buttons[c] |= N64_RB; //RB
+            if (usb_buttons[c] & (1 << 10)) n64_buttons[c] |= 0; //XBOX BUTTON
+            if (usb_buttons[c] & (1 << 11)) n64_buttons[c] |= 0; //XBOX SYNC
+            if (usb_buttons[c] & (1 << 12)) n64_buttons[c] |= N64_A; //A
+            if (usb_buttons[c] & (1 << 13)) n64_buttons[c] |= N64_B; //B
+            if (usb_buttons[c] & (1 << 14)) n64_buttons[c] |= N64_B; //X
+            if (usb_buttons[c] & (1 << 15)) n64_buttons[c] |= 0; //Y
+            if (usb_buttons[c] & (1 << 7))  n64_buttons[c] |= N64_CU | //RS triggers
                                                                         N64_CD | //all C usb_buttons
                                                                         N64_CL |
                                                                         N64_CR;
@@ -178,14 +178,14 @@ void loop()
             n64_c[c].bState.y_axis = axis[c][1] * 85 / 32768;
 
             //Z button
-            if (axis[c][4] > 10) n64_c[c].bState.dButtons |= N64_Z; //LT
-            if (axis[c][5] > 10) n64_c[c].bState.dButtons |= N64_Z; //RT
+            if (axis[c][4] > 10) n64_buttons[c] |= N64_Z; //LT
+            if (axis[c][5] > 10) n64_buttons[c] |= N64_Z; //RT
 
             //C usb_buttons
-            if (axis[c][2] > 16000)  n64_c[c].bState.dButtons |= N64_CR;
-            if (axis[c][2] < -16000) n64_c[c].bState.dButtons |= N64_CL;
-            if (axis[c][3] > 16000)  n64_c[c].bState.dButtons |= N64_CU;
-            if (axis[c][3] < -16000) n64_c[c].bState.dButtons |= N64_CD;
+            if (axis[c][2] > 16000)  n64_buttons[c] |= N64_CR;
+            if (axis[c][2] < -16000) n64_buttons[c] |= N64_CL;
+            if (axis[c][3] > 16000)  n64_buttons[c] |= N64_CU;
+            if (axis[c][3] < -16000) n64_buttons[c] |= N64_CD;
 
             n64_combo = (usb_buttons[c] & (1 << 5)); //back
 
@@ -194,8 +194,9 @@ void loop()
         default:
             break;
         }
-        //Copy the current state of the n64 buttons into another variable for later use.
-        n64_buttons[c] = n64_c[c].bState.dButtons;
+
+        //Apply digital buttons to controller
+        n64_c[c].bState.dButtons = n64_buttons[c];
 
         //Apply rumble if required
         if (n64_c[c].rpak != NULL)
@@ -259,9 +260,19 @@ void loop()
                         mbc == MBC5_RAM_BAT     || mbc == MBC5_RUM_RAM_BAT)
                     {
                         n64_c[c].current_peripheral = NONE;
-                        n64hal_sram_backup_to_file(n64_c[c].tpak->installedCart->filename,
+                        //Replace .gb or .gbc with .sav
+                        char* file_name = (char*)n64_c[c].tpak->installedCart->filename;
+                        char* new_filename = (char *)malloc(sizeof(file_name) + 5);
+                        strcpy(new_filename, file_name);
+                        char* ext = strrchr(new_filename, '.');
+                        strcpy(ext, ".sav");
+                        printf("Cart has RAM, backing up!\n");
+                        printf("filename: %s\n", new_filename);
+                        printf("ramsize, %u\n", n64_c[c].tpak->installedCart->ramsize);
+                        n64hal_sram_backup_to_file((uint8_t*)new_filename,
                                                    n64_c[c].tpak->installedCart->ram,
                                                    n64_c[c].tpak->installedCart->ramsize);
+                        free(new_filename);
                     }
                 }
 
@@ -271,7 +282,7 @@ void loop()
                     n64_c[c].tpak->installedCart->romsize = 0;
                     n64_c[c].tpak->installedCart->ramsize = 0;
                     if (n64_c[c].tpak->installedCart->ram)
-                    free(n64_c[c].tpak->installedCart->ram);
+                        free(n64_c[c].tpak->installedCart->ram);
                 }
 
                 //Now it's a TPAK with no cart installed
@@ -320,6 +331,8 @@ void loop()
                                 else
                                     gb_cart[cart].ram = NULL;
                         n64_c[c].tpak->installedCart = &gb_cart[cart];
+
+                        //TODO READBACK RAM FROM FLASH
                     }
                     else
                     {
@@ -412,19 +425,18 @@ void loop()
 
     } //FOR LOOP
 
-    static char serial_buff[256];
-    static char filename[256];
-    static FATFS *_fs = (FATFS *)malloc(sizeof(FATFS));
-    static FIL fil; static FRESULT res; static UINT br;
-    static String serial_buff_str;
-    static uint32_t sector_size, total_sectors, free_sectors = 0, num_files;
-    int len = 0;
     if (serial_port.available())
     {
-        if (_fs->fs_type == 0)
-        {
-            f_mount(_fs, "", 1);
-        }
+        noInterrupts();
+        static char serial_buff[256];
+        static char filename[256];
+        static BYTE work[4096];
+        static MKFS_PARM defopt = {FM_FAT, 1, 0, 0, 4096}; /* Default parameter */
+        static FATFS *_fs = (FATFS *)malloc(sizeof(FATFS));
+        static FIL fil; static FRESULT res; static UINT br;
+        static String serial_buff_str;
+        static uint32_t sector_size, total_sectors, free_sectors = 0, num_files;
+        int len = 0;
         uint8_t c = serial_port.read();
 
         switch (c)
@@ -484,6 +496,8 @@ void loop()
             break;
         /* 0xA5: Send free space and total space of the FATFS system to the host */
         case 0xA5:
+            if (_fs->fs_type == 0)
+                f_mount(_fs, "", 1);
             qspi_get_flash_properties(&sector_size, NULL);
             f_getfree("", &free_sectors, &_fs);
             total_sectors = (_fs->n_fatent - 2);
@@ -491,9 +505,13 @@ void loop()
                                                                      free_sectors  * sector_size);
             serial_port.write(serial_buff);
             break;
+        case 0xA6:
+            f_mkfs("", &defopt, work, sizeof(work));
+            printf("Formatted\n");
         default:
             printf("Unknown\n");
             break;
         }
+        interrupts();
     }
 } // MAIN LOOP

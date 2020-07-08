@@ -31,6 +31,8 @@ extern "C" {
 #include <Arduino.h>
 #include "n64_controller.h"
 
+#define SETTINGS_FILENAME "SETTINGS.DAT"
+
 #define N64_OUTPUT 1
 #define N64_INPUT 2
 

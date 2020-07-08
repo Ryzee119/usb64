@@ -24,6 +24,10 @@
 #ifndef _N64_MEMPAK_h
 #define _N64_MEMPAK_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MEMPAK_SIZE 32768
 
 typedef struct
@@ -39,5 +43,9 @@ typedef struct
 
 void n64_mempack_read32(n64_mempack *mempack, uint16_t address, uint8_t *rx_buff);
 void n64_mempack_write32(n64_mempack *mempack, uint16_t address, uint8_t *tx_buff);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

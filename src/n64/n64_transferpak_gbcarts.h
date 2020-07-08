@@ -24,6 +24,10 @@
 #ifndef _N64_TRANSFERPAK_GBCARTS_h
 #define _N64_TRANSFERPAK_GBCARTS_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //GAMEBOY
 //Header offsets - ref https://web.archive.org/web/20141105020940/http://problemkaputt.de/pandocs.htm
 #define GB_LOGO_OFFSET 0x0104    //48 bytes
@@ -138,5 +142,9 @@ void gb_readCartMBC5(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuf
 
 uint16_t tpak_getMBCAddress(uint16_t tpakAddress, uint8_t bank);
 void tpak_reset(n64_transferpak *tpak);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

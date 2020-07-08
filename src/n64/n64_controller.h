@@ -97,9 +97,7 @@ typedef struct
 
 #define MEMPAK_SIZE 32768
 
-#define MAX_GBROMS 8
-#define MAX_MEMPAKS 4
-#define MAX_TPAKS 1
+#define MAX_MEMPAKS MAX_CONTROLLERS
 #define VIRTUAL_PAK MAX_MEMPAKS
 
 void n64_init_subsystem(n64_controller *controllers);

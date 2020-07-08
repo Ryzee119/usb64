@@ -57,7 +57,6 @@ DRESULT disk_read(
 	if (sector_size == 0)
 		return RES_NOTRDY;
 
-	//printf("disk_read sector %u, count: %u\r\n", sector, count);
 	qspi_read(sector * sector_size, count * sector_size, buff);
 	return RES_OK;
 }

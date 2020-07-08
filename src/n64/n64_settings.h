@@ -24,8 +24,6 @@
 #ifndef N64_N64_SETTINGS_H_
 #define N64_N64_SETTINGS_H_
 
-#define SETTINGS_FILENAME "settings.dat"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -81,7 +81,6 @@ def device_get_info():
         ser.write(bytearray(b'\xA0'))
         line = ser.readline()
         debug_text.insert("0.0", line) 
-
         return 0
 
 def flash_get_info():
@@ -114,6 +113,18 @@ def flash_get_info():
                                         " / " + \
                                         str(round(flash_size/1024/1024,2)) + "MB"
     return 0
+
+def flash_format():
+    if ser.isOpen():
+        ser.reset_input_buffer()
+        ser.reset_output_buffer()
+
+        # 0xA6 is the command to format the flash chip
+        # Format is [0xA6], Readback: [string]
+        ser.write(bytearray(b'\xA6'))
+        line = ser.readline()
+        debug_text.insert("0.0", line) 
+        return 0
 
 def file_get_list():
     global file_list
@@ -234,6 +245,7 @@ button_download=Button(usb64_window, text='Download', command=file_download, bg=
 button_upload=Button(usb64_window, text='Upload', command=file_upload, bg='#FFF5BA', width = 20)
 button_delete=Button(usb64_window, text='Delete', command=file_delete, bg='#FFABAB', width = 20)
 button_clear=Button(usb64_window, text='Clear Log', command=terminal_clear, bg='#FFABAB', width = 20)
+button_format=Button(usb64_window, text='Format', command=flash_format, bg='#FFABAB', width = 20)
 
 # Create File list box
 file_list=Listbox(usb64_window, font=('Calibri',12), height = 8)
@@ -262,6 +274,7 @@ debug_log_label.grid(row=4, column=0, sticky=NSEW, columnspan = 4)
 debug_text.grid(row=5, column=0, sticky=NSEW, columnspan = 4)
 flash_capacity_label.grid(row=6, column=0, sticky=NSEW, columnspan = 4)
 flash_capacity.grid(row=7, column=0, sticky=NSEW, columnspan = 4)
+button_format.grid(row=8, column=0, sticky=NSEW, columnspan = 4)
 
 # Start the GUI and serial port
 usb64_window.after(100, serial_read)
