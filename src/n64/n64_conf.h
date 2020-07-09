@@ -24,7 +24,7 @@
 #define _N64_CONF_h
 
 #define MAX_CONTROLLERS 4 //Dont change this FIXME
-#define MAX_GBROMS 10 //ROMS over this will just get ignored
+#define MAX_GBROMS 10     //ROMS over this will just get ignored
 
 #define N64_CONTROLLER_1_PIN 41
 #define N64_CONTROLLER_2_PIN 27

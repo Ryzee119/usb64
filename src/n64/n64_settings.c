@@ -52,14 +52,15 @@ void n64_settings_init()
 
 void n64_settings_read()
 {
-    n64hal_sram_restore_from_file(SETTINGS_FILENAME, (uint8_t*)&settings, sizeof(settings));
+    n64hal_sram_restore_from_file(SETTINGS_FILENAME, (uint8_t *)&settings, sizeof(settings));
 }
 
 void n64_settings_write()
 {
-    n64hal_sram_backup_to_file(SETTINGS_FILENAME, (uint8_t*)&settings, sizeof(settings));
+    n64hal_sram_backup_to_file(SETTINGS_FILENAME, (uint8_t *)&settings, sizeof(settings));
 }
 
-n64_settings* n64_settings_get(){
+n64_settings *n64_settings_get()
+{
     return &settings;
 }

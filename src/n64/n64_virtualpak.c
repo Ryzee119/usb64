@@ -47,7 +47,7 @@ static uint8_t controller_page = 0;
 static uint8_t current_menu = MENU_MAIN;
 static char buff[64];
 static uint8_t num_roms = 0;
-static char *gbrom_filenames[MAX_GBROMS] = {NULL}; //Gameboy ROM List
+static char *gbrom_filenames[MAX_GBROMS] = {NULL};  //Gameboy ROM List
 static char *gbrom_titlenames[MAX_GBROMS] = {NULL}; //Gameboy ROM List
 
 //First 32 bytes of mempak. First byte must be 0x81. This small section is in RAM as the console writes to it
@@ -160,13 +160,12 @@ uint8_t n64_virtualpak_note_table[0x200] = {
 static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
 {
     static const uint8_t MEMPACK_CHARMAP[] =
-    {
-        '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', 
-        ' ' , '0' , '1' , '2' , '3' , '4' , '5' , '6' , '7' , '8' , '9' ,
-        'A' , 'B' , 'C' , 'D' , 'E' , 'F' , 'G' , 'H' , 'I' , 'J' , 'K' , 'L' , 'M' ,
-        'N' , 'O' , 'P' , 'Q' , 'R' , 'S' , 'T' , 'U' , 'V' , 'W' , 'X' , 'Y' , 'Z' ,
-        '!' , '"' , '#' , '\'', '*' , '+' , ',' , '-' , '.' , '/' , ':' , '=' , '?' , '@'
-    };
+        {
+            '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+            ' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+            'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+            '!', '"', '#', '\'', '*', '+', ',', '-', '.', '/', ':', '=', '?', '@'};
 
     uint8_t max_len;
     uint8_t len = 0xFF;
@@ -200,7 +199,7 @@ static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
         if (i > len)
             n64char = 1;
 
-        //Replace unknown character with a space.
+        //Replace unknown characters with a space.
         if (n64char == 0)
             n64char = 1;
 
@@ -221,19 +220,15 @@ void n64_virtualpak_init(n64_mempack *vpak)
     vpak->virtual_is_active = 1;
     vpak->virtual_selected_row = MENU_MAIN;
     current_menu = MENU_MAIN;
-    /* Scan FATFS flash for ROMS and populate an array to list them */
 
     //Clear up any previous memory allocations
-    for(int i = 0 ; i < MAX_GBROMS; i++){
-        if (gbrom_filenames[i] !=NULL)
-        {
+    for (int i = 0; i < MAX_GBROMS; i++)
+    {
+        if (gbrom_filenames[i] != NULL)
             free(gbrom_filenames[i]);
-        }
-            
-        if (gbrom_titlenames[i] !=NULL)
-        {
+        if (gbrom_titlenames[i] != NULL)
             free(gbrom_titlenames[i]);
-        }
+
         gbrom_filenames[i] = NULL;
         gbrom_titlenames[i] = NULL;
     }
@@ -244,13 +239,13 @@ void n64_virtualpak_init(n64_mempack *vpak)
         uint8_t gb_header[0x100];
         gameboycart gb_cart;
         //Copy the FATFS filename into an array
-        strcpy((char*)gb_cart.filename, gbrom_filenames[i]);
+        strcpy((char *)gb_cart.filename, gbrom_filenames[i]);
         if (n64hal_rom_read(&gb_cart, 0x100, gb_header, sizeof(gb_header)))
         {
             gb_initGameBoyCart(&gb_cart, gb_header, gbrom_filenames[i]);
             //Copy the gb cart title (from the rom header into an array)
-            gbrom_titlenames[i] = (char*)malloc(strlen((char*)gb_cart.title) + 1);
-            strcpy(gbrom_titlenames[i], (char*)gb_cart.title);
+            gbrom_titlenames[i] = (char *)malloc(strlen((char *)gb_cart.title) + 1);
+            strcpy(gbrom_titlenames[i], (char *)gb_cart.title);
         }
     }
     n64_virtualpak_update(vpak);
@@ -289,7 +284,7 @@ void n64_virtualpak_write32(uint16_t address, uint8_t *tx_buff)
 
 void n64_virtualpak_update(n64_mempack *vpak)
 {
-    n64_settings* settings = n64_settings_get();
+    n64_settings *settings = n64_settings_get();
 
     //Clear the screen;
     char alpha[2] = {'A', '\0'};
@@ -301,12 +296,12 @@ void n64_virtualpak_update(n64_mempack *vpak)
     }
 
     //Print generic headers and footers
-    n64_virtualpak_write_string("N360 BY RYZEE119", HEADING,  MENU_NAME_FIELD);
-    sprintf(buff,"CONTROLLER %u", controller_page + 1);
-    n64_virtualpak_write_string(buff,               SUBHEADING, MENU_NAME_FIELD);
+    n64_virtualpak_write_string("N360 BY RYZEE119", HEADING, MENU_NAME_FIELD);
+    sprintf(buff, "CONTROLLER %u", controller_page + 1);
+    n64_virtualpak_write_string(buff, SUBHEADING, MENU_NAME_FIELD);
     n64_virtualpak_write_string("________________", SUBHEADING + 1, MENU_NAME_FIELD);
-    n64_virtualpak_write_string("CHANGE CONT",   CHANGE_CONTROLLER, MENU_NAME_FIELD);
-    n64_virtualpak_write_string("RETURN",           RETURN, MENU_NAME_FIELD);
+    n64_virtualpak_write_string("CHANGE CONT", CHANGE_CONTROLLER, MENU_NAME_FIELD);
+    n64_virtualpak_write_string("RETURN", RETURN, MENU_NAME_FIELD);
 
     //Handle generic header and footer options
     switch (vpak->virtual_selected_row)
@@ -347,7 +342,8 @@ void n64_virtualpak_update(n64_mempack *vpak)
     {
         n64_virtualpak_write_string("TPAK SETTINGS", SUBHEADING + 2, MENU_NAME_FIELD);
         //If you selected a row which happens to be a ROM, change the default ROM
-        if (vpak->virtual_selected_row != -1){
+        if (vpak->virtual_selected_row != -1)
+        {
             uint8_t selected_rom = vpak->virtual_selected_row - (SUBHEADING + 2);
             if (selected_rom < num_roms)
             {
@@ -361,7 +357,7 @@ void n64_virtualpak_update(n64_mempack *vpak)
         {
             n64_virtualpak_write_string(gbrom_titlenames[i], SUBHEADING + 2 + i, MENU_NAME_FIELD);
             //This ROM matches default!
-            if(strcmp(gbrom_filenames[i], settings->default_tpak_rom[controller_page]) == 0)
+            if (strcmp(gbrom_filenames[i], settings->default_tpak_rom[controller_page]) == 0)
                 n64_virtualpak_write_string("*", SUBHEADING + 2 + i, MENU_EXT_FIELD);
         }
         vpak->virtual_selected_row = -1;
@@ -370,9 +366,9 @@ void n64_virtualpak_update(n64_mempack *vpak)
     if (current_menu == MENU_CONTROLLER_SETTINGS)
     {
         sprintf(buff, "CONTROLLER %u", controller_page + 1);
-        n64_virtualpak_write_string(buff,               SUBHEADING + 0, MENU_NAME_FIELD);
+        n64_virtualpak_write_string(buff, SUBHEADING + 0, MENU_NAME_FIELD);
         n64_virtualpak_write_string("________________", SUBHEADING + 1, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("CONT SETTINGS",    SUBHEADING + 2, MENU_NAME_FIELD);
+        n64_virtualpak_write_string("CONT SETTINGS", SUBHEADING + 2, MENU_NAME_FIELD);
         vpak->virtual_selected_row = -1;
     }
     vpak->virtual_update_req = 0;

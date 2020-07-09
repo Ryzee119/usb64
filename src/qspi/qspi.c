@@ -93,7 +93,7 @@ static void setupFlexSPI2()
 
     // turn on clock
     //clocks[4] = {396.0f, 720.0f, 664.62f, 528.0f} / CCM_CBCMR_FLEXSPI2_PODF + 1
-    CCM_CBCMR = (CCM_CBCMR & ~(CCM_CBCMR_FLEXSPI2_PODF_MASK | CCM_CBCMR_FLEXSPI2_CLK_SEL_MASK)) | CCM_CBCMR_FLEXSPI2_PODF(3) | CCM_CBCMR_FLEXSPI2_CLK_SEL(0); // 49.5 MHz
+    CCM_CBCMR = (CCM_CBCMR & ~(CCM_CBCMR_FLEXSPI2_PODF_MASK | CCM_CBCMR_FLEXSPI2_CLK_SEL_MASK)) | CCM_CBCMR_FLEXSPI2_PODF(3) | CCM_CBCMR_FLEXSPI2_CLK_SEL(0); // 99 MHz
     CCM_CCGR7 |= CCM_CCGR7_FLEXSPI2(CCM_CCGR_ON);
 
     FLEXSPI2_MCR0 |= FLEXSPI_MCR0_MDIS;
@@ -324,7 +324,8 @@ static bool waitFlash(uint32_t timeout)
     uint32_t t = millis();
     FLEXSPI_IPRXFCR = FLEXSPI_IPRXFCR_CLRIPRXF; // clear rx fifo
     do
-    {   noInterrupts();
+    {
+        noInterrupts();
         flexspi_ip_read(8, flashBaseAddr, &val, 1);
         interrupts();
         if (timeout && (millis() - t > timeout))
@@ -462,6 +463,7 @@ uint8_t qspi_write(uint32_t addr, uint32_t size, uint8_t *src)
         flexspi_ip_command(11, flashBaseAddr);                      // write enable
         flexspi_ip_write(13, flashBaseAddr + addr, src, _pagesize); // write
         interrupts();
+        delay(3);
 
 #ifdef FLASH_MEMMAP
         arm_dcache_delete((void *)((uint32_t)extBase + addr), _pagesize);
@@ -480,7 +482,7 @@ uint8_t qspi_erase(uint32_t addr, uint32_t size)
     while (s > 0)
     {
         noInterrupts();
-        flexspi_ip_command(11, flashBaseAddr); //write enable
+        flexspi_ip_command(11, flashBaseAddr);
         flexspi_ip_command(12, flashBaseAddr + addr);
         interrupts();
 
@@ -490,40 +492,10 @@ uint8_t qspi_erase(uint32_t addr, uint32_t size)
 
         addr += _blocksize;
         s -= _blocksize;
-        waitFlash(0);
+        do
+        {
+            delay(45);
+        } while (waitFlash(1));
     }
     return 0;
 }
-
-//********************************************************************************************************
-
-#if (0)
-int spiffs_mount(spiffs *fs)
-{
-
-    setupFlexSPI2();
-    setupFlexSPI2Flash();
-
-    spiffs_config cfg;
-
-    cfg.phys_size = flashCapacity;                    // use 16 MB flash TODO use ID to get capacity
-    cfg.phys_addr = /* 0x70000000 + */ flashBaseAddr; // start spiffs here (physical adress)
-    cfg.phys_erase_block = blocksize;                 //4K sectors
-    cfg.log_block_size = cfg.phys_erase_block;        // let us not complicate things
-    cfg.log_page_size = LOG_PAGE_SIZE;                // as we said
-
-    cfg.hal_read_f = my_spiffs_read;
-    cfg.hal_write_f = my_spiffs_write;
-    cfg.hal_erase_f = my_spiffs_erase;
-
-    int res = SPIFFS_mount(fs,
-                           &cfg,
-                           spiffs_work_buf,
-                           spiffs_fds,
-                           sizeof(spiffs_fds),
-                           spiffs_cache_buf,
-                           sizeof(spiffs_cache_buf),
-                           0);
-    return res;
-}
-#endif

@@ -116,8 +116,10 @@ void setup()
     //attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_3_PIN), n64_controller3_clock_edge, FALLING);
     //attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_4_PIN), n64_controller4_clock_edge, FALLING);
 
-    extern FATFS fs; BYTE work[4096];
+
     //Check that the flash chip is formatted for FAT access
+    //If it's not, format it! Should only happen once
+    extern FATFS fs; BYTE work[4096];
     MKFS_PARM defopt = {FM_FAT, 1, 0, 0, 4096};
     qspi_init(NULL, NULL);
     if (f_mount(&fs, "", 1) != FR_OK)
@@ -138,11 +140,11 @@ void loop()
         //If a change is buttons or axis has been detected
         if (gamecontroller[c]->available())
         {
-            usb_buttons[c] = gamecontroller[c]->getButtons();
             for (uint8_t i = 0; i < (sizeof(axis[c]) / sizeof(axis[c][0])); i++)
             {
                 axis[c][i] = gamecontroller[c]->getAxis(i);
             }
+            usb_buttons[c] = gamecontroller[c]->getButtons();
             gamecontroller[c]->joystickDataClear();
         }
 
@@ -153,26 +155,26 @@ void loop()
         case JoystickController::XBOX360:
         case JoystickController::XBOX360_WIRED:
             //Digital usb_buttons
-            if (usb_buttons[c] & (1 << 0))  n64_buttons[c] |= N64_DU; //DUP
-            if (usb_buttons[c] & (1 << 1))  n64_buttons[c] |= N64_DD; //DDOWN
-            if (usb_buttons[c] & (1 << 2))  n64_buttons[c] |= N64_DL; //DLEFT
-            if (usb_buttons[c] & (1 << 3))  n64_buttons[c] |= N64_DR; //DRIGHT
-            if (usb_buttons[c] & (1 << 4))  n64_buttons[c] |= N64_ST; //START
-            if (usb_buttons[c] & (1 << 5))  n64_buttons[c] |= 0; //BACK
-            if (usb_buttons[c] & (1 << 6))  n64_buttons[c] |= 0; //LS
-            if (usb_buttons[c] & (1 << 7))  n64_buttons[c] |= 0; //RS
-            if (usb_buttons[c] & (1 << 8))  n64_buttons[c] |= N64_LB; //LB
-            if (usb_buttons[c] & (1 << 9))  n64_buttons[c] |= N64_RB; //RB
-            if (usb_buttons[c] & (1 << 10)) n64_buttons[c] |= 0; //XBOX BUTTON
-            if (usb_buttons[c] & (1 << 11)) n64_buttons[c] |= 0; //XBOX SYNC
-            if (usb_buttons[c] & (1 << 12)) n64_buttons[c] |= N64_A; //A
-            if (usb_buttons[c] & (1 << 13)) n64_buttons[c] |= N64_B; //B
-            if (usb_buttons[c] & (1 << 14)) n64_buttons[c] |= N64_B; //X
-            if (usb_buttons[c] & (1 << 15)) n64_buttons[c] |= 0; //Y
+            if (usb_buttons[c] & (1 << 0))  n64_buttons[c] |= N64_DU;  //DUP
+            if (usb_buttons[c] & (1 << 1))  n64_buttons[c] |= N64_DD;  //DDOWN
+            if (usb_buttons[c] & (1 << 2))  n64_buttons[c] |= N64_DL;  //DLEFT
+            if (usb_buttons[c] & (1 << 3))  n64_buttons[c] |= N64_DR;  //DRIGHT
+            if (usb_buttons[c] & (1 << 4))  n64_buttons[c] |= N64_ST;  //START
+            if (usb_buttons[c] & (1 << 5))  n64_buttons[c] |= 0;       //BACK
+            if (usb_buttons[c] & (1 << 6))  n64_buttons[c] |= 0;       //LS
+            if (usb_buttons[c] & (1 << 7))  n64_buttons[c] |= 0;       //RS
+            if (usb_buttons[c] & (1 << 8))  n64_buttons[c] |= N64_LB;  //LB
+            if (usb_buttons[c] & (1 << 9))  n64_buttons[c] |= N64_RB;  //RB
+            if (usb_buttons[c] & (1 << 10)) n64_buttons[c] |= 0;       //XBOX BUTTON
+            if (usb_buttons[c] & (1 << 11)) n64_buttons[c] |= 0;       //XBOX SYNC
+            if (usb_buttons[c] & (1 << 12)) n64_buttons[c] |= N64_A;   //A
+            if (usb_buttons[c] & (1 << 13)) n64_buttons[c] |= N64_B;   //B
+            if (usb_buttons[c] & (1 << 14)) n64_buttons[c] |= N64_B;   //X
+            if (usb_buttons[c] & (1 << 15)) n64_buttons[c] |= 0;       //Y
             if (usb_buttons[c] & (1 << 7))  n64_buttons[c] |= N64_CU | //RS triggers
-                                                                        N64_CD | //all C usb_buttons
-                                                                        N64_CL |
-                                                                        N64_CR;
+                                                              N64_CD | //all C usb_buttons
+                                                              N64_CL |
+                                                              N64_CR;
             //Analog stick
             n64_c[c].bState.x_axis = axis[c][0] * 85 / 32768;
             n64_c[c].bState.y_axis = axis[c][1] * 85 / 32768;
@@ -187,15 +189,15 @@ void loop()
             if (axis[c][3] > 16000)  n64_buttons[c] |= N64_CU;
             if (axis[c][3] < -16000) n64_buttons[c] |= N64_CD;
 
+            //Button to hold for 'combos'
             n64_combo = (usb_buttons[c] & (1 << 5)); //back
-
             break;
-
+        //TODO: OTHER USB CONTROLLERS
         default:
             break;
         }
 
-        //Apply digital buttons to controller
+        //Apply digital buttons to n64 controller
         n64_c[c].bState.dButtons = n64_buttons[c];
 
         //Apply rumble if required
@@ -231,8 +233,8 @@ void loop()
                 snprintf((char *)filename, sizeof(filename), "MEMPAK%02u.MPK", n64_c[c].mempack->id);
                 n64_c[c].current_peripheral = NONE;
                 n64hal_sram_backup_to_file(filename,
-                                            n64_c[c].mempack->data,
-                                            MEMPAK_SIZE);
+                                           n64_c[c].mempack->data,
+                                           MEMPAK_SIZE);
                 n64_c[c].mempack->dirty = 0;
             }
 
@@ -261,15 +263,11 @@ void loop()
                     {
                         n64_c[c].current_peripheral = NONE;
                         //Replace .gb or .gbc with .sav
-                        char* file_name = (char*)n64_c[c].tpak->installedCart->filename;
-                        char* new_filename = (char *)malloc(sizeof(file_name) + 5);
+                        char *file_name = (char *)n64_c[c].tpak->installedCart->filename;
+                        char *new_filename = (char *)malloc(256);
                         strcpy(new_filename, file_name);
-                        char* ext = strrchr(new_filename, '.');
-                        strcpy(ext, ".sav");
-                        printf("Cart has RAM, backing up!\n");
-                        printf("filename: %s\n", new_filename);
-                        printf("ramsize, %u\n", n64_c[c].tpak->installedCart->ramsize);
-                        n64hal_sram_backup_to_file((uint8_t*)new_filename,
+                        strcpy(strrchr(new_filename, '.'), ".sav");
+                        n64hal_sram_backup_to_file((uint8_t *)new_filename,
                                                    n64_c[c].tpak->installedCart->ram,
                                                    n64_c[c].tpak->installedCart->ramsize);
                         free(new_filename);
@@ -284,10 +282,10 @@ void loop()
                     if (n64_c[c].tpak->installedCart->ram)
                         free(n64_c[c].tpak->installedCart->ram);
                 }
+                n64hal_rom_read(NULL, 0, NULL, 0);
 
                 //Now it's a TPAK with no cart installed
                 n64_c[c].tpak->installedCart = NULL;
-
             }
 
             //Changing peripheral to RUMBLEPAK
@@ -299,15 +297,15 @@ void loop()
                 printf("Changing controller %u's peripheral to rumblepak\r\n", c);
             }
 
-            //Changing peripheral to TPAK
-            if (n64_buttons[c] & N64_RB)
+            //Changing peripheral to TPAK (PLAYER 1 ONLY)
+            if (n64_buttons[c] & N64_RB && c ==0)
             {
                 n64_c[c].current_peripheral = PERI_NONE;
                 n64_c[c].next_peripheral = PERI_TPAK;
                 timer_peripheral_change = millis();
                 printf("Changing controller %u's peripheral to tpak\r\n", c);
 
-                n64_settings* settings = n64_settings_get();
+                n64_settings *settings = n64_settings_get();
                 //Find a free gb_cart object
                 int cart = 0;
                 for (; cart < MAX_CONTROLLERS; cart++)
@@ -316,23 +314,34 @@ void loop()
                         break;
                 }
                 //If a free gb_cart has been found
-                if(cart < MAX_CONTROLLERS)
+                if (cart < MAX_CONTROLLERS)
                 {
                     uint8_t gb_header[0x100];
-                    //Read the ROM header and init the gb_cart struct
-                    strcpy((char*)gb_cart[cart].filename, settings->default_tpak_rom[c]);
-                    if(n64hal_rom_read(&gb_cart[cart], 0x100, gb_header, sizeof(gb_header)))
+                    //Read the ROM header
+                    strcpy((char *)gb_cart[cart].filename, settings->default_tpak_rom[c]);
+                    if (n64hal_rom_read(&gb_cart[cart], 0x100, gb_header, sizeof(gb_header)))
                     {
+                        //Init the gb_cart struct using header info
                         gb_initGameBoyCart(&gb_cart[cart],
                                            gb_header,
                                            settings->default_tpak_rom[c]);
-                                if (gb_cart[cart].ramsize > 0)
-                                    gb_cart[cart].ram = (uint8_t*)malloc(gb_cart[cart].ramsize);
-                                else
-                                    gb_cart[cart].ram = NULL;
+
+                        //malloc ram is needed
+                        if (gb_cart[cart].ramsize > 0)
+                            gb_cart[cart].ram = (uint8_t *)malloc(gb_cart[cart].ramsize);
+                        else
+                            gb_cart[cart].ram = NULL;
                         n64_c[c].tpak->installedCart = &gb_cart[cart];
 
-                        //TODO READBACK RAM FROM FLASH
+                        //Readback savefile from Flash, replace .gb or .gbc with .sav
+                        char *file_name = (char *)n64_c[c].tpak->installedCart->filename;
+                        char *save_filename = (char *)malloc(256);
+                        strcpy(save_filename, file_name);
+                        strcpy(strrchr(save_filename, '.'), ".sav");
+                        n64hal_sram_restore_from_file((uint8_t *)save_filename,
+                                                      n64_c[c].tpak->installedCart->ram,
+                                                      MEMPAK_SIZE);
+                        free(save_filename);
                     }
                     else
                     {
@@ -358,7 +367,7 @@ void loop()
 
                 if (n64_c[c].mempack->data != NULL)
                 {
-                    //Data should already be backed up at this point
+                    //Data should already be backed up at this point, can free safely
                     free(n64_c[c].mempack->data);
                     n64_c[c].mempack->data = NULL;
                 }
@@ -383,13 +392,13 @@ void loop()
                     }
                     else
                     {
-                        //Mempack is free, let's go!
+                        //Found a free mempak, we're done!
                         break;
                     }
                 }
                 if (mempak_bank != -1)
                 {
-                    printf("Setting mempak bank %u to controller %u\n", mempak_bank, c);
+                    printf("Changing controller %u's peripheral to mempak %u\n", c, mempak_bank);
                     n64_c[c].mempack->id = mempak_bank;
                     if (mempak_bank != VIRTUAL_PAK)
                     {
@@ -412,6 +421,8 @@ void loop()
             }
         }
 
+        //We simulate a peripheral change time. The peripheral goes to NONE
+        //for a short period. Some games need this.
         if (n64_c[c].current_peripheral == PERI_NONE &&
             (millis() - timer_peripheral_change) > 750)
         {
@@ -423,8 +434,9 @@ void loop()
             n64_virtualpak_update(n64_c[c].mempack);
         }
 
-    } //FOR LOOP
+    } //END FOR LOOP
 
+    //Handle serial comm data from GUI
     if (serial_port.available())
     {
         noInterrupts();

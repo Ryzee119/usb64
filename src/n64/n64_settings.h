@@ -25,7 +25,8 @@
 #define N64_N64_SETTINGS_H_
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "n64_conf.h"
@@ -45,7 +46,7 @@ typedef struct
 void n64_settings_init();
 void n64_settings_read();
 void n64_settings_write();
-n64_settings* n64_settings_get();
+n64_settings *n64_settings_get();
 
 #ifdef __cplusplus
 }
