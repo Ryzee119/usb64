@@ -96,7 +96,6 @@ static int scan_files(const char *path, uint8_t print)
 void setup()
 {
     serial_port.begin(500000);
-    while(!serial_port);
 
     //Check that the flash chip is formatted for FAT access
     //If it's not, format it! Should only happen once
@@ -449,8 +448,7 @@ void loop()
         static MKFS_PARM defopt = {FM_FAT, 1, 0, 0, 4096};
         static FATFS *_fs = (FATFS *)malloc(sizeof(FATFS));
         static FIL fil; static FRESULT res; static UINT br;
-        static String serial_buff_str;
-        static uint32_t sector_size, total_sectors, free_sectors = 0, num_files;
+        static uint32_t sector_size, total_sectors, free_sectors, num_files;
         int len = 0;
         uint8_t c = serial_port.read();
         switch (c)
@@ -552,7 +550,7 @@ void loop()
             f_mkfs("", &defopt, work, sizeof(work));
             printf("Formatted file system ok\n");
         default:
-            printf("Unknown\n");
+            printf("Unknown command\n");
             break;
         }
         n64_c[0].current_peripheral = peri;

@@ -165,7 +165,8 @@ static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
             ' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
             'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-            '!', '"', '#', '\'', '*', '+', ',', '-', '.', '/', ':', '=', '?', '@'};
+            '!', '"', '#', '\'', '*', '+', ',', '-', '.', '/', ':', '=', '?', '@'
+        };
 
     uint8_t max_len;
     uint8_t len = 0xFF;
@@ -205,13 +206,9 @@ static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
 
         //Write to char to the note table
         if (ext)
-        {
             n64_virtualpak_note_table[(32 * line) + 12 + i] = n64char;
-        }
         else
-        {
             n64_virtualpak_note_table[(32 * line) + 16 + i] = n64char;
-        }
     }
 }
 
@@ -238,7 +235,7 @@ void n64_virtualpak_init(n64_mempack *vpak)
     {
         uint8_t gb_header[0x100];
         gameboycart gb_cart;
-        //Copy the FATFS filename into an array
+        //Copy the cart filename into an array
         strcpy((char *)gb_cart.filename, gbrom_filenames[i]);
         if (n64hal_rom_read(&gb_cart, 0x100, gb_header, sizeof(gb_header)))
         {
@@ -254,21 +251,13 @@ void n64_virtualpak_init(n64_mempack *vpak)
 void n64_virtualpak_read32(uint16_t address, uint8_t *rx_buff)
 {
     if (address < 0x20)
-    {
         memcpy(rx_buff, &n64_virtualpak_scratch[address], 32);
-    }
     else if (address < 0x300)
-    {
         memcpy(rx_buff, &n64_virtualpak_header[address], 32);
-    }
     else if (address < 0x500)
-    {
         memcpy(rx_buff, &n64_virtualpak_note_table[address - 0x300], 32);
-    }
     else
-    {
         memset(rx_buff, 0x00, 32);
-    }
 }
 
 void n64_virtualpak_write32(uint16_t address, uint8_t *tx_buff)
@@ -277,9 +266,7 @@ void n64_virtualpak_write32(uint16_t address, uint8_t *tx_buff)
     //Ignore other writes. Dont actually want the N64 to write over stuff
     //If this scratch space doesnt get written, n64 assumes corrupt mempak.
     if (address < 0x20)
-    {
         memcpy(&n64_virtualpak_scratch[address], tx_buff, 32);
-    }
 }
 
 void n64_virtualpak_update(n64_mempack *vpak)
@@ -296,7 +283,7 @@ void n64_virtualpak_update(n64_mempack *vpak)
     }
 
     //Print generic headers and footers
-    n64_virtualpak_write_string("USB64 BY RYZEE119", HEADING, MENU_NAME_FIELD);
+    n64_virtualpak_write_string("USB64 - RYZEE119", HEADING, MENU_NAME_FIELD);
     sprintf(buff, "CONTROLLER %u", controller_page + 1);
     n64_virtualpak_write_string(buff, SUBHEADING, MENU_NAME_FIELD);
     n64_virtualpak_write_string("________________", SUBHEADING + 1, MENU_NAME_FIELD);
@@ -367,7 +354,7 @@ void n64_virtualpak_update(n64_mempack *vpak)
         sprintf(buff, "CONTROLLER %u", controller_page + 1);
         n64_virtualpak_write_string(buff, SUBHEADING + 0, MENU_NAME_FIELD);
         n64_virtualpak_write_string("________________", SUBHEADING + 1, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("CONT SETTINGS", SUBHEADING + 2, MENU_NAME_FIELD);
+        n64_virtualpak_write_string("CONT SETTINGS",    SUBHEADING + 2, MENU_NAME_FIELD);
         vpak->virtual_selected_row = -1;
     }
     vpak->virtual_update_req = 0;
