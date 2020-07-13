@@ -98,31 +98,37 @@ uint32_t gb_getSramSize(uint8_t sram_type, uint8_t mbc_type)
 
 void gb_writeCartROMOnly(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *inBuffer)
 {
+    printf("gb_writeCartROMOnly not implemented\n");
     //Not expecting to actually write anything here.
 }
 
 void gb_readCartROMOnly(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuffer)
 {
     //flash_read(MBCAddress+cart->flash_romoffset, outBuffer,32);
+    printf("gb_readCartROMOnly not implemented\n");
 }
 
 /* MBC1 */
 void gb_writeCartMBC1(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *inBuffer)
 {
+    printf("gb_writeCartMBC1 not implemented\n");
 }
 
 void gb_readCartMBC1(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuffer)
 {
+    printf("gb_readCartMBC1 not implemented\n");
 }
 /* END MBC1 */
 
 /* MBC2 */
 void gb_writeCartMBC2(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *inBuffer)
 {
+    printf("gb_writeCartMBC2 not implemented\n");
 }
 
 void gb_readCartMBC2(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuffer)
 {
+    printf("gb_readCartMBC2 not implemented\n");
 }
 /* END MBC2 */
 
@@ -305,20 +311,24 @@ void gb_readCartMBC3(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuf
 /* MBC4 */
 void gb_writeCartMBC4(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *inBuffer)
 {
+    printf("gb_writeCartMBC4 not implemented\n");
 }
 
 void gb_readCartMBC4(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuffer)
 {
+    printf("gb_readCartMBC4 not implemented\n");
 }
 /* END MBC4 */
 
 /* MBC5 */
 void gb_writeCartMBC5(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *inBuffer)
 {
+    printf("gb_writeCartMBC5 not implemented\n");
 }
 
 void gb_readCartMBC5(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuffer)
 {
+    printf("gb_readCartMBC5 not implemented\n");
 }
 /* END MBC5 */
 
@@ -339,7 +349,7 @@ void gb_initGameBoyCart(gameboycart *cart, uint8_t *gb_header, char *filename)
         cart->romsize = gb_getRomSize(gb_header[GB_ROMSIZE_OFFSET - 0x100]);
         cart->ramsize = gb_getSramSize(gb_header[GB_RAMSIZE_OFFSET - 0x100], cart->mbc);
         memcpy(cart->filename, filename, sizeof(cart->filename));
-        #if (0)
+        #if (1)
         printf("GB Name: %.15s\r\n", (char *)cart->title);
         printf("ROM Bytes: %lu\r\n", cart->romsize);
         printf("SRAM Bytes: %lu\r\n", cart->ramsize);

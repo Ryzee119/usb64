@@ -296,7 +296,7 @@ void n64_virtualpak_update(n64_mempack *vpak)
     }
 
     //Print generic headers and footers
-    n64_virtualpak_write_string("N360 BY RYZEE119", HEADING, MENU_NAME_FIELD);
+    n64_virtualpak_write_string("USB64 BY RYZEE119", HEADING, MENU_NAME_FIELD);
     sprintf(buff, "CONTROLLER %u", controller_page + 1);
     n64_virtualpak_write_string(buff, SUBHEADING, MENU_NAME_FIELD);
     n64_virtualpak_write_string("________________", SUBHEADING + 1, MENU_NAME_FIELD);
@@ -319,7 +319,6 @@ void n64_virtualpak_update(n64_mempack *vpak)
     }
 
     /* Print the required menu and handle actions specific to each menu */
-
     if (current_menu == MENU_MAIN)
     {
         switch (vpak->virtual_selected_row)

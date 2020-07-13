@@ -3,12 +3,14 @@ import os
 import sys
 import time
 import tkinter as tk
-from tkinter import *
+from tkinter import messagebox
 from tkinter.ttk import *
 from tkinter.filedialog import * 
 from time import sleep
 
 from serial.tools.list_ports import comports
+
+locked = 0
 
 def serial_list_ports():
     ports = []
@@ -65,13 +67,15 @@ def serial_read():
     global ser
     global file_list
     c = ""
-    if (ser.isOpen() and ser.inWaiting() > 0):
-        c = ser.read(ser.inWaiting())
-        debug_text.insert("0.0", c) 
+    if locked == 0:
+        if (ser.isOpen() and ser.inWaiting() > 0):
+            c = ser.read(ser.inWaiting())
+            debug_text.insert("0.0", c) 
 
     usb64_window.after(10, serial_read) # check serial again soon
 
 def device_get_info():
+    locked = 1
     if ser.isOpen():
         ser.reset_input_buffer()
         ser.reset_output_buffer()
@@ -81,9 +85,11 @@ def device_get_info():
         ser.write(bytearray(b'\xA0'))
         line = ser.readline()
         debug_text.insert("0.0", line) 
-        return 0
+    locked = 0
+    return 0
 
 def flash_get_info():
+    locked = 1
     if ser.isOpen():
         ser.reset_input_buffer()
         ser.reset_output_buffer()
@@ -113,20 +119,29 @@ def flash_get_info():
                                         " / " + \
                                         str(round(flash_size/1024/1024,2)) + "MB"
     return 0
+    locked = 0
 
 def flash_format():
+    locked = 1
     if ser.isOpen():
         ser.reset_input_buffer()
         ser.reset_output_buffer()
+        warning = tk.messagebox.askquestion ('Format Device','Are you sure you want to format',icon = 'warning')
+        if warning == 'yes':
+            # 0xA6 is the command to format the flash chip
+            # Format is [0xA6], Readback: [string]
+            ser.write(bytearray(b'\xA6'))
+            line = ser.readline()
+            debug_text.insert("0.0", line)
 
-        # 0xA6 is the command to format the flash chip
-        # Format is [0xA6], Readback: [string]
-        ser.write(bytearray(b'\xA6'))
-        line = ser.readline()
-        debug_text.insert("0.0", line) 
-        return 0
+        # Update GUI info
+        flash_get_info()
+        file_get_list()
+    locked = 0
+    return 0
 
 def file_get_list():
+    locked = 1
     global file_list
     if ser.isOpen():
         ser.reset_input_buffer()
@@ -150,48 +165,79 @@ def file_get_list():
         returned_command = line.decode('ascii').split(",")
         num_files = int(returned_command[1])
         file_list.delete(0, tk.END)
-        if num_files == 0:
-            file_list.insert(1, "No files to show")
         while num_files > 0:
             line = ser.readline()
-            file_list.insert(1, line)
+            cleantext = line.replace(b'\n', b'\0')
+            cleantext = cleantext.replace(b'\r', b'\0')
+            file_list.insert(1, cleantext)
             num_files = num_files - 1
         line = ser.readline()
         print("file_get_list returned: ", line)
+    locked = 0
     return 0
 
 def file_delete():
+    locked = 1
     global file_list
     if ser.isOpen():
         ser.reset_input_buffer()
         ser.reset_output_buffer()
 
         # 0xA4 is the command to delete a file
-        # Format is [0xA4, "Filename to delete"]
-        ser.write(bytearray(b'\xA4'))
-        print(file_list.get(ACTIVE))
-        ser.write(file_list.get(ACTIVE))
-        line = ser.readline()
-        print("file_delete returned: ", line)
+        # Message format is [0xA4, "Filename to delete"]
+        if file_list.get(ACTIVE):
+            message_text = 'Are you sure you want to delete ' + file_list.get(ACTIVE).decode(sys.stdout.encoding)
+            warning = tk.messagebox.askquestion ('Delete File',message_text,icon = 'warning')
+            if warning == 'yes':
+                ser.write(bytearray(b'\xA4'))
+                print(file_list.get(ACTIVE))
+                ser.write(file_list.get(ACTIVE))
+                line = ser.readline()
+                print("file_delete returned: ", line)
 
     # Update GUI info
     flash_get_info()
     file_get_list()
+    locked = 0
     return 0
 
 def file_download():
+    locked = 1
     if ser.isOpen():
         ser.reset_input_buffer()
         ser.reset_output_buffer()
-
         # 0xA2 is the command to download a file
-        ser.write(bytearray(b'\xA2'))
-        line = ser.readline()
-        print("file_download returned: ", line)
-    file = asksaveasfile()
+        file = asksaveasfile(mode='wb')
+        if file:
+            ser.write(bytearray(b'\xA2'))
+            ser.write(file_list.get(ACTIVE))
+            ser.write(bytearray(b'\x00'))
+
+            # Read back info from device
+            line = ser.readline()
+            attempts = 3
+            while line.decode('ascii')[:2] != "A2" and attempts > 0 :
+                line = ser.readline()
+                attempts = attempts - 1
+            if attempts == 0:
+                print("Error retrieving file for download")
+                return 0
+
+            returned_command = line.decode('ascii').split(",")
+            filesize = int(returned_command[1])
+            data = ser.read(filesize)
+
+            file.write(data)
+            file.close
+            line = ser.readline()
+            print("file_download returned: ", line)
+            ser.reset_input_buffer()
+            ser.reset_output_buffer()
+    locked = 0
     return 0
 
 def file_upload():
+    locked = 1
     #Get the file to upload
     file = askopenfile(mode ="rb")
     if file is None:
@@ -199,7 +245,9 @@ def file_upload():
     print("Opening : ", file.name)
     filename = os.path.basename(file.name)
     content = file.read()
-
+    file.seek(0,2)
+    filesize = file.tell()
+    print(filesize)
     if ser.isOpen():
         ser.reset_input_buffer()
         ser.reset_output_buffer()
@@ -210,10 +258,15 @@ def file_upload():
         ser.write(filename.encode())
         ser.write(bytearray(b'\x00'))
 
-        # Send the file
-        print("Writing...")
-        ser.reset_output_buffer()
-        ser.write(content)
+        # Send the file with a progress meter!
+        chunk = 4096
+        pos = 0
+        global flash_capacity
+        while ser.write(content[pos:(pos+chunk)]) > 0:
+            pos = pos + chunk
+            flash_capacity_label['text'] = str(round(pos / filesize * 100)) + "%"
+            flash_capacity['value'] = pos / filesize * 100
+            usb64_window.update()
         time.sleep(0.5)
         response = ser.readline()
         print("file_upload returned: ", response)
@@ -222,20 +275,22 @@ def file_upload():
         flash_get_info()
         file_get_list()
     return 0
+    locked = 0
 
 def terminal_clear():
     global debug_text
     debug_text.delete(1.0,END)
     return 0
 
-# Craete Window
+# Create Window
 usb64_window = tk.Tk()
 usb64_window.configure(bg='#2C3539')
 
 # Setup serial interface
 ser = serial.Serial(rtscts=1)
 ser.baudrate = 500000
-ser.timeout = 1
+ser.rtscts = 1
+ser.timeout = 10
 serial_refresh()
 
 # Create buttons
