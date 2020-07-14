@@ -6,10 +6,10 @@ A project developed to use USB controllers on the Nintendo 64 console.
 - [x] 4 x Simulatenous N64 mouse emulation (Use a USB Mouse!).
 - [x] 4 x Simulatenous Rumblepak emulation.
 - [x] 1 x Mempak Emulation (Player 1) with 8 banks (selectable with controller combos)
-- [x] 1 x Transferpak Emulation (Player 1) with up storage of up to 10 ROMS.
+- [x] 1 x Transferpak Emulation (Player 1) with storage of up to 10 Gameboy ROMs.
 - [x] Configuration deadzones, sensitivity and analog stick shape.
 - [x] Complete configuration of device straight from the N64 console.
-- [x] Simple cross platform GUI to backup SRAM saves or load Transferpak ROMs over USB.
+- [x] Simple cross platform GUI to backup SRAM saves or load Transferpak Gameboy ROMs over USB.
 
 ## Todo
 - [ ] Teensy 4.1 is overkill. Port to cheaper platform.
