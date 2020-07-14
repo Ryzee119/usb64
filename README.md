@@ -13,6 +13,7 @@ A project developed to use USB controllers on the Nintendo 64 console.
 
 ## Todo
 - [ ] Teensy 4.1 is overkill. Port to cheaper platform.
+- [ ] SD Card instead of Flash chip?
 - [ ] 4 x Simultaneous Mempaks
 - [ ] 4 x Simultaneous Transferpaks
 - [ ] More USB controller drivers
