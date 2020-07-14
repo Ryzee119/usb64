@@ -26,7 +26,7 @@ def serial_connect():
         ser.open()
     except serial.SerialException as e:
         print(e)
-        return 0
+        return 1
     print("Connected to " + port_list.get())
     button_connect['text'] = "Disconnect"
     button_connect['command'] = serial_disconnect
@@ -37,7 +37,7 @@ def serial_connect():
     device_get_info()
     flash_get_info()
     file_get_list()
-    return 1
+    return 0
 
 def serial_disconnect():
     global ser
@@ -46,15 +46,14 @@ def serial_disconnect():
         ser.close()
     except serial.SerialException as e:
         print(e)
-        return 0
+        return 1
     print("Disconnected from " + ser.portstr)
     button_connect['text'] = "Connect"
     button_connect['command'] = serial_connect
     file_list.delete(0, tk.END)
     flash_capacity_label['text'] = "Flash Capacity"
     flash_capacity['value'] = 0
-
-    return 1
+    return 0
 
 def serial_refresh():
     global port_list
