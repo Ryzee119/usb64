@@ -274,8 +274,8 @@ def file_upload():
         # Update GUI info
         flash_get_info()
         file_get_list()
-    return 0
     locked = 0
+    return 0
 
 def terminal_clear():
     global debug_text
