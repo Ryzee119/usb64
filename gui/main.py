@@ -80,7 +80,7 @@ def device_get_info():
         ser.reset_input_buffer()
         ser.reset_output_buffer()
 
-        # 0xA9 is the command to ask for the device welcome message
+        # 0xA0 is the command to ask for the device welcome message
         # Format is [0xA0], Readback: [string]
         ser.write(bytearray(b'\xA0'))
         line = ser.readline()
