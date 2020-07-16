@@ -28,7 +28,17 @@
 
 static n64_settings settings;
 
-void n64_settings_init()
+static void n64_settings_read()
+{
+    n64hal_sram_restore_from_file((uint8_t*) SETTINGS_FILENAME, (uint8_t *)&settings, sizeof(settings));
+}
+/*
+static void n64_settings_write()
+{
+    n64hal_sram_backup_to_file((uint8_t*) SETTINGS_FILENAME, (uint8_t *)&settings, sizeof(settings));
+}
+*/
+n64_settings *n64_settings_init()
 {
     n64_settings_read();
     if (settings.magic != _MAGIC)
@@ -48,16 +58,7 @@ void n64_settings_init()
     {
         printf("Read %s ok\n", SETTINGS_FILENAME);
     }
-}
-
-void n64_settings_read()
-{
-    n64hal_sram_restore_from_file(SETTINGS_FILENAME, (uint8_t *)&settings, sizeof(settings));
-}
-
-void n64_settings_write()
-{
-    n64hal_sram_backup_to_file(SETTINGS_FILENAME, (uint8_t *)&settings, sizeof(settings));
+    return &settings; 
 }
 
 n64_settings *n64_settings_get()

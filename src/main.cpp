@@ -34,9 +34,15 @@
 #include "n64_virtualpak.h"
 #include "n64_settings.h"
 
+typedef struct
+{
+    char name[256];
+    uint8_t *data;
+    int len;
+} sram_storage;
+
 #define serial_port Serial
 n64_controller n64_c[MAX_CONTROLLERS];
-gameboycart gb_cart[MAX_CONTROLLERS];
 
 //USB Host Interface
 USBHost usbh;
@@ -45,6 +51,57 @@ JoystickController joy2(usbh);
 JoystickController joy3(usbh);
 JoystickController joy4(usbh);
 JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3, &joy4};
+
+static sram_storage sram[10] = {0};
+static uint8_t *alloc_sram(const char *name, int alloc_len)
+{
+    
+    if (alloc_len == 0)
+        return NULL;
+
+    //Loop through to see if alloced memory already exists
+    for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
+    {
+        if (strcmp(sram[i].name, (const char *)name) == 0)
+        {
+            printf("SRAM already malloced at slot %u\n", i);
+            //Already malloced, check len is ok
+            if (sram[i].len <= alloc_len)
+                return sram[i].data;
+
+            printf("ERROR: SRAM malloced memory isnt right, resetting memory\n");
+            //Allocated length isnt long enough. Reset it to be memory safe
+            free(sram[i].data);
+            sram[i].data = NULL;
+            sram[i].len = 0;
+        }
+    }
+    //If nothing exists, loop again to find a spot and allocate
+    for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
+    {
+        if (sram[i].len == 0)
+        {
+            printf("SRAM slot %u is free, allocating %u bytes\n", i, alloc_len);
+            sram[i].data = (uint8_t*)malloc(alloc_len);
+            sram[i].len = alloc_len;
+            strcpy(sram[i].name, name);
+            return sram[i].data;
+        }
+    }
+    //Not allocated, and no spots left. You need to flush RAM to Flash
+    printf("No SRAM allocs left. Flush RAM to Flash!\n");
+    return NULL;
+}
+
+static void flush_sram()
+{
+    noInterrupts();
+    for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
+    {
+
+    }
+    interrupts();
+}
 
 void _putchar(char character)
 {
@@ -222,154 +279,86 @@ void loop()
             if (n64_c[c].current_peripheral == PERI_NONE)
                 break;
 
+            /* HANDLE CURRENT PERIPHERAL */
             //Changing peripheral from MEMPAK
-            if (n64_c[c].current_peripheral == PERI_MEMPCK &&
-                n64_c[c].mempack->dirty &&
-                n64_c[c].mempack->data != NULL &&
-                n64_c[c].mempack->id != VIRTUAL_PAK)
+            if (n64_c[c].current_peripheral == PERI_MEMPAK)
             {
-                uint8_t filename[32];
-                snprintf((char *)filename, sizeof(filename), "MEMPAK%02u.MPK", n64_c[c].mempack->id);
-                n64_c[c].current_peripheral = NONE;
-                n64hal_sram_backup_to_file(filename,
-                                           n64_c[c].mempack->data,
-                                           MEMPAK_SIZE);
-                n64_c[c].mempack->dirty = 0;
-            }
-
-            //Changing peripheral from VIRTUAL PAK
-            if (n64_c[c].current_peripheral == PERI_MEMPCK &&
-                n64_c[c].mempack->dirty &&
-                n64_c[c].mempack->id == VIRTUAL_PAK)
-            {
-                n64_c[c].current_peripheral = NONE;
-                n64_settings_write();
-                n64_c[c].mempack->dirty = 0;
+                n64_c[c].mempack->data = NULL;
             }
 
             //Changing peripheral from TPAK
             if (n64_c[c].current_peripheral == PERI_TPAK)
             {
-                //Do we need to backup ram?
-                if (n64_c[c].tpak->installedCart != NULL && n64_c[c].tpak->installedCart->dirty)
-                {
-                    uint8_t mbc = n64_c[c].tpak->installedCart->mbc;
-                    if (mbc == ROM_RAM_BAT      || mbc == ROM_RAM_BAT  ||
-                        mbc == MBC1_RAM_BAT     || mbc == MBC2_BAT     ||
-                        mbc == MBC3_RAM_BAT     || mbc == MBC3_TIM_BAT ||
-                        mbc == MBC3_TIM_RAM_BAT || mbc == MBC4_RAM_BAT ||
-                        mbc == MBC5_RAM_BAT     || mbc == MBC5_RUM_RAM_BAT)
-                    {
-                        n64_c[c].current_peripheral = NONE;
-                        //Replace .gb or .gbc with .sav
-                        char *file_name = (char *)n64_c[c].tpak->installedCart->filename;
-                        char *new_filename = (char *)malloc(256);
-                        strcpy(new_filename, file_name);
-                        strcpy(strrchr(new_filename, '.'), ".sav");
-                        n64hal_sram_backup_to_file((uint8_t *)new_filename,
-                                                   n64_c[c].tpak->installedCart->ram,
-                                                   n64_c[c].tpak->installedCart->ramsize);
-                        free(new_filename);
-                    }
-                }
-
-                //Clean up
-                if (n64_c[c].tpak->installedCart != NULL)
-                {
-                    n64_c[c].tpak->installedCart->romsize = 0;
-                    n64_c[c].tpak->installedCart->ramsize = 0;
-                    if (n64_c[c].tpak->installedCart->ram)
-                        free(n64_c[c].tpak->installedCart->ram);
-                }
+                n64_c[c].tpak->gbcart->romsize = 0;
+                n64_c[c].tpak->gbcart->ramsize = 0;
+                n64_c[c].tpak->gbcart->ram = NULL;
                 n64hal_rom_read(NULL, 0, NULL, 0);
-
-                //Now it's a TPAK with no cart installed
-                n64_c[c].tpak->installedCart = NULL;
             }
+
+            /* HANDLE NEXT PERIPHERAL */
+            n64_c[c].current_peripheral = PERI_NONE;
 
             //Changing peripheral to RUMBLEPAK
             if (n64_buttons[c] & N64_LB)
             {
-                n64_c[c].current_peripheral = PERI_NONE;
                 n64_c[c].next_peripheral = PERI_RUMBLE;
                 timer_peripheral_change = millis();
                 printf("Changing controller %u's peripheral to rumblepak\n", c);
             }
 
-            //Changing peripheral to TPAK (Player 1 only)
-            if (n64_buttons[c] & N64_RB && c ==0)
+            //Changing peripheral to TPAK
+            if (n64_buttons[c] & N64_RB)
             {
-                n64_c[c].current_peripheral = PERI_NONE;
                 n64_c[c].next_peripheral = PERI_TPAK;
                 timer_peripheral_change = millis();
                 printf("Changing controller %u's peripheral to tpak\n", c);
 
                 n64_settings *settings = n64_settings_get();
-                //Find a free gb_cart object
-                int cart = 0;
-                for (; cart < MAX_CONTROLLERS; cart++)
+                gameboycart *gb_cart = n64_c[c].tpak->gbcart;
+                uint8_t gb_header[0x100];
+                gb_cart->ram = NULL;
+                //Read the ROM header
+                strcpy((char *)gb_cart->filename, settings->default_tpak_rom[c]);
+                if (n64hal_rom_read(gb_cart, 0x100, gb_header, sizeof(gb_header)))
                 {
-                    if (gb_cart[cart].romsize == 0)
-                        break;
-                }
-                //If a free gb_cart has been found
-                if (cart < MAX_CONTROLLERS)
-                {
-                    uint8_t gb_header[0x100];
-                    //Read the ROM header
-                    strcpy((char *)gb_cart[cart].filename, settings->default_tpak_rom[c]);
-                    if (n64hal_rom_read(&gb_cart[cart], 0x100, gb_header, sizeof(gb_header)))
+                    //Init the gb_cart struct using header info
+                    gb_initGameBoyCart(gb_cart,
+                                       gb_header,
+                                       settings->default_tpak_rom[c]);
+
+                    char save_filename[256];
+                    if (gb_cart->ramsize > 0)
                     {
-                        //Init the gb_cart struct using header info
-                        gb_initGameBoyCart(&gb_cart[cart],
-                                           gb_header,
-                                           settings->default_tpak_rom[c]);
-
-                        //malloc ram is needed
-                        if (gb_cart[cart].ramsize > 0)
-                            gb_cart[cart].ram = (uint8_t *)malloc(gb_cart[cart].ramsize);
-                        else
-                            gb_cart[cart].ram = NULL;
-                        n64_c[c].tpak->installedCart = &gb_cart[cart];
-
                         //Readback savefile from Flash, replace .gb or .gbc with .sav
-                        char *file_name = (char *)n64_c[c].tpak->installedCart->filename;
-                        char *save_filename = (char *)malloc(256);
+                        char *file_name = (char *)n64_c[c].tpak->gbcart->filename;
                         strcpy(save_filename, file_name);
                         strcpy(strrchr(save_filename, '.'), ".sav");
-                        n64hal_sram_restore_from_file((uint8_t *)save_filename,
-                                                      n64_c[c].tpak->installedCart->ram,
-                                                      MEMPAK_SIZE);
-                        free(save_filename);
+                        gb_cart->ram = alloc_sram(save_filename, gb_cart->ramsize);
+                        if (gb_cart->ram == NULL)
+                            printf("ERROR: Could not alloc memory for %s\n", save_filename);
                     }
-                    else
+                    if (gb_cart->ram != NULL)
                     {
-                        printf("ERROR: Could not read %s\n", gb_cart[cart].filename);
-                        n64_c[c].tpak->installedCart = NULL;
+                        n64hal_sram_restore_from_file((uint8_t *)save_filename,
+                                                        n64_c[c].tpak->gbcart->ram,
+                                                        gb_cart->ramsize);
                     }
                 }
                 else
                 {
-                    printf("ERROR: No free gb_cart objects found\n");
+                    printf("ERROR: Could not read %s\n", gb_cart->filename);
                 }
                 tpak_reset(n64_c[c].tpak);
             }
 
-            //Changing peripheral to MEMPAK (Player1 only)
+            //Changing peripheral to MEMPAK
             if ((n64_buttons[c] & N64_DU || n64_buttons[c] & N64_DD ||
                  n64_buttons[c] & N64_DL || n64_buttons[c] & N64_DR ||
-                 n64_buttons[c] & N64_ST) && c ==0)
+                 n64_buttons[c] & N64_ST))
             {
-
-                n64_c[c].current_peripheral = PERI_NONE;
                 n64_c[c].mempack->id = VIRTUAL_PAK;
-
-                if (n64_c[c].mempack->data != NULL)
-                {
-                    //Data should already be backed up at this point, can free safely
-                    free(n64_c[c].mempack->data);
-                    n64_c[c].mempack->data = NULL;
-                }
+                n64_c[c].mempack->data = NULL;
+                n64_c[c].next_peripheral = PERI_MEMPAK;
 
                 //Allocate mempack based on combo if available
                 int8_t mempak_bank = 0;
@@ -379,6 +368,10 @@ void loop()
                 (dpad & N64_DD) ? mempak_bank = 2 : (0);
                 (dpad & N64_DL) ? mempak_bank = 3 : (0);
                 (dpad & N64_ST) ? mempak_bank = 4 : (0);
+                
+                //Create the filename
+                uint8_t filename[32];
+                snprintf((char *)filename, sizeof(filename), "MEMPAK%02u.MPK", mempak_bank);
 
                 //Scan controllers to see if mempack is in use
                 for (int i = 0; i < MAX_CONTROLLERS; i++)
@@ -387,25 +380,21 @@ void loop()
                     {
                         printf("Mempak already in use by controller setting to rumble %u\n", i);
                         n64_c[c].next_peripheral = PERI_RUMBLE;
-                        mempak_bank = -1;
-                    }
-                    else
-                    {
-                        //Found a free mempak, we're done!
-                        break;
+                        n64_c[c].mempack->data = NULL;
                     }
                 }
-                if (mempak_bank != -1)
+
+                //Mempack wasn't in use
+                if (n64_c[c].next_peripheral != PERI_RUMBLE)
+                    n64_c[c].mempack->data = alloc_sram((const char*) filename, MEMPAK_SIZE);
+
+                if (n64_c[c].mempack->data != NULL)
                 {
                     printf("Changing controller %u's peripheral to mempak %u\n", c, mempak_bank);
                     n64_c[c].mempack->id = mempak_bank;
                     if (mempak_bank != VIRTUAL_PAK)
                     {
-                        n64_c[c].mempack->data = (uint8_t *)malloc(MEMPAK_SIZE);
                         n64_c[c].mempack->virtual_is_active = 0;
-
-                        uint8_t filename[32];
-                        snprintf((char *)filename, sizeof(filename), "MEMPAK%02u.MPK", n64_c[c].mempack->id);
                         n64hal_sram_restore_from_file(filename,
                                                       n64_c[c].mempack->data,
                                                       MEMPAK_SIZE);
@@ -414,7 +403,6 @@ void loop()
                     {
                         n64_virtualpak_init(n64_c[c].mempack);
                     }
-                    n64_c[c].next_peripheral = PERI_MEMPCK;
                 }
                 timer_peripheral_change = millis();
             }

@@ -45,7 +45,7 @@ typedef struct
     int8_t current_bit;         //The current bit to being received in
     int8_t current_byte;        //The current byte being received in
     uint8_t data_buffer[50];    //Controller main tx and rx buffer
-    int8_t current_peripheral;  //Peripheral flag, PERI_NONE, PERI_RUMBLE, PERI_MEMPCK, PERI_TPAK
+    int8_t current_peripheral;  //Peripheral flag, PERI_NONE, PERI_RUMBLE, PERI_MEMPAK, PERI_TPAK
     int8_t next_peripheral;     //What Peripheral to change to next after timer
     n64_buttonmap bState;       //N64 controller button and analog stick map
     uint8_t crc_error;          //Set if the 2 byte address has a CRC error.
@@ -71,7 +71,7 @@ typedef struct
 #define N64_CRC_POS 35
 #define N64_MAX_POS 36
 #define PERI_RUMBLE 0
-#define PERI_MEMPCK 1
+#define PERI_MEMPAK 1
 #define PERI_NONE 2
 #define PERI_TPAK 3
 

@@ -42,6 +42,7 @@
 n64_rumblepak n64_rpak[4];
 n64_mempack n64_mpack[4];
 n64_transferpak n64_tpak[4];
+gameboycart gb_cart[4];
 
 void n64_init_subsystem(n64_controller *controllers)
 {
@@ -58,11 +59,8 @@ void n64_init_subsystem(n64_controller *controllers)
         controllers[i].mempack->id = VIRTUAL_PAK;
         controllers[i].mempack->data = NULL;
         controllers[i].tpak = &n64_tpak[i];
-        controllers[i].tpak->installedCart = NULL;
+        controllers[i].tpak->gbcart = &gb_cart[i];
     }
-
-    n64_settings settings;
-    n64_settings_read(&settings);
 
     //Setup the Controller pin IO mapping and interrupts
     n64hal_hs_tick_init();
@@ -363,10 +361,10 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             else if (peri_address >= 0xC000 &&
                      peri_address <= 0xFFFF &&
                      cont->current_peripheral == PERI_TPAK &&
-                     cont->tpak->installedCart)
+                     cont->tpak->gbcart)
             {
                 uint16_t MBCAddress = tpak_getMBCAddress(peri_address, cont->tpak->currentMBCBank);
-                switch (cont->tpak->installedCart->mbc)
+                switch (cont->tpak->gbcart->mbc)
                 {
                 case ROM_ONLY:
                 case ROM_RAM:
@@ -403,20 +401,20 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                     gb_writeCartMBC5(MBCAddress, cont->tpak, &cont->data_buffer[N64_DATA_POS]);
                     break;
                 default:
-                    printf("Unsupported MBC %u\n", cont->tpak->installedCart->mbc);
+                    printf("Unsupported MBC %u\n", cont->tpak->gbcart->mbc);
                     break;
                 }
             }
 
             //Do we have to write to the mempak?
-            if (cont->current_peripheral == PERI_MEMPCK && peri_address <= 0x7FFF && !cont->crc_error)
+            if (cont->current_peripheral == PERI_MEMPAK && peri_address <= 0x7FFF && !cont->crc_error)
             {
                 cont->mempack->dirty = 1;
                 n64_mempack_write32(cont->mempack, peri_address, &cont->data_buffer[N64_DATA_POS]);
             }
 
             //VIRTUAL MEMPAK NOTE TABLE HOOK
-            if (cont->current_peripheral == PERI_MEMPCK &&
+            if (cont->current_peripheral == PERI_MEMPAK &&
                 cont->mempack->virtual_is_active &&
                 peri_address >= 0x300 && peri_address < 0x500)
             {
@@ -487,7 +485,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                         memset(&cont->data_buffer[N64_DATA_POS], 0x80, 32);
                     }
                 }
-                else if (cont->current_peripheral == PERI_MEMPCK)
+                else if (cont->current_peripheral == PERI_MEMPAK)
                 {
                     //If we have a mempak install, lets just read the data
                     n64_mempack_read32(cont->mempack, peri_address, &cont->data_buffer[N64_DATA_POS]);
@@ -513,7 +511,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                 //TPAK: Check Gameboy Cart Access Mode. Only responds if powerState is set.
                 if (cont->current_peripheral == PERI_TPAK && cont->tpak->powerState == 1)
                 {
-                    if (cont->tpak->installedCart != NULL)
+                    if (cont->tpak->gbcart != NULL)
                     {
                         if (cont->tpak->accessState == 1)
                         {
@@ -542,10 +540,10 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             else if (peri_address >= 0xC000 &&
                      peri_address <= 0xFFFF &&
                      cont->current_peripheral == PERI_TPAK &&
-                     cont->tpak->installedCart)
+                     cont->tpak->gbcart)
             {
                 uint16_t MBCAddress = tpak_getMBCAddress(peri_address, cont->tpak->currentMBCBank);
-                switch (cont->tpak->installedCart->mbc)
+                switch (cont->tpak->gbcart->mbc)
                 {
                 case ROM_ONLY:
                 case ROM_RAM:
@@ -582,7 +580,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                     gb_readCartMBC5(MBCAddress, cont->tpak, &cont->data_buffer[N64_DATA_POS]);
                     break;
                 default:
-                    printf("Error: Unsupported MBC %u\n", cont->tpak->installedCart->mbc);
+                    printf("Error: Unsupported MBC %u\n", cont->tpak->gbcart->mbc);
                     break;
                 }
             }

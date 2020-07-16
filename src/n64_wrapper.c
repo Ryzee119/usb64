@@ -70,7 +70,7 @@ void n64hal_sram_write(uint8_t *txdata, uint8_t *dest, uint16_t address, uint16_
         memcpy(dest + address, txdata, len);
     }
 }
-
+//FIXME FOR 4 TPAKS
 uint8_t n64hal_rom_read(gameboycart *gb_cart, uint32_t address, uint8_t *data, uint32_t len)
 {
     static uint8_t open_file[256];

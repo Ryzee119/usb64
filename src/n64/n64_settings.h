@@ -43,9 +43,9 @@ typedef struct
     uint8_t snap_axis[MAX_CONTROLLERS];          //0 or 1
 } n64_settings;
 
-void n64_settings_init();
-void n64_settings_read();
-void n64_settings_write();
+n64_settings *n64_settings_init();
+//void n64_settings_read();
+//void n64_settings_write();
 n64_settings *n64_settings_get();
 
 #ifdef __cplusplus

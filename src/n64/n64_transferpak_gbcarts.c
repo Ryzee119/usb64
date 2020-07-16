@@ -135,7 +135,7 @@ void gb_readCartMBC2(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuf
 /* MBC3 */
 void gb_writeCartMBC3(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *inBuffer)
 {
-    gameboycart *cart = tpak->installedCart;
+    gameboycart *cart = tpak->gbcart;
     //0000-1FFF - RAM and Timer Enable
     if (MBCAddress >= 0x0000 && MBCAddress <= 0x1FFF)
     {
@@ -229,7 +229,7 @@ void gb_writeCartMBC3(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *inBuf
 
 void gb_readCartMBC3(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuffer)
 {
-    gameboycart *cart = tpak->installedCart;
+    gameboycart *cart = tpak->gbcart;
     uint32_t cartAddress = MBCAddress;
     uint16_t readAddress;
 

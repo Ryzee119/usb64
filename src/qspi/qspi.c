@@ -325,9 +325,7 @@ static bool waitFlash(uint32_t timeout)
     FLEXSPI_IPRXFCR = FLEXSPI_IPRXFCR_CLRIPRXF; // clear rx fifo
     do
     {
-        noInterrupts();
         flexspi_ip_read(8, flashBaseAddr, &val, 1);
-        interrupts();
         if (timeout && (millis() - t > timeout))
             return 1;
     } while ((val & 0x01) == 1);
@@ -447,9 +445,7 @@ uint8_t qspi_read(uint32_t addr, uint32_t size, uint8_t *dst)
 #ifdef FLASH_MEMMAP
     memcpy(dst, (uint8_t *)extBase + addr, size);
 #else
-    noInterrupts();
     flexspi_ip_read(5, flashBaseAddr + addr, dst, size);
-    interrupts();
 #endif
     return 0;
 }
@@ -459,10 +455,8 @@ uint8_t qspi_write(uint32_t addr, uint32_t size, uint8_t *src)
     int s = size;
     while (s > 0)
     {
-        noInterrupts();
         flexspi_ip_command(11, flashBaseAddr);                      // write enable
         flexspi_ip_write(13, flashBaseAddr + addr, src, _pagesize); // write
-        interrupts();
         delay(3);
 
 #ifdef FLASH_MEMMAP
@@ -481,10 +475,8 @@ uint8_t qspi_erase(uint32_t addr, uint32_t size)
     int s = size;
     while (s > 0)
     {
-        noInterrupts();
         flexspi_ip_command(11, flashBaseAddr);
         flexspi_ip_command(12, flashBaseAddr + addr);
-        interrupts();
 
 #ifdef FLASH_MEMMAP
         arm_dcache_delete((void *)((uint32_t)extBase + addr), _blocksize);

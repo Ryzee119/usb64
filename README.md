@@ -5,17 +5,13 @@ A project developed to use USB controllers on the Nintendo 64 console.
 - [x] 4 x Simulatenous N64 controller emulation.
 - [x] 4 x Simulatenous N64 mouse emulation (Use a USB Mouse!).
 - [x] 4 x Simulatenous Rumblepak emulation.
-- [x] 1 x Mempak Emulation (Player 1) with 8 banks (selectable with controller combos)
-- [x] 1 x Transferpak Emulation (Player 1) with storage of up to 10 Gameboy ROMs.
-- [x] Configuration deadzones, sensitivity and analog stick shape.
-- [x] Complete configuration of device straight from the N64 console.
-- [x] Simple cross platform GUI to backup SRAM saves or load Transferpak Gameboy ROMs over USB.
+- [x] 4 x Simulatenous Mempak Emulation or 4 Selectable Banks
+- [x] 4 x Simulatenous Transferpak Emulation with 16MB internal storage for Gameboy ROMs.
+- [x] Configurable deadzones, sensitivity and analog stick shape.
+- [x] USB Mass Storage driver to backup mempaks, gameboy ROMs over USB.
 
 ## Todo
 - [ ] Teensy 4.1 is overkill. Port to cheaper platform.
-- [ ] SD Card instead of Flash chip?
-- [ ] 4 x Simultaneous Mempaks
-- [ ] 4 x Simultaneous Transferpaks
 - [ ] More USB controller drivers
 - [ ] True dual analog sticks with GoldenEye and Perfect Dark
 
@@ -29,10 +25,10 @@ A project developed to use USB controllers on the Nintendo 64 console.
 
 ## Controls
 - Back + D-Pad = Insert mempak banks 1 to 4
-- Back + A/B/X/Y = Insert mempak banks 5 to 8
 - Back + LB = Insert Rumblepak
 - Back + RB = Insert Transferpak
 - Back + Start = Select *virtual pak* (Use in-game mempak managers to configure the device)
+- Back + Start = HOLD for 3 seconds to backup SRAM to Flash **(NEEDED BEFORE POWER OFF!)**
 
 ## Needed Parts
 | Part Description | Link |

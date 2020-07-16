@@ -117,7 +117,7 @@ typedef struct
     uint8_t bankingMode;    //0x00 ROM Banking Mode:
                             //When 0x00, 0x4000 is the RAM Bank Number from 00 to 03),
                             //When 0x01 RAM Banking Mode (The RAM Bank is used as the two upper bits of the ROM Bank)
-    gameboycart *installedCart;
+    gameboycart *gbcart;
     uint8_t activeRomID;
 } n64_transferpak;
 
