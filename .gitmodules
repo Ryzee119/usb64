@@ -5,3 +5,6 @@
 [submodule "lib/USBHost_t36"]
         path = lib/USBHost_t36
         url = https://github.com/Ryzee119/USBHost_t36
+[submodule "src/tinyusb"]
+	path = src/tinyusb
+	url = https://github.com/hathach/tinyusb
