@@ -28,7 +28,7 @@ A project developed to use USB controllers on the Nintendo 64 console.
 - Back + LB = Insert Rumblepak
 - Back + RB = Insert Transferpak
 - Back + Start = Select *virtual pak* (Use in-game mempak managers to configure the device)
-- Back + Start = HOLD for 2 seconds to backup SRAM to Flash **(NEEDED BEFORE POWER OFF!)**
+- Back + A = Backup SRAM to Flash **(DO THIS BEFORE POWER OFF!)**
 
 ## Needed Parts
 | Part Description | Link |
