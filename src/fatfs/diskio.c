@@ -40,7 +40,7 @@ DSTATUS disk_status(
 }
 
 DSTATUS disk_initialize(
-	BYTE pdrv /* Physical drive nmuber to identify the drive */
+	BYTE pdrv /* Physical drive number to identify the drive */
 )
 {
 	qspi_init(&sector_size, &flash_size);
