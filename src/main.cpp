@@ -33,6 +33,7 @@
 #include "n64_transferpak_gbcarts.h"
 #include "n64_virtualpak.h"
 #include "n64_settings.h"
+#include "tusb.h"
 
 typedef struct
 {
@@ -52,10 +53,9 @@ JoystickController joy3(usbh);
 JoystickController joy4(usbh);
 JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3, &joy4};
 
-static sram_storage sram[10] = {0};
+sram_storage sram[10] = {0};
 static uint8_t *alloc_sram(const char *name, int alloc_len)
 {
-    
     if (alloc_len == 0)
         return NULL;
 
@@ -82,9 +82,13 @@ static uint8_t *alloc_sram(const char *name, int alloc_len)
         if (sram[i].len == 0)
         {
             printf("SRAM slot %u is free, allocating %u bytes\n", i, alloc_len);
-            sram[i].data = (uint8_t*)malloc(alloc_len);
+            sram[i].data = (uint8_t *)malloc(alloc_len);
             sram[i].len = alloc_len;
             strcpy(sram[i].name, name);
+
+            n64hal_sram_restore_from_file((uint8_t *)sram[i].name,
+                                          sram[i].data,
+                                          sram[i].len);
             return sram[i].data;
         }
     }
@@ -95,17 +99,23 @@ static uint8_t *alloc_sram(const char *name, int alloc_len)
 
 static void flush_sram()
 {
-    noInterrupts();
     for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
     {
+        if(sram[i].len == 0)
+            continue;
 
+        if(sram[i].data == NULL)
+            continue;
+
+        n64hal_sram_backup_to_file((uint8_t*)sram[i].name, sram[i].data, sram[i].len);
     }
-    interrupts();
 }
 
+static uint8_t ring_buffer_pos = 0;
+static char ring_buffer[256];
 void _putchar(char character)
 {
-    serial_port.write(character);
+    ring_buffer[ring_buffer_pos++] = character;
 }
 
 void n64_controller1_clock_edge()
@@ -150,10 +160,18 @@ static int scan_files(const char *path, uint8_t print)
     return num_files;
 }
 
+void USB_OTG1_IRQHandler(void)
+{
+  tud_int_handler(0);
+}
+
+
+
 void setup()
 {
+    Serial1.begin(9600);
     serial_port.begin(500000);
-
+    memset(ring_buffer,0xFF,sizeof(ring_buffer));
     //Check that the flash chip is formatted for FAT access
     //If it's not, format it! Should only happen once
     extern FATFS fs; BYTE work[4096];
@@ -166,6 +184,9 @@ void setup()
     }
 
     usbh.begin();
+    attachInterruptVector(IRQ_USB1, &USB_OTG1_IRQHandler);
+    tusb_init();
+    
 
     n64_init_subsystem(n64_c);
     n64_settings_init();
@@ -178,7 +199,8 @@ void setup()
     pinMode(N64_CONTROLLER_2_PIN, INPUT_PULLUP);
     //pinMode(N64_CONTROLLER_3_PIN, INPUT_PULLUP); //TODO MAP
     //pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP); //TODO MAP
-    NVIC_SET_PRIORITY(IRQ_GPIO6789, 1);
+    NVIC_SET_PRIORITY(IRQ_GPIO6789, 2);
+    NVIC_SET_PRIORITY(IRQ_FLEXSPI2, 1);
     attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_1_PIN), n64_controller1_clock_edge, FALLING);
     //attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_2_PIN), n64_controller2_clock_edge, FALLING);
     //attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_3_PIN), n64_controller3_clock_edge, FALLING);
@@ -191,6 +213,16 @@ void loop()
     static uint32_t usb_buttons[MAX_CONTROLLERS] = {0};
     static uint16_t n64_buttons[MAX_CONTROLLERS] = {0};
     static int32_t axis[MAX_CONTROLLERS][6] = {0};
+    tud_task();
+
+    static uint8_t ring_buffer_print_pos = 0;
+    if(ring_buffer[ring_buffer_print_pos] !=0xFF)
+    {
+        Serial1.write(ring_buffer[ring_buffer_print_pos]);
+        ring_buffer[ring_buffer_print_pos] = 0xFF;
+        ring_buffer_print_pos++;
+    }
+    
     for (int c = 0; c < MAX_CONTROLLERS; c++)
     {
         //If a change is buttons or axis has been detected
@@ -253,8 +285,9 @@ void loop()
             break;
         }
 
-        //Apply digital buttons to n64 controller
-        n64_c[c].bState.dButtons = n64_buttons[c];
+        //Apply digital buttons to n64 controller if combo button isnt pressed
+        if (n64_combo == 0)
+            n64_c[c].bState.dButtons = n64_buttons[c];
 
         //Apply rumble if required
         if (n64_c[c].rpak != NULL)
@@ -267,7 +300,7 @@ void loop()
         }
 
         //Handle button combinations
-        static uint32_t timer_peripheral_change = 0;
+        static uint32_t timer_peri_change[MAX_CONTROLLERS] = {0};
         if (n64_combo && (n64_buttons[c] & N64_DU ||
                           n64_buttons[c] & N64_DD ||
                           n64_buttons[c] & N64_DL ||
@@ -302,7 +335,6 @@ void loop()
             if (n64_buttons[c] & N64_LB)
             {
                 n64_c[c].next_peripheral = PERI_RUMBLE;
-                timer_peripheral_change = millis();
                 printf("Changing controller %u's peripheral to rumblepak\n", c);
             }
 
@@ -310,7 +342,6 @@ void loop()
             if (n64_buttons[c] & N64_RB)
             {
                 n64_c[c].next_peripheral = PERI_TPAK;
-                timer_peripheral_change = millis();
                 printf("Changing controller %u's peripheral to tpak\n", c);
 
                 n64_settings *settings = n64_settings_get();
@@ -337,12 +368,6 @@ void loop()
                         if (gb_cart->ram == NULL)
                             printf("ERROR: Could not alloc memory for %s\n", save_filename);
                     }
-                    if (gb_cart->ram != NULL)
-                    {
-                        n64hal_sram_restore_from_file((uint8_t *)save_filename,
-                                                        n64_c[c].tpak->gbcart->ram,
-                                                        gb_cart->ramsize);
-                    }
                 }
                 else
                 {
@@ -356,7 +381,6 @@ void loop()
                  n64_buttons[c] & N64_DL || n64_buttons[c] & N64_DR ||
                  n64_buttons[c] & N64_ST))
             {
-                n64_c[c].mempack->id = VIRTUAL_PAK;
                 n64_c[c].mempack->data = NULL;
                 n64_c[c].next_peripheral = PERI_MEMPAK;
 
@@ -367,7 +391,7 @@ void loop()
                 (dpad & N64_DR) ? mempak_bank = 1 : (0);
                 (dpad & N64_DD) ? mempak_bank = 2 : (0);
                 (dpad & N64_DL) ? mempak_bank = 3 : (0);
-                (dpad & N64_ST) ? mempak_bank = 4 : (0);
+                (dpad & N64_ST) ? mempak_bank = VIRTUAL_PAK : (0);
                 
                 //Create the filename
                 uint8_t filename[32];
@@ -376,42 +400,34 @@ void loop()
                 //Scan controllers to see if mempack is in use
                 for (int i = 0; i < MAX_CONTROLLERS; i++)
                 {
-                    if (n64_c[i].mempack->id == mempak_bank && n64_c[i].mempack->id != VIRTUAL_PAK)
+                    if (n64_c[i].mempack->id == mempak_bank && mempak_bank != VIRTUAL_PAK)
                     {
                         printf("Mempak already in use by controller setting to rumble %u\n", i);
                         n64_c[c].next_peripheral = PERI_RUMBLE;
-                        n64_c[c].mempack->data = NULL;
                     }
                 }
 
                 //Mempack wasn't in use
-                if (n64_c[c].next_peripheral != PERI_RUMBLE)
-                    n64_c[c].mempack->data = alloc_sram((const char*) filename, MEMPAK_SIZE);
+                if (n64_c[c].next_peripheral != PERI_RUMBLE && mempak_bank != VIRTUAL_PAK)
+                    n64_c[c].mempack->data = alloc_sram((const char *)filename, MEMPAK_SIZE);
 
                 if (n64_c[c].mempack->data != NULL)
                 {
                     printf("Changing controller %u's peripheral to mempak %u\n", c, mempak_bank);
-                    n64_c[c].mempack->id = mempak_bank;
-                    if (mempak_bank != VIRTUAL_PAK)
-                    {
-                        n64_c[c].mempack->virtual_is_active = 0;
-                        n64hal_sram_restore_from_file(filename,
-                                                      n64_c[c].mempack->data,
-                                                      MEMPAK_SIZE);
-                    }
-                    else
-                    {
-                        n64_virtualpak_init(n64_c[c].mempack);
-                    }
+                    n64_c[c].mempack->virtual_is_active = 0;
                 }
-                timer_peripheral_change = millis();
+                if (mempak_bank == VIRTUAL_PAK)
+                {
+                    n64_virtualpak_init(n64_c[c].mempack);
+                }
             }
+            timer_peri_change[c] = millis();
         }
 
         //We simulate a peripheral change time. The peripheral goes to NONE
         //for a short period. Some games need this.
         if (n64_c[c].current_peripheral == PERI_NONE &&
-            (millis() - timer_peripheral_change) > 750)
+            (millis() - timer_peri_change[c]) > 750)
         {
             n64_c[c].current_peripheral = n64_c[c].next_peripheral;
         }
@@ -421,9 +437,17 @@ void loop()
             n64_virtualpak_update(n64_c[c].mempack);
         }
 
+        if (n64_combo && (n64_buttons[c] & (N64_A | N64_B)))
+        {
+            printf("Flushing SRAM to Flash!\n");
+            flush_sram();
+            delay(1000);
+        }
+
     } //END FOR LOOP
 
     //Handle serial comm data from GUI
+    #if (0)
     if (serial_port.available())
     {
         uint8_t peri = n64_c[0].current_peripheral;
@@ -543,4 +567,5 @@ void loop()
         }
         n64_c[0].current_peripheral = peri;
     }
+    #endif
 } // MAIN LOOP

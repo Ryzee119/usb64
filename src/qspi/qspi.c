@@ -52,9 +52,8 @@ static uint8_t spi_bitbang(uint8_t data, bool final)
         delay(1);
         digitalWrite(clk, LOW);
         (data & (1 << i)) ? digitalWrite(mosi, HIGH) : digitalWrite(mosi, LOW);
-        if (digitalRead(miso))
-            ret |= (1 << i);
         delay(1);
+        ret |= (digitalRead(miso) << i);
         digitalWrite(clk, HIGH);
     }
     if (final)
@@ -93,7 +92,7 @@ static void setupFlexSPI2()
 
     // turn on clock
     //clocks[4] = {396.0f, 720.0f, 664.62f, 528.0f} / CCM_CBCMR_FLEXSPI2_PODF + 1
-    CCM_CBCMR = (CCM_CBCMR & ~(CCM_CBCMR_FLEXSPI2_PODF_MASK | CCM_CBCMR_FLEXSPI2_CLK_SEL_MASK)) | CCM_CBCMR_FLEXSPI2_PODF(3) | CCM_CBCMR_FLEXSPI2_CLK_SEL(0); // 99 MHz
+    CCM_CBCMR = (CCM_CBCMR & ~(CCM_CBCMR_FLEXSPI2_PODF_MASK | CCM_CBCMR_FLEXSPI2_CLK_SEL_MASK)) | CCM_CBCMR_FLEXSPI2_PODF(7) | CCM_CBCMR_FLEXSPI2_CLK_SEL(0); // 99 MHz
     CCM_CCGR7 |= CCM_CCGR7_FLEXSPI2(CCM_CCGR_ON);
 
     FLEXSPI2_MCR0 |= FLEXSPI_MCR0_MDIS;
@@ -457,12 +456,12 @@ uint8_t qspi_write(uint32_t addr, uint32_t size, uint8_t *src)
     {
         flexspi_ip_command(11, flashBaseAddr);                      // write enable
         flexspi_ip_write(13, flashBaseAddr + addr, src, _pagesize); // write
-        delay(3);
+        //delay(3);
+        waitFlash(0);
 
 #ifdef FLASH_MEMMAP
         arm_dcache_delete((void *)((uint32_t)extBase + addr), _pagesize);
 #endif
-        waitFlash(0);
         src += _pagesize;
         addr += _pagesize;
         s -= _pagesize;
@@ -484,10 +483,8 @@ uint8_t qspi_erase(uint32_t addr, uint32_t size)
 
         addr += _blocksize;
         s -= _blocksize;
-        do
-        {
-            delay(45);
-        } while (waitFlash(1));
+        //delay(500);
+        waitFlash(0);
     }
     return 0;
 }

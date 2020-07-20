@@ -93,6 +93,11 @@ uint8_t n64hal_rom_read(gameboycart *gb_cart, uint32_t address, uint8_t *data, u
         return 0;
     }
 
+    if (gb_cart->filename[0] == '\0')
+    {
+        return 0;
+    }
+
     //Has file changed, open new file and build cluster link map table for fast seek
     const char *filename = (char *)gb_cart->filename;
     if (strcmp((const char *)open_file, filename) != 0)
