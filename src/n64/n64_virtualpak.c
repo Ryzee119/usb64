@@ -200,7 +200,7 @@ static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
         if (i > len || n64char == 0)
             n64char = 15;
 
-        //Write to char to the note table
+        //Write the character to the note table
         if (ext)
             n64_virtualpak_note_table[(32 * line) + 12 + i] = n64char;
         else
