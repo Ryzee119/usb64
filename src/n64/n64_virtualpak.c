@@ -196,13 +196,9 @@ static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
                 n64char = j;
         }
 
-        //Pad with spaces if past end
-        if (i > len)
-            n64char = 1;
-
-        //Replace unknown characters with a space.
-        if (n64char == 0)
-            n64char = 1;
+        //Pad with spaces if past end or the character is unsupported
+        if (i > len || n64char == 0)
+            n64char = 15;
 
         //Write to char to the note table
         if (ext)
