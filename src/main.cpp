@@ -40,6 +40,7 @@ typedef struct
     char name[256];
     uint8_t *data;
     int len;
+    int non_volatile;
 } sram_storage;
 
 #define serial_port Serial
@@ -92,7 +93,7 @@ static uint8_t *alloc_sram(const char *name, int alloc_len)
             return sram[i].data;
         }
     }
-    //Not allocated, and no spots left. You need to flush RAM to Flash
+    //Not allocated, or no spots left. You need to flush RAM to Flash
     printf("No SRAM allocs left. Flush RAM to Flash!\n");
     return NULL;
 }
@@ -109,6 +110,11 @@ static void flush_sram()
 
         n64hal_sram_backup_to_file((uint8_t*)sram[i].name, sram[i].data, sram[i].len);
     }
+}
+
+static void tusbd_interrupt(void)
+{
+  tud_int_handler(0);
 }
 
 static uint8_t ring_buffer_pos = 0;
@@ -160,13 +166,6 @@ static int scan_files(const char *path, uint8_t print)
     return num_files;
 }
 
-void USB_OTG1_IRQHandler(void)
-{
-  tud_int_handler(0);
-}
-
-
-
 void setup()
 {
     Serial1.begin(9600);
@@ -184,7 +183,7 @@ void setup()
     }
 
     usbh.begin();
-    attachInterruptVector(IRQ_USB1, &USB_OTG1_IRQHandler);
+    attachInterruptVector(IRQ_USB1, &tusbd_interrupt);
     tusb_init();
     
 
@@ -409,13 +408,16 @@ void loop()
 
                 //Mempack wasn't in use
                 if (n64_c[c].next_peripheral != PERI_RUMBLE && mempak_bank != VIRTUAL_PAK)
+                {
                     n64_c[c].mempack->data = alloc_sram((const char *)filename, MEMPAK_SIZE);
+                }
 
                 if (n64_c[c].mempack->data != NULL)
                 {
                     printf("Changing controller %u's peripheral to mempak %u\n", c, mempak_bank);
                     n64_c[c].mempack->virtual_is_active = 0;
                 }
+
                 if (mempak_bank == VIRTUAL_PAK)
                 {
                     n64_virtualpak_init(n64_c[c].mempack);
@@ -443,129 +445,5 @@ void loop()
             flush_sram();
             delay(1000);
         }
-
     } //END FOR LOOP
-
-    //Handle serial comm data from GUI
-    #if (0)
-    if (serial_port.available())
-    {
-        uint8_t peri = n64_c[0].current_peripheral;
-        n64_c[0].current_peripheral = PERI_NONE;
-        serial_port.flush();
-        serial_port.setTimeout(500);
-        static char serial_buff[256];
-        static char filename[256];
-        static BYTE work[4096];
-        static MKFS_PARM defopt = {FM_FAT, 1, 0, 0, 4096};
-        static FATFS *_fs = (FATFS *)malloc(sizeof(FATFS));
-        static FIL fil; static FRESULT res; static UINT br;
-        static uint32_t sector_size, total_sectors, free_sectors, num_files;
-        int len = 0;
-        uint8_t c = serial_port.read();
-        switch (c)
-        {
-        /* 0xA0: Sends a welcome string */
-        case 0xA0:
-            sprintf(serial_buff, "usb64 by Ryzee119 Build date: %s\n", __DATE__);
-            serial_port.write(serial_buff);
-            break;
-        /* 0xA1: Send a list of files present on the FATFS system memory */
-        case 0xA1:
-            //Scan and return num of files. Dont print the output yet
-            num_files = scan_files("", 0);
-            //Tell the host how many files it's expecting
-            snprintf(serial_buff, sizeof(serial_buff), "A1,%u\n", num_files);
-            serial_port.write(serial_buff);
-            //Now rescan the files, and print them to this serial port
-            scan_files("", 1);
-            printf("Sent %u files\n", num_files);
-            break;
-        /* 0xA2: Download a file from the FATFS system to the host */
-        case 0xA2:
-            //Get the filename
-            memset(filename, 0x00, sizeof(filename));
-            serial_port.readBytesUntil('\0', filename, sizeof(filename));
-            res = f_open(&fil, (const TCHAR *)filename, FA_READ);
-            if (res != FR_OK)
-            {
-                printf("Error opening %s for READ\n", filename);
-                break;
-            }
-            //Tell the host the filesize
-            snprintf(serial_buff, sizeof(serial_buff), "A2,%u\n", f_size(&fil));
-            serial_port.write(serial_buff);
-            delay(100);
-            //Send the data
-            do
-            {
-                res = f_read(&fil, serial_buff, sizeof(serial_buff), &br);
-                serial_port.write(serial_buff, br);
-            } while (br == sizeof(serial_buff));
-
-            f_close(&fil);
-            printf("download of %s completed\n", filename);
-            break;
-        /* 0xA3: Upload a file from the host and write to the FATFS system */
-        case 0xA3:
-            //Get the filename
-            memset(filename, 0x00, sizeof(filename));
-            serial_port.readBytesUntil('\0', filename, sizeof(filename));
-            res = f_open(&fil, (const TCHAR *)filename, FA_WRITE | FA_CREATE_ALWAYS);
-            if (res != FR_OK)
-            {
-                printf("Error opening %s for WRITE\n", filename);
-                break;
-            }
-            //Send the data
-            len = 0;
-            do
-            {
-                len = serial_port.readBytes(serial_buff, sizeof(serial_buff));
-                res = f_write(&fil, serial_buff, len, &br);
-                if (res != FR_OK)
-                {
-                    printf("Error writing %s\n", filename);
-                    break;
-                }
-            } while (len > 0);
-            f_close(&fil);
-            printf("Wrote %s ok\n", filename);
-            break;
-        /* 0xA4: Delete a file from the FATFS system */
-        case 0xA4:
-            //Get the filename
-            memset(filename, 0x00, sizeof(filename));
-            serial_port.readBytesUntil('\0', filename, sizeof(filename));
-            res = f_unlink(filename);
-            if (res != FR_OK)
-            {
-                printf("Error deleting %s with error: %i\n", filename, res);
-                break;
-            }
-            printf("Delete ok\n");
-            break;
-        /* 0xA5: Send free space and total space of the FATFS system to the host */
-        case 0xA5:
-            if (_fs->fs_type == 0)
-                f_mount(_fs, "", 1);
-            qspi_get_flash_properties(&sector_size, NULL);
-            f_getfree("", &free_sectors, &_fs);
-            total_sectors = (_fs->n_fatent - 2);
-
-            //Tell the host the flash capacity and remaining space
-            snprintf(serial_buff, sizeof(serial_buff), "A5,%u,%u\n", total_sectors * sector_size,
-                     free_sectors * sector_size);
-            serial_port.write(serial_buff);
-            break;
-        case 0xA6:
-            f_mkfs("", &defopt, work, sizeof(work));
-            printf("Formatted file system ok\n");
-        default:
-            printf("Unknown command\n");
-            break;
-        }
-        n64_c[0].current_peripheral = peri;
-    }
-    #endif
 } // MAIN LOOP
