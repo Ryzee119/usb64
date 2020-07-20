@@ -2,6 +2,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Ha Thach (tinyusb.org)
+ * Copyright (c) 2019 Ryan Wendland (USB64)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,17 +27,9 @@
 #include "bsp/board.h"
 #include "qspi.h"
 #include "tusb.h"
+#include "printf.h"
 
 #if CFG_TUD_MSC
-
-// Some MCU doesn't have enough 8KB SRAM to store the whole disk
-// We will use Flash as read-only disk with board that has
-// CFG_EXAMPLE_MSC_READONLY defined
-
-#define README_CONTENTS \
-  "This is tinyusb's MassStorage Class demo.\r\n\r\n\
-If you find any bugs or get any questions, feel free to file an\r\n\
-issue at github.com/hathach/tinyusb"
 
 enum
 {
@@ -64,8 +57,7 @@ void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16
 bool tud_msc_test_unit_ready_cb(uint8_t lun)
 {
   (void)lun;
-
-  return true; // RAM disk is always ready
+  return true;
 }
 
 // Invoked when received SCSI_CMD_READ_CAPACITY_10 and SCSI_CMD_READ_FORMAT_CAPACITY to determine the disk size
@@ -73,7 +65,6 @@ bool tud_msc_test_unit_ready_cb(uint8_t lun)
 void tud_msc_capacity_cb(uint8_t lun, uint32_t *block_count, uint16_t *block_size)
 {
   (void)lun;
-
   *block_count = DISK_BLOCK_NUM;
   *block_size = DISK_BLOCK_SIZE;
 }
@@ -96,6 +87,7 @@ bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, boo
     else
     {
       // unload disk storage
+      // Flush?
     }
   }
 
@@ -116,8 +108,10 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buff
 int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize)
 {
   (void)lun;
-  qspi_erase(lba * DISK_BLOCK_SIZE + offset, bufsize);
-  qspi_write(lba * DISK_BLOCK_SIZE + offset, bufsize, buffer);
+  //These are 512!
+  printf("%u %u %u %u\n", lun, lba, offset, bufsize);
+  //qspi_erase(lba * DISK_BLOCK_SIZE + offset, bufsize);
+  //qspi_write(lba * DISK_BLOCK_SIZE + offset, bufsize, buffer);
   return bufsize;
 }
 
