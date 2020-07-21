@@ -114,7 +114,7 @@ static void flush_sram()
 
 static void tusbd_interrupt(void)
 {
-  tud_int_handler(0);
+    tud_int_handler(0);
 }
 
 static uint8_t ring_buffer_pos = 0;
@@ -141,31 +141,6 @@ void n64_controller4_clock_edge()
     n64_controller_hande_new_edge(&n64_c[3]);
 }
 
-static int scan_files(const char *path, uint8_t print)
-{
-    FRESULT res; DIR dir; UINT num_files = 0;
-    static FILINFO fno;
-    res = f_opendir(&dir, path);
-    if (res == FR_OK)
-    {
-        for (;;)
-        {
-            res = f_readdir(&dir, &fno);
-            if (res != FR_OK || fno.fname[0] == 0)
-                break;
-            if (!(fno.fattrib & AM_DIR))
-            {
-                num_files++;
-                if (print)
-                    printf("%s\n", fno.fname);
-            }
-        }
-        f_closedir(&dir);
-    }
-
-    return num_files;
-}
-
 void setup()
 {
     Serial1.begin(9600);
@@ -178,7 +153,7 @@ void setup()
     qspi_init(NULL, NULL);
     if (f_mount(&fs, "", 1) != FR_OK)
     {
-        printf("Error mounting, probably not format correctly\n");
+        printf("Error mounting, probably not formatted correctly. Formatting flash...\n");
         f_mkfs("", &defopt, work, sizeof(work));
     }
 
