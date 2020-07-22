@@ -109,7 +109,7 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buff
   (void)lun;
   //If lba is the cached block, read from the cache instead of flash.
   if (lba == cached_block)
-    memcpy(buffer, block_cache, bufsize);
+    memcpy(buffer, block_cache + offset, bufsize);
   else
     qspi_read(lba * DISK_BLOCK_SIZE + offset, bufsize, buffer); 
   
