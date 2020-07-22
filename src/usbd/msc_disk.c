@@ -33,9 +33,12 @@
 
 enum
 {
-  DISK_BLOCK_NUM = 4096, // 8KB is the smallest size that windows allow to mount
+  DISK_BLOCK_NUM  = 4096, // 8KB is the smallest size that windows allow to mount
   DISK_BLOCK_SIZE = 4096
 };
+
+static int cached_block = -1;
+static block_cache[DISK_BLOCK_SIZE];
 
 // Invoked when received SCSI_CMD_INQUIRY
 // Application fill vendor id, product id and revision with string up to 8, 16, 4 characters respectively
@@ -43,13 +46,13 @@ void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16
 {
   (void)lun;
 
-  const char vid[] = "USB64 By Ryzee119";
-  const char pid[] = "Mass Storage";
-  const char rev[] = "1.0";
+  const char _vid[] = "USB64 By Ryzee119";
+  const char _pid[] = "Mass Storage";
+  const char _rev[] = "1.0";
 
-  memcpy(vendor_id, vid, strlen(vid));
-  memcpy(product_id, pid, strlen(pid));
-  memcpy(product_rev, rev, strlen(rev));
+  memcpy(vendor_id,   _vid, strlen(vid));
+  memcpy(product_id,  _pid, strlen(pid));
+  memcpy(product_rev, _rev, strlen(rev));
 }
 
 // Invoked when received Test Unit Ready command.
@@ -81,13 +84,18 @@ bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, boo
   {
     if (start)
     {
-      // load disk storage
+      printf("Load MSC disk storage\n");
       qspi_init(NULL, NULL);
     }
     else
     {
-      // unload disk storage
-      // Flush?
+      printf("Unload MSC disk storage\n");
+      if(cached_block != -1)
+      {
+        qspi_erase(cached_block * DISK_BLOCK_SIZE, DISK_BLOCK_SIZE);
+        qspi_write(cached_block * DISK_BLOCK_SIZE, DISK_BLOCK_SIZE, block_cache);
+      }
+      cached_block = -1;
     }
   }
 
@@ -99,7 +107,12 @@ bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, boo
 int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buffer, uint32_t bufsize)
 {
   (void)lun;
-  qspi_read(lba * DISK_BLOCK_SIZE + offset, bufsize, buffer);
+  //If lba is the cached block, read from the cache instead of flash.
+  if (lba == cached_block)
+    memcpy(buffer, block_cache, bufsize);
+  else
+    qspi_read(lba * DISK_BLOCK_SIZE + offset, bufsize, buffer); 
+  
   return bufsize;
 }
 
@@ -110,8 +123,20 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *
   (void)lun;
   //These are 512!
   printf("%u %u %u %u\n", lun, lba, offset, bufsize);
-  //qspi_erase(lba * DISK_BLOCK_SIZE + offset, bufsize);
-  //qspi_write(lba * DISK_BLOCK_SIZE + offset, bufsize, buffer);
+    
+  //Addressing a new block, we need to flush the old block to flash.
+  if (lba != cached_block)
+  {
+    if(cached_block != -1)
+    {
+      qspi_erase(cached_block * DISK_BLOCK_SIZE, DISK_BLOCK_SIZE);
+      qspi_write(cached_block * DISK_BLOCK_SIZE, DISK_BLOCK_SIZE, block_cache);
+    }
+    //Read new sector into cache
+    qspi_read(lba * DISK_BLOCK_SIZE, DISK_BLOCK_SIZE, block_cache);
+    cached_block = lba;
+  }
+  memcpy(block_cache + offset, buffer, bufsize);
   return bufsize;
 }
 
@@ -139,12 +164,12 @@ int32_t tud_msc_scsi_cb(uint8_t lun, uint8_t const scsi_cmd[16], void *buffer, u
     // Set Sense = Invalid Command Operation
     tud_msc_set_sense(lun, SCSI_SENSE_ILLEGAL_REQUEST, 0x20, 0x00);
 
-    // negative means error -> tinyusb could stall and/or response with failed status
+    // Negative means error -> tinyusb could stall and/or response with failed status
     resplen = -1;
     break;
   }
 
-  // return resplen must not larger than bufsize
+  // Return resplen must not larger than bufsize
   if (resplen > bufsize)
     resplen = bufsize;
 
