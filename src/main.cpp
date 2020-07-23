@@ -37,7 +37,7 @@
 
 typedef struct
 {
-    char name[256];
+    char name[MAX_FILENAME_LEN];
     uint8_t *data;
     int len;
     int non_volatile;
@@ -45,6 +45,7 @@ typedef struct
 
 #define serial_port Serial1
 n64_controller n64_c[MAX_CONTROLLERS];
+n64_settings* settings;
 
 //USB Host Interface
 USBHost usbh;
@@ -55,7 +56,7 @@ JoystickController joy4(usbh);
 JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3, &joy4};
 
 sram_storage sram[10] = {0};
-static uint8_t *alloc_sram(const char *name, int alloc_len)
+static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
 {
     if (alloc_len == 0)
         return NULL;
@@ -86,10 +87,18 @@ static uint8_t *alloc_sram(const char *name, int alloc_len)
             sram[i].data = (uint8_t *)malloc(alloc_len);
             sram[i].len = alloc_len;
             strcpy(sram[i].name, name);
+            if(non_volatile)
+            {
+                n64hal_sram_restore_from_file((uint8_t *)sram[i].name,
+                                            sram[i].data,
+                                            sram[i].len);
+                sram[i].non_volatile = 1;
+            }
+            else
+            {
+                memset(sram[i].data, 0x00, sram[i].len);
+            }
 
-            n64hal_sram_restore_from_file((uint8_t *)sram[i].name,
-                                          sram[i].data,
-                                          sram[i].len);
             return sram[i].data;
         }
     }
@@ -106,6 +115,9 @@ static void flush_sram()
             continue;
 
         if(sram[i].data == NULL)
+            continue;
+
+        if(sram[i].non_volatile == 0)
             continue;
 
         n64hal_sram_backup_to_file((uint8_t*)sram[i].name, sram[i].data, sram[i].len);
@@ -158,14 +170,24 @@ void setup()
         BYTE work[256];
         f_mkfs("", &defopt, work, sizeof(work));
     }
-
-    //attachInterruptVector(IRQ_USB1, &tusbd_interrupt);
-    //tusb_init();
+    //#define USB_DEVICE //FIX ME. HOW TO TRIGGER DEVICE?
+    #ifdef USB_DEVICE
+    attachInterruptVector(IRQ_USB1, &tusbd_interrupt);
+    tusb_init();
+    while(1)
+    {
+        tud_task();
+    }
+    #endif
     usbh.begin();
     memset(ring_buffer,0xFF,sizeof(ring_buffer));
 
     n64_init_subsystem(n64_c);
-    n64_settings_init();
+
+    //Read in settings from flash
+    settings = (n64_settings *)alloc_sram(SETTINGS_FILENAME, sizeof(n64_settings), 1);
+    n64_settings_init(settings);
+
     n64_c[0].gpio_pin = N64_CONTROLLER_1_PIN;
     n64_c[1].gpio_pin = N64_CONTROLLER_2_PIN;
     n64_c[2].gpio_pin = N64_CONTROLLER_3_PIN;
@@ -191,7 +213,6 @@ void loop()
     static uint16_t n64_buttons[MAX_CONTROLLERS] = {0};
     static int32_t axis[MAX_CONTROLLERS][6] = {0};
 
-    //tud_task();
     static uint8_t ring_buffer_print_pos = 0;
     while(ring_buffer[ring_buffer_print_pos] !=0xFF)
     {
@@ -323,7 +344,6 @@ void loop()
                 n64_c[c].next_peripheral = PERI_TPAK;
                 printf("Changing controller %u's peripheral to tpak\n", c);
 
-                n64_settings *settings = n64_settings_get();
                 gameboycart *gb_cart = n64_c[c].tpak->gbcart;
                 uint8_t gb_header[0x100];
                 gb_cart->ram = NULL;
@@ -336,14 +356,28 @@ void loop()
                                        gb_header,
                                        settings->default_tpak_rom[c]);
 
-                    char save_filename[256];
+                    char save_filename[MAX_FILENAME_LEN];
                     if (gb_cart->ramsize > 0)
                     {
                         //Readback savefile from Flash, replace .gb or .gbc with .sav
                         char *file_name = (char *)n64_c[c].tpak->gbcart->filename;
                         strcpy(save_filename, file_name);
                         strcpy(strrchr(save_filename, '.'), ".sav");
-                        gb_cart->ram = alloc_sram(save_filename, gb_cart->ramsize);
+
+                        uint8_t mbc = gb_cart->mbc;
+                        //Only the MBC has a battery, set the non volatile flag for the SRAM
+                        if (mbc == ROM_RAM_BAT      || mbc == ROM_RAM_BAT  ||
+                            mbc == MBC1_RAM_BAT     || mbc == MBC2_BAT     ||
+                            mbc == MBC3_RAM_BAT     || mbc == MBC3_TIM_BAT ||
+                            mbc == MBC3_TIM_RAM_BAT || mbc == MBC4_RAM_BAT ||
+                            mbc == MBC5_RAM_BAT     || mbc == MBC5_RUM_RAM_BAT)
+                        {
+                            gb_cart->ram = alloc_sram(save_filename, gb_cart->ramsize, 1);
+                        }
+                        else
+                        {
+                            gb_cart->ram = alloc_sram(save_filename, gb_cart->ramsize, 0);
+                        }
                         if (gb_cart->ram == NULL)
                             printf("ERROR: Could not alloc memory for %s\n", save_filename);
                     }
@@ -389,7 +423,7 @@ void loop()
                 //Mempack wasn't in use
                 if (n64_c[c].next_peripheral != PERI_RUMBLE && mempak_bank != VIRTUAL_PAK)
                 {
-                    n64_c[c].mempack->data = alloc_sram((const char *)filename, MEMPAK_SIZE);
+                    n64_c[c].mempack->data = alloc_sram((const char *)filename, MEMPAK_SIZE, 1);
                 }
 
                 if (n64_c[c].mempack->data != NULL)
@@ -400,6 +434,7 @@ void loop()
 
                 if (mempak_bank == VIRTUAL_PAK)
                 {
+
                     n64_virtualpak_init(n64_c[c].mempack);
                 }
             }

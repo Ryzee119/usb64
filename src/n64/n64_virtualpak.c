@@ -215,7 +215,7 @@ void n64_virtualpak_init(n64_mempack *vpak)
     current_menu = MENU_MAIN;
 
     //Clear up any previous memory allocations
-    for (int i = 0; i < MAX_GBROMS; i++)
+    for (int i = 0; i < num_roms; i++)
     {
         if (gbrom_filenames[i] != NULL)
             free(gbrom_filenames[i]);
@@ -226,7 +226,7 @@ void n64_virtualpak_init(n64_mempack *vpak)
         gbrom_titlenames[i] = NULL;
     }
 
-    num_roms = n64hal_scan_flash_gbroms(gbrom_filenames);
+    num_roms = n64hal_scan_flash_gbroms(gbrom_filenames, MAX_GBROMS);
     for (int i = 0; i < num_roms; i++)
     {
         uint8_t gb_header[0x100];
@@ -268,7 +268,11 @@ void n64_virtualpak_write32(uint16_t address, uint8_t *tx_buff)
 void n64_virtualpak_update(n64_mempack *vpak)
 {
     n64_settings *settings = n64_settings_get();
-
+    if (settings == NULL)
+    {
+        printf("ERROR: settings not initialised (n64_virtualpak_update)\n");
+        return;
+    }
     //Clear the screen;
     char alpha[2] = {'A', '\0'};
     for (uint8_t i = 0; i < 15; i++)

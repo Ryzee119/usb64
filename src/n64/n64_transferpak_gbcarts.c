@@ -104,8 +104,6 @@ void gb_writeCartROMOnly(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *in
 
 void gb_readCartROMOnly(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuffer)
 {
-    //flash_read(MBCAddress+cart->flash_romoffset, outBuffer,32);
-    //printf("gb_readCartROMOnly not implemented\n");
     n64hal_rom_read(tpak->gbcart, MBCAddress, outBuffer, 32);
 }
 

@@ -31,21 +31,16 @@ extern "C"
 
 #include "n64_conf.h"
 
-#define _MAGIC 0xAB
-
 typedef struct
 {
     uint8_t magic;
-    char default_tpak_rom[MAX_CONTROLLERS][256]; //Filename
-    uint8_t octa[MAX_CONTROLLERS];               //0 or 1
+    char default_tpak_rom[MAX_CONTROLLERS][MAX_FILENAME_LEN]; //Filename
     uint8_t sensitivity[MAX_CONTROLLERS];        //0 to 5
     uint8_t deadzone[MAX_CONTROLLERS];           //0 to 3
     uint8_t snap_axis[MAX_CONTROLLERS];          //0 or 1
 } n64_settings;
 
-n64_settings *n64_settings_init();
-//void n64_settings_read();
-//void n64_settings_write();
+void n64_settings_init(n64_settings* settings);
 n64_settings *n64_settings_get();
 
 #ifdef __cplusplus

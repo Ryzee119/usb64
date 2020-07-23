@@ -26,42 +26,27 @@
 #include "n64_wrapper.h"
 #include "printf.h"
 
-static n64_settings settings;
+n64_settings *_settings = NULL;
 
-static void n64_settings_read()
+void n64_settings_init(n64_settings *settings)
 {
-    n64hal_sram_restore_from_file((uint8_t*) SETTINGS_FILENAME, (uint8_t *)&settings, sizeof(settings));
-}
-/*
-static void n64_settings_write()
-{
-    n64hal_sram_backup_to_file((uint8_t*) SETTINGS_FILENAME, (uint8_t *)&settings, sizeof(settings));
-}
-*/
-n64_settings *n64_settings_init()
-{
-    n64_settings_read();
-    if (settings.magic != _MAGIC)
+    const uint8_t _MAGIC = 0x64; //FIXME. CHECKSUM WILL BE BETTER
+    if (settings->magic != _MAGIC)
     {
         printf("%s not found or invalid, setting to default\n", SETTINGS_FILENAME);
         for (int i = 0; i < MAX_CONTROLLERS; i++)
         {
-            settings.magic = _MAGIC;
-            strcpy(settings.default_tpak_rom[i], "");
-            settings.deadzone[i] = 1;
-            settings.sensitivity[i] = 3;
-            settings.octa[i] = 1;
-            settings.snap_axis[i] = 1;
+            settings->magic = _MAGIC;
+            strcpy(settings->default_tpak_rom[i], "");
+            settings->deadzone[i] = 1;
+            settings->sensitivity[i] = 3;
+            settings->snap_axis[i] = 1;
         }
     }
-    else
-    {
-        printf("Read %s ok\n", SETTINGS_FILENAME);
-    }
-    return &settings; 
+    _settings = settings;
 }
 
 n64_settings *n64_settings_get()
 {
-    return &settings;
+    return _settings;
 }

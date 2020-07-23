@@ -73,7 +73,7 @@ void n64hal_sram_write(uint8_t *txdata, uint8_t *dest, uint16_t address, uint16_
 //FIXME FOR 4 TPAKS
 uint8_t n64hal_rom_read(gameboycart *gb_cart, uint32_t address, uint8_t *data, uint32_t len)
 {
-    static uint8_t open_file[256];
+    static uint8_t open_file[MAX_FILENAME_LEN];
     static FIL fil;
     static DWORD clmt[256];
     FRESULT res;
@@ -131,7 +131,7 @@ uint8_t n64hal_rom_read(gameboycart *gb_cart, uint32_t address, uint8_t *data, u
     return 1;
 }
 
-uint8_t n64hal_scan_flash_gbroms(char **array)
+uint8_t n64hal_scan_flash_gbroms(char **array, int max)
 {
     FRESULT res;
     DIR dir;
@@ -143,7 +143,7 @@ uint8_t n64hal_scan_flash_gbroms(char **array)
         for (;;)
         {
             res = f_readdir(&dir, &fno);
-            if (res != FR_OK || fno.fname[0] == 0)
+            if (res != FR_OK || fno.fname[0] == 0 || file_count >= max)
                 break;
 
             if (strstr(fno.fname, ".GB\0") != NULL || strstr(fno.fname, ".GBC\0") != NULL ||

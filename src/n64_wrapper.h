@@ -31,8 +31,6 @@ extern "C" {
 #include <Arduino.h>
 #include "n64_controller.h"
 
-#define SETTINGS_FILENAME "SETTINGS.DAT"
-
 #define N64_OUTPUT 1
 #define N64_INPUT 2
 
@@ -43,7 +41,7 @@ extern "C" {
     void n64hal_sram_write(uint8_t *txdata, uint8_t *dest, uint16_t address, uint16_t len);
     void n64hal_rtc_read(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
     void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
-    uint8_t n64hal_scan_flash_gbroms(char** array);
+    uint8_t n64hal_scan_flash_gbroms(char** array, int max);
 
 
     //High speed counter used for bit bang timing precision of N64 protocol output
