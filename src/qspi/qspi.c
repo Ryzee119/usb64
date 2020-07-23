@@ -440,12 +440,7 @@ void qspi_get_flash_properties(uint32_t *sector_size, uint32_t *flash_size)
 
 uint8_t qspi_read(uint32_t addr, uint32_t size, uint8_t *dst)
 {
-
-#ifdef FLASH_MEMMAP
-    memcpy(dst, (uint8_t *)extBase + addr, size);
-#else
     flexspi_ip_read(5, flashBaseAddr + addr, dst, size);
-#endif
     return 0;
 }
 
@@ -483,7 +478,6 @@ uint8_t qspi_erase(uint32_t addr, uint32_t size)
 
         addr += _blocksize;
         s -= _blocksize;
-        //delay(500);
         waitFlash(0);
     }
     return 0;

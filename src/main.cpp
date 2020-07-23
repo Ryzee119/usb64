@@ -43,7 +43,7 @@ typedef struct
     int non_volatile;
 } sram_storage;
 
-#define serial_port Serial
+#define serial_port Serial1
 n64_controller n64_c[MAX_CONTROLLERS];
 
 //USB Host Interface
@@ -118,10 +118,13 @@ static void tusbd_interrupt(void)
 }
 
 static uint8_t ring_buffer_pos = 0;
-static char ring_buffer[256];
+static char ring_buffer[4096];
 void _putchar(char character)
 {
-    ring_buffer[ring_buffer_pos++] = character;
+    //ring_buffer[ring_buffer_pos++] = character;
+    //if (ring_buffer_pos >= sizeof(ring_buffer))
+    //    ring_buffer_pos = 0;
+    serial_port.write(character);
 }
 
 void n64_controller1_clock_edge()
@@ -143,24 +146,23 @@ void n64_controller4_clock_edge()
 
 void setup()
 {
-    Serial1.begin(9600);
-    serial_port.begin(500000);
-    memset(ring_buffer,0xFF,sizeof(ring_buffer));
+    serial_port.begin(9600);
     //Check that the flash chip is formatted for FAT access
     //If it's not, format it! Should only happen once
-    extern FATFS fs; BYTE work[4096];
-    MKFS_PARM defopt = {FM_FAT, 1, 0, 0, 4096};
+    extern FATFS fs; 
     qspi_init(NULL, NULL);
     if (f_mount(&fs, "", 1) != FR_OK)
     {
         printf("Error mounting, probably not formatted correctly. Formatting flash...\n");
+        MKFS_PARM defopt = {FM_FAT, 1, 0, 0, 4096};
+        BYTE work[256];
         f_mkfs("", &defopt, work, sizeof(work));
     }
 
+    //attachInterruptVector(IRQ_USB1, &tusbd_interrupt);
+    //tusb_init();
     usbh.begin();
-    attachInterruptVector(IRQ_USB1, &tusbd_interrupt);
-    tusb_init();
-    
+    memset(ring_buffer,0xFF,sizeof(ring_buffer));
 
     n64_init_subsystem(n64_c);
     n64_settings_init();
@@ -173,8 +175,9 @@ void setup()
     pinMode(N64_CONTROLLER_2_PIN, INPUT_PULLUP);
     //pinMode(N64_CONTROLLER_3_PIN, INPUT_PULLUP); //TODO MAP
     //pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP); //TODO MAP
-    NVIC_SET_PRIORITY(IRQ_GPIO6789, 2);
-    NVIC_SET_PRIORITY(IRQ_FLEXSPI2, 1);
+    NVIC_SET_PRIORITY(IRQ_USB1, 1);
+    NVIC_SET_PRIORITY(IRQ_GPIO6789, 3);
+    NVIC_SET_PRIORITY(IRQ_FLEXSPI2, 2);
     attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_1_PIN), n64_controller1_clock_edge, FALLING);
     //attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_2_PIN), n64_controller2_clock_edge, FALLING);
     //attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_3_PIN), n64_controller3_clock_edge, FALLING);
@@ -187,14 +190,16 @@ void loop()
     static uint32_t usb_buttons[MAX_CONTROLLERS] = {0};
     static uint16_t n64_buttons[MAX_CONTROLLERS] = {0};
     static int32_t axis[MAX_CONTROLLERS][6] = {0};
-    tud_task();
 
+    //tud_task();
     static uint8_t ring_buffer_print_pos = 0;
-    if(ring_buffer[ring_buffer_print_pos] !=0xFF)
+    while(ring_buffer[ring_buffer_print_pos] !=0xFF)
     {
-        Serial1.write(ring_buffer[ring_buffer_print_pos]);
+        serial_port.write(ring_buffer[ring_buffer_print_pos]);
         ring_buffer[ring_buffer_print_pos] = 0xFF;
         ring_buffer_print_pos++;
+        if (ring_buffer_print_pos >= sizeof(ring_buffer))
+            ring_buffer_print_pos = 0;
     }
     
     for (int c = 0; c < MAX_CONTROLLERS; c++)

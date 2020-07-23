@@ -30,5 +30,7 @@
 #define N64_CONTROLLER_2_PIN 27
 #define N64_CONTROLLER_3_PIN 3
 #define N64_CONTROLLER_4_PIN 4
+#define USER_BUTTON_PIN 
+#define USER_LED_PIN 13
 
 #endif
