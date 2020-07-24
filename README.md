@@ -14,6 +14,8 @@ A project developed to use USB controllers on the Nintendo 64 console.
 - [ ] Teensy 4.1 is overkill. Port to cheaper platform.
 - [ ] More USB controller drivers
 - [ ] True dual analog sticks with GoldenEye and Perfect Dark
+- [ ] Additional Gameboy MBCs
+- [ ] Gameboy Camera?
 
 ## Supported USB Controllers
 - Bluetooth 8bitdo/compatible controllers via the [8BitDo Wireless USB Adapter](https://www.8bitdo.com/wireless-usb-adapter/)
