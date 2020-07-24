@@ -129,7 +129,7 @@ static void tusbd_interrupt(void)
     tud_int_handler(0);
 }
 
-static uint8_t ring_buffer_pos = 0;
+static int32_t ring_buffer_pos = 0;
 static char ring_buffer[4096];
 void _putchar(char character)
 {
@@ -213,7 +213,7 @@ void loop()
     static uint16_t n64_buttons[MAX_CONTROLLERS] = {0};
     static int32_t axis[MAX_CONTROLLERS][6] = {0};
 
-    static uint8_t ring_buffer_print_pos = 0;
+    static int32_t ring_buffer_print_pos = 0;
     while(ring_buffer[ring_buffer_print_pos] !=0xFF)
     {
         serial_port.write(ring_buffer[ring_buffer_print_pos]);
@@ -225,7 +225,7 @@ void loop()
     
     for (int c = 0; c < MAX_CONTROLLERS; c++)
     {
-        //If a change is buttons or axis has been detected
+        //If a change in buttons or axis has been detected
         if (gamecontroller[c]->available())
         {
             for (uint8_t i = 0; i < (sizeof(axis[c]) / sizeof(axis[c][0])); i++)
