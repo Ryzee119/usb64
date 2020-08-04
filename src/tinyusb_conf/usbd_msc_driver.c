@@ -2,7 +2,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Ha Thach (tinyusb.org)
- * Copyright (c) 2020 Ryan Wendland (Modified for USB64)
+ * Copyright (c) 2020 Ryan Wendland (Modified for usb64)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -46,7 +46,7 @@ void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16
 {
     (void)lun;
 
-    const char _vid[] = "USB64 By Ryzee119";
+    const char _vid[] = "usb64 By Ryzee119";
     const char _pid[] = "Mass Storage";
     const char _rev[] = "1.0";
 
@@ -84,11 +84,11 @@ bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, boo
     {
         if (start)
         {
-
+            //Don't need to do anything here
         }
         else
         {
-            printf("Unload MSC disk storage\n");
+            printf("Unload MSC disk storage\n"); //FIXME (Requires you to 'safely remove hardware')
             if (cached_block != -1)
             {
                 qspi_erase(cached_block * DISK_BLOCK_SIZE, DISK_BLOCK_SIZE);
