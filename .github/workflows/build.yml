@@ -15,8 +15,10 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v1
-      with:
-        submodules: recursive
+    - name: Checkout submodules
+      run: |
+        echo hello
+        ls
     - name: Set up Python
       uses: actions/setup-python@v1
     - name: Install dependencies
