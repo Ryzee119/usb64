@@ -11,10 +11,11 @@ A project developed to use USB controllers on the Nintendo 64 console.
 - [x] USB Mass Storage driver to backup mempaks, gameboy ROMs over USB.
 
 ## Todo
-- [ ] Teensy 4.1 is overkill. Port to cheaper platform.
+- [ ] Teensy 4.1 is overkill. Port to other platforms
 - [ ] More USB controller drivers
 - [ ] True dual analog sticks with GoldenEye and Perfect Dark
 - [ ] Additional Gameboy MBCs
+- [ ] Raspberry Pi interface or similar for all other USB controllers
 - [ ] Gameboy Camera?
 
 ## Supported USB Controllers
@@ -22,8 +23,6 @@ A project developed to use USB controllers on the Nintendo 64 console.
 - Xbox one Wired (Genuine Only)
 - Xbox 360 Wired
 - Xbox 360 Wireless (Via PC USB Receiver)
-- PS3 Controllers
-- PS4 Controllers
 
 ## Controls
 - Back + D-Pad = Insert mempak banks 1 to 4
@@ -38,7 +37,7 @@ A project developed to use USB controllers on the Nintendo 64 console.
 | Teensy 4.1 | https://www.pjrc.com/store/teensy41.html |
 | USB Host Cable | https://www.pjrc.com/store/cable_usb_host_t36.html |
 | 128Mbit SPI Flash W25Q128 SOIC-8| https://www.digikey.com.au/short/zb3v27 |
-| Tactile Push Button | https://www.digikey.com.au/short/zbdqnq |
+| Tactile Push Button (NO/Momentary) | https://www.digikey.com.au/short/zbdqnq |
 | N64 Controller Extensions | [AliExpress](https://www.aliexpress.com/wholesale?catId=0&SearchText=n64%20controller%20extension) |
 | Case | To do |
 

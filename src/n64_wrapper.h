@@ -34,7 +34,7 @@ extern "C" {
 #define N64_OUTPUT 1
 #define N64_INPUT 2
 
-    uint8_t n64hal_rom_read(gameboycart *gb_cart, uint32_t address, uint8_t *data, uint32_t len);
+    uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *data, uint32_t len);
     void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len);
     void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t len);
     void n64hal_sram_read(uint8_t *rxdata, uint8_t *src, uint16_t address, uint16_t len);

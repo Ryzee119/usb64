@@ -233,7 +233,7 @@ void n64_virtualpak_init(n64_mempack *vpak)
         gameboycart gb_cart;
         //Copy the cart filename into an array
         strcpy((char *)gb_cart.filename, gbrom_filenames[i]);
-        if (n64hal_rom_read(&gb_cart, 0x100, gb_header, sizeof(gb_header)))
+        if (n64hal_rom_fastread(&gb_cart, 0x100, gb_header, sizeof(gb_header)))
         {
             gb_initGameBoyCart(&gb_cart, gb_header, gbrom_filenames[i]);
             //Copy the gb cart title (from the rom header into an array)
@@ -335,6 +335,7 @@ void n64_virtualpak_update(n64_mempack *vpak)
             {
                 strcpy(settings->default_tpak_rom[controller_page],
                        gbrom_filenames[selected_rom]);
+                n64_settings_update_checksum(settings);
             }
         }
 

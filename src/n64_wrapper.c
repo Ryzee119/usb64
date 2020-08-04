@@ -37,6 +37,37 @@
 
 FATFS fs;
 
+/* The following two low level functions have been copied from the FATFs ff.c file to be used in this wrapper. */
+/*-----------------------------------------------------------------------*/
+/* FAT handling - Convert offset into cluster with link map table        */
+/*-----------------------------------------------------------------------*/
+static DWORD clmt_clust(FIL *fp, FSIZE_t ofs)
+{
+    DWORD cl, ncl, *tbl;
+    FATFS *fs = fp->obj.fs;
+
+    tbl = fp->cltbl + 1;                       /* Top of CLMT */
+    cl = (DWORD)(ofs / FF_MAX_SS / fs->csize); /* Cluster order from top of the file */
+    for (;;)
+    {
+        ncl = *tbl++; /* Number of cluters in the fragment */
+        if (ncl == 0) return 0; /* End of table? (error) */
+        if (cl < ncl) break; /* In this fragment? */
+        cl -= ncl;
+        tbl++; /* Next fragment */
+    }
+    return cl + *tbl; /* Return the cluster number */
+}
+/*-----------------------------------------------------------------------*/
+/* Get physical sector number from cluster number                        */
+/*-----------------------------------------------------------------------*/
+static LBA_t clst2sect(FATFS *fs, DWORD clst)
+{
+    clst -= 2; /* Cluster number is origin from 2 */
+    if (clst >= fs->n_fatent - 2) return 0;
+    return fs->database + (LBA_t)fs->csize * clst;
+}
+
 /*
  * Function: Reads a hardware realtime clock and populates day,h,m,s
  * ----------------------------
@@ -55,6 +86,18 @@ void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_
 {
 }
 
+/*
+ * Function: Reads a packet of data from src and places it in rxdata of length len.
+ * If using external RAM, this can read from external memory etc.
+ * Speed critical!
+ * ----------------------------
+ *   Returns void
+ *
+ *   rxdata: Pointer to a destination data array.
+ *   src: Pointer to the src data.
+ *   address: The address offset from the src array origin
+ *   len: Length of data to read in bytes.
+ */
 void n64hal_sram_read(uint8_t *rxdata, uint8_t *src, uint16_t address, uint16_t len)
 {
     if (src != NULL)
@@ -63,6 +106,18 @@ void n64hal_sram_read(uint8_t *rxdata, uint8_t *src, uint16_t address, uint16_t 
     }
 }
 
+/*
+ * Function: Writes a packet of data from txdata to dest of length len.
+ * If using external RAM, this can write to external memory etc.
+ * Speed critical!
+ * ----------------------------
+ *   Returns void
+ *
+ *   txdata: Pointer to a data array to write
+ *   dest: Pointer to the destination data array.
+ *   address: The address offset from the dest array origin
+ *   len: Length of data to write in bytes.
+ */
 void n64hal_sram_write(uint8_t *txdata, uint8_t *dest, uint16_t address, uint16_t len)
 {
     if (dest != NULL)
@@ -70,67 +125,116 @@ void n64hal_sram_write(uint8_t *txdata, uint8_t *dest, uint16_t address, uint16_
         memcpy(dest + address, txdata, len);
     }
 }
-//FIXME FOR 4 TPAKS
-uint8_t n64hal_rom_read(gameboycart *gb_cart, uint32_t address, uint8_t *data, uint32_t len)
+
+/*
+ * Function: Reads a packet of data from a gameboy cart ROM located in external flash memory
+ * Speed critical!
+ *
+ * ----------------------------
+ *   Returns void
+ *
+ *   gb_cart: Pointer to the gb_cart object
+ *   address: The address offset of the gb rom
+ *   data: Pointer to the destination array
+ *   len: Length of data to read in bytes.
+ */
+uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *data, uint32_t len)
 {
-    static uint8_t open_file[MAX_FILENAME_LEN];
-    static FIL fil;
-    static DWORD clmt[256];
+    //Due to FATFS caching and overhead, pure f_open/f_seek/f_read calls were too slow for the n64 console.
+    //Therefore, I use the FATFS system to open the file and create the cluster link map table for the file only once.
+    //Then from that point on I use that table to perform raw flash reads at the correct flash sectors to get the data.
+    //Arrays are used to manage multiple tpaks simulatenously (multiple roms being accessed).
+
+    //Store a list of open filenames
+    static uint8_t open_files[MAX_GBROMS][MAX_FILENAME_LEN];
+
+    //Store a list of open file pointers
+    static FIL fil[MAX_GBROMS];
+
+    //Store an array of the cluster link map table for each file.
+    //FIXME, is 32 ok or should I dynamically alloc the correct length
+    static DWORD clmt[MAX_GBROMS][32];
+
     FRESULT res;
     uint32_t sector_size;
     qspi_get_flash_properties(&sector_size, NULL);
 
+    //If FATFS isn't mounted, mount it now
     if (fs.fs_type == 0)
     {
-        printf("Mounting fs\r\n");
+        printf("Mounting fs\n");
         f_mount(&fs, "", 1);
     }
 
-    //Reset this function
-    if (gb_cart == NULL)
-    {
-        strcpy((char *)open_file, "");
-        return 0;
-    }
-
-    if (gb_cart->filename[0] == '\0')
+    //Sanity check the inputs
+    if (gb_cart == NULL || gb_cart->filename[0] == '\0' || data == NULL)
     {
         return 0;
     }
 
-    //Has file changed, open new file and build cluster link map table for fast seek
-    const char *filename = (char *)gb_cart->filename;
-    if (strcmp((const char *)open_file, filename) != 0)
+    //Find if the file is already open
+    int i = 0;
+    for (i = 0; i < MAX_GBROMS; i++)
     {
-        printf("Building cluster link map table for %s\n", filename);
-        f_close(&fil);
-        res = f_open(&fil, (const TCHAR *)filename, FA_READ);
-        if (res != FR_OK)
+        const char *filename = (char *)gb_cart->filename;
+        if (strcmp((const char *)open_files[i], filename) == 0)
         {
-            strcpy((char *)open_file, "");
+            //printf("Found file at slot %u\n", i);
+            break;
+        }
+    }
+
+    //File not already open, open it and allocate it to a free spot
+    if (i == MAX_GBROMS)
+    {
+        for (i = 0; i < MAX_GBROMS; i++)
+        {
+            const char *filename = (char *)gb_cart->filename;
+            if (open_files[i][0] == '\0')
+            {
+                printf("%s allocated at slot %u\n", filename, i);
+                strcpy((char *)open_files[i], (char *)filename);
+                break;
+            }
+        }
+        if (i == MAX_GBROMS)
+        {
+            printf("ERROR: File not opened. Too many files already open\n");
             return 0;
         }
-        fil.cltbl = clmt;
-        clmt[0] = sizeof(clmt);
-        res = f_lseek(&fil, CREATE_LINKMAP);
-        strcpy((char *)open_file, (char *)filename);
     }
 
-    //Fast seek to get sector
-    res = f_lseek(&fil, address % 4096 == 0 ? address + 1 : address);
-    if (res != FR_OK)
+    //If the file is newly opened, build cluster link map table for fast seek
+    if (fil[i].cltbl == NULL)
     {
-        printf("Seek error on %s at %08x\r\n", filename, address); //Not good!
-        strcpy((char *)open_file, "");
-        return 0;
+        const char *filename = (char *)gb_cart->filename;
+        printf("Building cluster link map table for %s\n", filename);
+        res = f_open(&fil[i], (const TCHAR *)filename, FA_READ);
+        if (res != FR_OK)
+        {
+            open_files[i][0] = '\0';
+            return 0;
+        }
+        fil[i].cltbl = clmt[i];
+        clmt[i][0] = sizeof(clmt);
+        res = f_lseek(&fil[i], CREATE_LINKMAP);
     }
 
-    //For speed, skip the fatfs f_read and read with the backend QSPI at the seeked address
-    if (data != NULL)
-        qspi_read(fil.sect * sector_size + (address % sector_size), len, data);
+    //For speed, skip the fatfs f_read/f_seek and read with the backend QSPI at the address
+    DWORD sector = clst2sect(&fs, clmt_clust(&fil[i], address));
+    qspi_read(sector * sector_size + (address % sector_size), len, data);
     return 1;
 }
 
+/*
+ * Function: Returns are array of strings for each gameboy rom (files with extension .gb and .gbc) up to max.
+ * Not speed critical
+ * ----------------------------
+ *   Returns: Number of files found.
+ *
+ *   array: array of char pointers of length greater than max.
+ *   max: Max number of gb roms to find. Function exits with max is reached.
+ */
 uint8_t n64hal_scan_flash_gbroms(char **array, int max)
 {
     FRESULT res;
@@ -159,6 +263,16 @@ uint8_t n64hal_scan_flash_gbroms(char **array, int max)
     return file_count;
 }
 
+/*
+ * Function: Backup a SRAM file to flash. This will overwrite the file if it already exists in flash.
+ * Not speed critical
+ * ----------------------------
+ *   Returns: Void
+ *
+ *   filename: The filename of the saved file
+ *   data: Pointer to the array of data to be saved
+ *   len: Number of bytes to save.
+ */
 void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len)
 {
     if (fs.fs_type == 0)
@@ -189,6 +303,16 @@ void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len)
     f_close(&fil);
 }
 
+/*
+ * Function: Restore a SRAM file from flash. This will return 0x00's if the file does not exist.
+ * Not speed critical
+ * ----------------------------
+ *   Returns: Void
+ *
+ *   filename: The filename of the saved file
+ *   data: Pointer to the array of data to be restored to
+ *   len: Number of bytes to restore.
+ */
 void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t len)
 {
     if (fs.fs_type == 0)

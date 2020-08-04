@@ -104,7 +104,7 @@ void gb_writeCartROMOnly(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *in
 
 void gb_readCartROMOnly(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuffer)
 {
-    n64hal_rom_read(tpak->gbcart, MBCAddress, outBuffer, 32);
+    n64hal_rom_fastread(tpak->gbcart, MBCAddress, outBuffer, 32);
 }
 
 /* MBC1 */
@@ -236,13 +236,13 @@ void gb_readCartMBC3(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuf
     if (MBCAddress >= 0x0000 && MBCAddress <= 0x3FFF)
     {
         cartAddress = MBCAddress;
-        n64hal_rom_read(cart, cartAddress, outBuffer, 32);
+        n64hal_rom_fastread(cart, cartAddress, outBuffer, 32);
     }
     //4000-7FFF - Cart Flash Access Banked Section.
     else if (MBCAddress >= 0x4000 && MBCAddress <= 0x7FFF)
     {
         cartAddress = (MBCAddress - 0x4000) + (tpak->currentROMBank * 0x4000);
-        n64hal_rom_read(cart, cartAddress, outBuffer, 32);
+        n64hal_rom_fastread(cart, cartAddress, outBuffer, 32);
     }
     //A000 to BFFF - Cart RAM or RTC Register Access
     else if (MBCAddress >= 0xA000 && MBCAddress <= 0xBFFF)

@@ -325,7 +325,6 @@ void loop()
                 n64_c[c].tpak->gbcart->romsize = 0;
                 n64_c[c].tpak->gbcart->ramsize = 0;
                 n64_c[c].tpak->gbcart->ram = NULL;
-                n64hal_rom_read(NULL, 0, NULL, 0);
             }
 
             /* HANDLE NEXT PERIPHERAL */
@@ -349,7 +348,7 @@ void loop()
                 gb_cart->ram = NULL;
                 //Read the ROM header
                 strcpy((char *)gb_cart->filename, settings->default_tpak_rom[c]);
-                if (n64hal_rom_read(gb_cart, 0x100, gb_header, sizeof(gb_header)))
+                if (n64hal_rom_fastread(gb_cart, 0x100, gb_header, sizeof(gb_header)))
                 {
                     //Init the gb_cart struct using header info
                     gb_initGameBoyCart(gb_cart,

@@ -28,25 +28,44 @@
 
 n64_settings *_settings = NULL;
 
+static uint8_t _calc_checksum(n64_settings *settings)
+{
+    uint8_t checksum = 0;
+    for (int i = 0; i < sizeof(n64_settings) - 1; i++)
+    {
+        checksum += ((uint8_t *)settings)[i];
+    }
+    return checksum;
+}
+
 void n64_settings_init(n64_settings *settings)
 {
-    const uint8_t _MAGIC = 0x64; //FIXME. CHECKSUM WILL BE BETTER
-    if (settings->magic != _MAGIC)
+    if (settings->checksum != _calc_checksum(settings))
     {
         printf("%s not found or invalid, setting to default\n", SETTINGS_FILENAME);
         for (int i = 0; i < MAX_CONTROLLERS; i++)
         {
-            settings->magic = _MAGIC;
+            settings->start = 0x64;
             strcpy(settings->default_tpak_rom[i], "");
             settings->deadzone[i] = 1;
             settings->sensitivity[i] = 3;
             settings->snap_axis[i] = 1;
         }
+        settings->checksum = _calc_checksum(settings);
     }
     _settings = settings;
 }
 
+void n64_settings_update_checksum(n64_settings *settings)
+{
+    settings->checksum = _calc_checksum(settings);
+}
+
 n64_settings *n64_settings_get()
 {
+    if (_settings == NULL)
+    {
+        printf("ERROR: n64_settings_get returning null. Did you init?\n");
+    }
     return _settings;
 }
