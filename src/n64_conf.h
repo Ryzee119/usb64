@@ -23,7 +23,7 @@
 #ifndef _N64_CONF_h
 #define _N64_CONF_h
 
-#define MAX_CONTROLLERS 2 //Max is 4
+#define MAX_CONTROLLERS 4 //Max is 4
 #define MAX_GBROMS 10 //ROMS over this will just get ignored
 
 /* PIN MAPPING */

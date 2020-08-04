@@ -146,14 +146,13 @@ static void tusbd_interrupt(void)
     tud_int_handler(0);
 }
 
-static int32_t ring_buffer_pos = 0;
+static uint32_t ring_buffer_pos = 0;
 static char ring_buffer[4096];
 void _putchar(char character)
 {
-    //ring_buffer[ring_buffer_pos++] = character;
-    //if (ring_buffer_pos >= sizeof(ring_buffer))
-    //    ring_buffer_pos = 0;
-    serial_port.write(character);
+    ring_buffer[ring_buffer_pos++] = character;
+    if (ring_buffer_pos >= sizeof(ring_buffer))
+        ring_buffer_pos = 0;
 }
 
 #if (MAX_CONTROLLERS >= 1)
@@ -195,15 +194,20 @@ void setup()
         BYTE work[256];
         f_mkfs("", &defopt, work, sizeof(work));
     }
-    //#define USB_DEVICE //FIX ME. HOW TO TRIGGER DEVICE?
-    #ifdef USB_DEVICE
-    attachInterruptVector(IRQ_USB1, &tusbd_interrupt);
-    tusb_init();
-    while(1)
+
+    //If holding the button down on power up, start the USB Device MSC driver
+    pinMode(USER_BUTTON_PIN, INPUT_PULLUP);
+    delay(50);
+    if (digitalRead(USER_BUTTON_PIN) == 0)
     {
-        tud_task();
+        attachInterruptVector(IRQ_USB1, &tusbd_interrupt);
+        tusb_init();
+        while (1)
+        {
+            tud_task();
+        }
     }
-    #endif
+
     usbh.begin();
     memset(ring_buffer,0xFF,sizeof(ring_buffer));
 
@@ -236,10 +240,6 @@ void setup()
     pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_4_PIN), n64_controller4_clock_edge, FALLING);
     #endif
-
-    NVIC_SET_PRIORITY(IRQ_USB1, 1);
-    NVIC_SET_PRIORITY(IRQ_GPIO6789, 3);
-    NVIC_SET_PRIORITY(IRQ_FLEXSPI2, 2);
 }
 
 static bool n64_combo = false;
@@ -249,7 +249,7 @@ void loop()
     static uint16_t n64_buttons[MAX_CONTROLLERS] = {0};
     static int32_t axis[MAX_CONTROLLERS][6] = {0};
 
-    static int32_t ring_buffer_print_pos = 0;
+    static uint32_t ring_buffer_print_pos = 0;
     while(ring_buffer[ring_buffer_print_pos] !=0xFF)
     {
         serial_port.write(ring_buffer[ring_buffer_print_pos]);
