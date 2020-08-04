@@ -48,6 +48,6 @@ jobs:
       with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: .pio/build/teensy41/firmware.hex
-          asset_name: teensy41-firmware
+          asset_name: firmware-teensy41.hex
           asset_content_type: application/hex
 
