@@ -1,5 +1,5 @@
-# USB64
-![Build](https://github.com/Ryzee119/usb64/workflows/Build/badge.svg) ![badge](https://img.shields.io/github/license/Ryzee119/usb64)  
+# usb64
+![Build](https://github.com/Ryzee119/usb64/workflows/Build/badge.svg) ![badge](https://img.shields.io/badge/license-MIT-green)  
 A project developed to use USB controllers on the Nintendo 64 console.  
 
 - [x] 4 x Simulatenous N64 controller emulation.
@@ -11,12 +11,12 @@ A project developed to use USB controllers on the Nintendo 64 console.
 - [x] USB Mass Storage driver to backup mempaks, gameboy ROMs over USB.
 
 ## Todo
-- [ ] Teensy 4.1 is overkill. Port to other platforms
-- [ ] More USB controller drivers
-- [ ] True dual analog sticks with GoldenEye and Perfect Dark
-- [ ] Additional Gameboy MBCs
+- [ ] Teensy 4.1 is overkill. Port to other platforms.
+- [ ] More USB controller drivers.
+- [ ] True dual analog sticks with GoldenEye and Perfect Dark.
+- [ ] Additional Gameboy MBCs.
 - [ ] Raspberry Pi interface or similar for all other USB controllers.
-- [ ] Gameboy Camera?
+- [ ] Gameboy Camera.
 
 ## Supported USB Controllers
 - Bluetooth 8bitdo/compatible controllers via the [8BitDo Wireless USB Adapter](https://www.8bitdo.com/wireless-usb-adapter/)
@@ -42,16 +42,35 @@ A project developed to use USB controllers on the Nintendo 64 console.
 | Case | To do |
 
 ## Compile
-To do
+### CLI (Requires python and python-pip)
+```
+git clone https://github.com/Ryzee119/usb64.git --recursive
+python -m pip install --upgrade pip
+pip install platformio
+cd usb64
+platformio run -e teensy41
+```
+### Visual Studio Code
+* Download and install [Visual Studio Code](https://code.visualstudio.com/).
+* Install the [PlatformIO IDE](https://platformio.org/platformio-ide) plugin.
+* Clone this repo recursively `git clone https://github.com/Ryzee119/usb64.git --recursive`
+* In Visual Studio Code `File > Open Folder... > usb64`
+* Hit build on the Platform IO toolbar (`✓`).
 
 ## Program
-To do
+### Teensy (using Teensy Loader)
+* Connect the Teensy to your PC using a MicroUSB cable.
+* Run the [Teensy Loader Application](https://www.pjrc.com/teensy/loader.html).
+
+### Teensy (using Visual Studio Code)
+* Setup Visual Studio Code as per the Compile instructions.
+* Hit the program button on the Platform IO toolbar (`→`).
 
 ## Install
 To do
 
 ## License and Attribution
-USB64 is shared under the [MIT license](https://github.com/Ryzee119/usb64/blob/dev/LICENSE), however this project includes code by others. Refer to the list below.
+usb64 is shared under the [MIT license](https://github.com/Ryzee119/usb64/blob/dev/LICENSE), however this project includes code by others. Refer to the list below.
 * [mpaland](https://github.com/mpaland)/**[printf](https://github.com/mpaland/printf)** shared under the [MIT License](https://github.com/mpaland/printf/blob/d3b984684bb8a8bdc48cc7a1abecb93ce59bbe3e/LICENSE).
 * [hathach](https://github.com/hathach)/**[tinyusb](https://github.com/hathach/tinyusb)** shared under the [MIT License](https://github.com/hathach/tinyusb/blob/master/LICENSE).
 * [FatFs by ChaN](http://elm-chan.org/fsw/ff/00index_e.html) shared under a [BSD-style license](https://github.com/Ryzee119/usb64/blob/dev/src/fatfs/LICENSE.txt).
