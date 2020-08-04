@@ -1,6 +1,7 @@
 # usb64
 ![Build](https://github.com/Ryzee119/usb64/workflows/Build/badge.svg) ![badge](https://img.shields.io/badge/license-MIT-green)  
 A project developed to use USB controllers on the Nintendo 64 console.  
+Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee119/usb64/releases). See programming instructions below.  
 
 - [x] 4 x Simulatenous N64 controller emulation.
 - [x] 4 x Simulatenous N64 mouse emulation (Use a USB Mouse!).
@@ -41,33 +42,11 @@ A project developed to use USB controllers on the Nintendo 64 console.
 | N64 Controller Extensions | [AliExpress](https://www.aliexpress.com/wholesale?catId=0&SearchText=n64%20controller%20extension) |
 | Case | To do |
 
-## Compile
-### CLI (Requires python and python-pip)
-```
-git clone https://github.com/Ryzee119/usb64.git --recursive
-python -m pip install --upgrade pip
-pip install platformio
-cd usb64
-platformio run -e teensy41
-```
-### Visual Studio Code
-* Download and install [Visual Studio Code](https://code.visualstudio.com/).
-* Install the [PlatformIO IDE](https://platformio.org/platformio-ide) plugin.
-* Clone this repo recursively `git clone https://github.com/Ryzee119/usb64.git --recursive`
-* In Visual Studio Code `File > Open Folder... > usb64`
-* Hit build on the Platform IO toolbar (`✓`).
-
-## Program
-### Teensy (using Teensy Loader)
-* Connect the Teensy to your PC using a MicroUSB cable.
-* Run the [Teensy Loader Application](https://www.pjrc.com/teensy/loader.html).
-
-### Teensy (using Visual Studio Code)
-* Setup Visual Studio Code as per the Compile instructions.
-* Hit the program button on the Platform IO toolbar (`→`).
+## Compile and Program
+See [COMPILE.md](https://github.com/Ryzee119/usb64/blob/dev/COMPILE.md).
 
 ## Install
-To do
+See [INSTALL.md](https://github.com/Ryzee119/usb64/blob/dev/INSTALL.md).
 
 ## License and Attribution
 usb64 is shared under the [MIT license](https://github.com/Ryzee119/usb64/blob/dev/LICENSE), however this project includes code by others. Refer to the list below.
