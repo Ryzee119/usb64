@@ -16,7 +16,7 @@ A project developed to use USB controllers on the Nintendo 64 console.
 - [ ] More USB controller drivers
 - [ ] True dual analog sticks with GoldenEye and Perfect Dark
 - [ ] Additional Gameboy MBCs
-- [ ] Raspberry Pi interface or similar for all other USB controllers
+- [ ] Raspberry Pi interface or similar for all other USB controllers.
 - [ ] Gameboy Camera?
 
 ## Supported USB Controllers
