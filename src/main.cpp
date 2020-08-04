@@ -364,7 +364,7 @@ void loop()
                         strcpy(strrchr(save_filename, '.'), ".sav");
 
                         uint8_t mbc = gb_cart->mbc;
-                        //Only the MBC has a battery, set the non volatile flag for the SRAM
+                        //Only the MBC has a battery, set the non volatile flag for the SRAM.
                         if (mbc == ROM_RAM_BAT      || mbc == ROM_RAM_BAT  ||
                             mbc == MBC1_RAM_BAT     || mbc == MBC2_BAT     ||
                             mbc == MBC3_RAM_BAT     || mbc == MBC3_TIM_BAT ||
