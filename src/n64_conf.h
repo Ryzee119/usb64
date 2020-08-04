@@ -23,15 +23,15 @@
 #ifndef _N64_CONF_h
 #define _N64_CONF_h
 
-#define MAX_CONTROLLERS 4 //Dont change this FIXME to be configurable
-#define MAX_GBROMS 10     //ROMS over this will just get ignored
+#define MAX_CONTROLLERS 2 //Max is 4
+#define MAX_GBROMS 10 //ROMS over this will just get ignored
 
 /* PIN MAPPING */
 #define N64_CONTROLLER_1_PIN 41
 #define N64_CONTROLLER_2_PIN 27
 #define N64_CONTROLLER_3_PIN 3
 #define N64_CONTROLLER_4_PIN 4
-#define USER_BUTTON_PIN 
+#define USER_BUTTON_PIN 40
 #define USER_LED_PIN 13
 
 #define MAX_FILENAME_LEN 256

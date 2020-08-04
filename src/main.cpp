@@ -49,11 +49,28 @@ n64_settings* settings;
 
 //USB Host Interface
 USBHost usbh;
+#if (MAX_CONTROLLERS >= 1)
 JoystickController joy1(usbh);
+#endif
+#if (MAX_CONTROLLERS >= 2)
 JoystickController joy2(usbh);
+#endif
+#if (MAX_CONTROLLERS >= 3)
 JoystickController joy3(usbh);
+#endif
+#if (MAX_CONTROLLERS >= 4)
 JoystickController joy4(usbh);
+#endif
+
+#if MAX_CONTROLLERS == 1
+JoystickController *gamecontroller[] = {&joy1};
+#elif MAX_CONTROLLERS == 2
+JoystickController *gamecontroller[] = {&joy1, &joy2};
+#elif MAX_CONTROLLERS == 3
+JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3};
+#elif MAX_CONTROLLERS == 4
 JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3, &joy4};
+#endif
 
 sram_storage sram[10] = {0};
 static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
@@ -139,22 +156,30 @@ void _putchar(char character)
     serial_port.write(character);
 }
 
+#if (MAX_CONTROLLERS >= 1)
 void n64_controller1_clock_edge()
 {
     n64_controller_hande_new_edge(&n64_c[0]);
 }
+#endif
+#if (MAX_CONTROLLERS >= 2)
 void n64_controller2_clock_edge()
 {
     n64_controller_hande_new_edge(&n64_c[1]);
 }
+#endif
+#if (MAX_CONTROLLERS >= 3)
 void n64_controller3_clock_edge()
 {
     n64_controller_hande_new_edge(&n64_c[2]);
 }
+#endif
+#if (MAX_CONTROLLERS >= 4)
 void n64_controller4_clock_edge()
 {
     n64_controller_hande_new_edge(&n64_c[3]);
 }
+#endif
 
 void setup()
 {
@@ -188,22 +213,33 @@ void setup()
     settings = (n64_settings *)alloc_sram(SETTINGS_FILENAME, sizeof(n64_settings), 1);
     n64_settings_init(settings);
 
+    #if (MAX_CONTROLLERS >= 1)
     n64_c[0].gpio_pin = N64_CONTROLLER_1_PIN;
-    n64_c[1].gpio_pin = N64_CONTROLLER_2_PIN;
-    n64_c[2].gpio_pin = N64_CONTROLLER_3_PIN;
-    n64_c[3].gpio_pin = N64_CONTROLLER_4_PIN;
-
     pinMode(N64_CONTROLLER_1_PIN, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_1_PIN), n64_controller1_clock_edge, FALLING);
+    #endif
+
+    #if (MAX_CONTROLLERS >= 2)
+    n64_c[1].gpio_pin = N64_CONTROLLER_2_PIN;
     pinMode(N64_CONTROLLER_2_PIN, INPUT_PULLUP);
-    //pinMode(N64_CONTROLLER_3_PIN, INPUT_PULLUP); //TODO MAP
-    //pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP); //TODO MAP
+    attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_2_PIN), n64_controller2_clock_edge, FALLING);
+    #endif
+
+    #if (MAX_CONTROLLERS >= 3)
+    n64_c[2].gpio_pin = N64_CONTROLLER_3_PIN;
+    pinMode(N64_CONTROLLER_3_PIN, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_3_PIN), n64_controller3_clock_edge, FALLING);
+    #endif
+
+    #if (MAX_CONTROLLERS >= 4)
+    n64_c[3].gpio_pin = N64_CONTROLLER_4_PIN;
+    pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_4_PIN), n64_controller4_clock_edge, FALLING);
+    #endif
+
     NVIC_SET_PRIORITY(IRQ_USB1, 1);
     NVIC_SET_PRIORITY(IRQ_GPIO6789, 3);
     NVIC_SET_PRIORITY(IRQ_FLEXSPI2, 2);
-    attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_1_PIN), n64_controller1_clock_edge, FALLING);
-    //attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_2_PIN), n64_controller2_clock_edge, FALLING);
-    //attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_3_PIN), n64_controller3_clock_edge, FALLING);
-    //attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_4_PIN), n64_controller4_clock_edge, FALLING);
 }
 
 static bool n64_combo = false;
