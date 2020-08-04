@@ -1,4 +1,5 @@
 # USB64
+![Build](https://github.com/Ryzee119/usb64/workflows/Build/badge.svg) ![badge](https://img.shields.io/github/license/Ryzee119/usb64)  
 A project developed to use USB controllers on the Nintendo 64 console.  
 **WARNING: Considered early BETA!**
 
