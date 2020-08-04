@@ -21,10 +21,8 @@ jobs:
         git submodule init src/printf
         git submodule init src/tinyusb
         git submodule update
-        ls src/tinyusb
-        ls src/tinyusb/hw
-        ls src/tinyusb/hw/mcu
-        git submodule init src/tinyusb/hw/mcu/nxp
+        cd src/tinyusb
+        git submodule init hw/mcu/nxp
         git submodule update
     - name: Set up Python
       uses: actions/setup-python@v1
