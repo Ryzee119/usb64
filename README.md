@@ -38,7 +38,7 @@ A project developed to use USB controllers on the Nintendo 64 console.
 | Teensy 4.1 | https://www.pjrc.com/store/teensy41.html |
 | USB Host Cable | https://www.pjrc.com/store/cable_usb_host_t36.html |
 | 128Mbit SPI Flash W25Q128 SOIC-8| https://www.digikey.com.au/short/zb3v27 |
-| Tactile Push Button (NO/Momentary) | https://www.digikey.com.au/short/zbdqnq |
+| Tactile Push Button (NO/Momentary) | https://www.digikey.com.au/short/z59wtp |
 | N64 Controller Extensions | [AliExpress](https://www.aliexpress.com/wholesale?catId=0&SearchText=n64%20controller%20extension) |
 | Case | To do |
 
