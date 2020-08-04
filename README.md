@@ -1,7 +1,7 @@
 # usb64
 ![Build](https://github.com/Ryzee119/usb64/workflows/Build/badge.svg) ![badge](https://img.shields.io/badge/license-MIT-green)  
 A project developed to use USB controllers on the Nintendo 64 console.  
-Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee119/usb64/releases). See programming instructions below.  
+Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee119/usb64/releases).  
 
 - [x] 4 x Simulatenous N64 controller emulation.
 - [x] 4 x Simulatenous N64 mouse emulation (Use a USB Mouse!).
