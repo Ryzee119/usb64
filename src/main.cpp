@@ -240,6 +240,8 @@ void setup()
     pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_4_PIN), n64_controller4_clock_edge, FALLING);
     #endif
+
+    NVIC_SET_PRIORITY(IRQ_USB1, 1);
 }
 
 static bool n64_combo = false;
