@@ -6,6 +6,6 @@
 	path = src/tinyusb
 	url = https://github.com/hathach/tinyusb
 
-[submodule "src/USBHost_t36"]
-	path = src/USBHost_t36
-	url = https://github.com/Ryzee119/USBHost_t36
+[submodule "src/teensy41/USBHost_t36"]
+	path = src/teensy41/USBHost_t36
+	url = https://github.com/Ryzee119/USBHost_t36.git
