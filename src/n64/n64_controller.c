@@ -175,9 +175,15 @@ void n64_controller_hande_new_edge(n64_controller *cont)
     static uint8_t peri_access = 0;
     static uint32_t bus_timer[MAX_CONTROLLERS] = {0};
 
+    //Hardcoded controller responses for indentify requests
+    static const uint8_t n64_mouse[]          = {0x02, 0x00, 0x00};
+    static const uint8_t n64_cont_no_peri[]   = {0x05, 0x00, 0x02};
+    static const uint8_t n64_cont_with_peri[] = {0x05, 0x00, 0x04};
+    static const uint8_t n64_cont_crc_error[] = {0x05, 0x00, 0x01};
+
     //If bus has been idle for 300us, start of a new stream.
     if ((n64hal_hs_tick_get() - bus_timer[cont->id]) >
-        (300 *n64hal_hs_tick_get_speed() / 1000000))
+        (300 * n64hal_hs_tick_get_speed() / 1000000))
     {
         n64_reset_stream(cont);
         peri_access = 0;
@@ -210,33 +216,17 @@ void n64_controller_hande_new_edge(n64_controller *cont)
         case N64_IDENTIFY:
         case N64_CONTROLLER_RESET:
             if (cont->isMouse)
-            {
-                cont->data_buffer[N64_DATA_POS + 0] = 0x02;
-                cont->data_buffer[N64_DATA_POS + 1] = 0x00;
-                cont->data_buffer[N64_DATA_POS + 2] = 0x00;
-            }
-            else if (cont->current_peripheral == PERI_NONE)
-            {
-                cont->data_buffer[N64_DATA_POS + 0] = 0x05;
-                cont->data_buffer[N64_DATA_POS + 1] = 0x00;
-                cont->data_buffer[N64_DATA_POS + 2] = 0x02;
-            }
+                memcpy(&cont->data_buffer[N64_DATA_POS], n64_mouse, 3);
+
+            else if (cont->current_peripheral != PERI_NONE && !cont->crc_error)
+                memcpy(&cont->data_buffer[N64_DATA_POS], n64_cont_with_peri, 3);
+
+            else if (cont->current_peripheral != PERI_NONE && cont->crc_error)
+                memcpy(&cont->data_buffer[N64_DATA_POS], n64_cont_crc_error, 3);
+
             else
-            { //Something is plugged in the peripheral slot
-                if (!cont->crc_error)
-                {
-                    cont->data_buffer[N64_DATA_POS + 0] = 0x05;
-                    cont->data_buffer[N64_DATA_POS + 1] = 0x00;
-                    cont->data_buffer[N64_DATA_POS + 2] = 0x01;
-                }
-                else
-                {
-                    cont->crc_error = 0;
-                    cont->data_buffer[N64_DATA_POS + 0] = 0x05;
-                    cont->data_buffer[N64_DATA_POS + 1] = 0x00;
-                    cont->data_buffer[N64_DATA_POS + 2] = 0x04;
-                }
-            }
+                memcpy(&cont->data_buffer[N64_DATA_POS], n64_cont_no_peri, 3);
+
             n64_wait_micros(2);
             n64_send_stream(cont->data_buffer + N64_DATA_POS, 3, cont);
             n64_reset_stream(cont);

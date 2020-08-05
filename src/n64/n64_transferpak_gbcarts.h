@@ -123,6 +123,7 @@ typedef struct
 
 //Prototypes
 void tpak_write(n64_transferpak *tp, uint16_t raw_peri_address, uint8_t *data);
+void tpak_read(n64_transferpak *tp, uint16_t raw_peri_address, uint8_t *data);
 void tpak_reset(n64_transferpak *tpak);
 
 void gb_init_cart(gameboycart *cart, uint8_t *gb_header, char *filename);
