@@ -38,6 +38,7 @@ static uint8_t _calc_checksum(n64_settings *settings)
     return checksum;
 }
 
+//*settings should be a globally available allocated block of memory
 void n64_settings_init(n64_settings *settings)
 {
     if (settings->checksum != _calc_checksum(settings))
@@ -45,11 +46,11 @@ void n64_settings_init(n64_settings *settings)
         printf("%s not found or invalid, setting to default\n", SETTINGS_FILENAME);
         for (int i = 0; i < MAX_CONTROLLERS; i++)
         {
-            settings->start = 0x64;
+            settings->start = 0x64; //N64 :)
             strcpy(settings->default_tpak_rom[i], "");
-            settings->deadzone[i] = 1;
-            settings->sensitivity[i] = 3;
-            settings->snap_axis[i] = 1;
+            settings->deadzone[i]    = DEFAULT_DEADZONE;
+            settings->sensitivity[i] = DEFAULT_SENSITIVITY;
+            settings->snap_axis[i]   = DEFAULT_SNAP;
         }
         settings->checksum = _calc_checksum(settings);
     }

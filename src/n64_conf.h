@@ -23,9 +23,10 @@
 #ifndef _N64_CONF_h
 #define _N64_CONF_h
 
-//For printf outputs
+/* DEBUGGING OUTPUT */
 #define serial_port Serial1
 
+/* N64 LIB */
 #define MAX_CONTROLLERS 4 //Max is 4
 #define MAX_GBROMS 10 //ROMS over this will just get ignored
 
@@ -37,7 +38,13 @@
 #define USER_BUTTON_PIN 40
 #define USER_LED_PIN 13
 
+/* FILESYSTEM */
 #define MAX_FILENAME_LEN 256
 #define SETTINGS_FILENAME "SETTINGS.DAT"
+
+/* FIRMWARE DEFAULTS (CONFIGURABLE DURING USE) */
+#define DEFAULT_SENSITIVITY 3 //0 to 6 (0 = low sensitivity, 6 = max)
+#define DEFAULT_DEADZONE 2    //0 to 4 (0 = no deadzone correction, 4 = max (40%))
+#define DEFAULT_SNAP 1        //0 or 1 (0 = will output raw analog stick angle, 1 will snap to 45deg angles)
 
 #endif

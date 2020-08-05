@@ -341,10 +341,12 @@ void n64_virtualpak_update(n64_mempack *vpak)
     if (current_menu == MENU_TPAK)
     {
         n64_virtualpak_write_string("TPAK SETTINGS", SUBHEADING + 2, MENU_NAME_FIELD);
-        //If you selected a row which happens to be a ROM, change the default ROM
-        if (vpak->virtual_selected_row != -1)
+        //A row has been selected
+        uint8_t selected_row = vpak->virtual_selected_row;
+        if (selected_row != -1)
         {
-            uint8_t selected_rom = vpak->virtual_selected_row - (SUBHEADING + 2);
+            //...which happens to be a ROM so change the default ROM
+            uint8_t selected_rom = selected_row - (SUBHEADING + 2);
             if (selected_rom < num_roms)
             {
                 strcpy(settings->default_tpak_rom[controller_page],
@@ -368,8 +370,44 @@ void n64_virtualpak_update(n64_mempack *vpak)
     {
         sprintf(buff, "CONTROLLER %u", controller_page + 1);
         n64_virtualpak_write_string(buff, SUBHEADING + 0, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("________________", SUBHEADING + 1, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("CONT SETTINGS",    SUBHEADING + 2, MENU_NAME_FIELD);
+        n64_virtualpak_write_string("________________", SUBHEADING + 1,  MENU_NAME_FIELD);
+        n64_virtualpak_write_string("CONT SETTINGS",    SUBHEADING + 2,  MENU_NAME_FIELD);
+
+        n64_virtualpak_write_string("SENSITIVITY+",     SUBHEADING + 4,  MENU_NAME_FIELD);
+        n64_virtualpak_write_string("SENSITIVITY-",     SUBHEADING + 5,  MENU_NAME_FIELD);
+
+        n64_virtualpak_write_string("DEADZONE+",        SUBHEADING + 7,  MENU_NAME_FIELD);
+        n64_virtualpak_write_string("DEADZONE-",        SUBHEADING + 8,  MENU_NAME_FIELD);
+
+        n64_virtualpak_write_string("SNAP TOGGLE",      SUBHEADING + 10, MENU_NAME_FIELD);
+
+        //A row has been selected, adjust settings accordingly
+        uint8_t selected_row = vpak->virtual_selected_row;
+        if (selected_row != -1)
+        {
+            if(selected_row == SUBHEADING + 4 && settings->sensitivity[controller_page] < 6)
+                 settings->sensitivity[controller_page]++;
+            if(selected_row == SUBHEADING + 5 && settings->sensitivity[controller_page] > 0)
+                 settings->sensitivity[controller_page]--;
+            if(selected_row == SUBHEADING + 7 && settings->deadzone[controller_page] < 4)
+                 settings->deadzone[controller_page]++;
+            if(selected_row == SUBHEADING + 8 && settings->deadzone[controller_page] > 0)
+                 settings->deadzone[controller_page]--;
+            if(selected_row == SUBHEADING + 10)
+                 settings->snap_axis[controller_page] ^= 1;
+            n64_settings_update_checksum(settings);
+        }
+
+        //Print the current values of each setting
+        sprintf(buff, "%04u", settings->sensitivity[controller_page]);
+        n64_virtualpak_write_string(buff, SUBHEADING + 4,  MENU_EXT_FIELD);
+
+        sprintf(buff, "%04u", settings->deadzone[controller_page]);
+        n64_virtualpak_write_string(buff, SUBHEADING + 7,  MENU_EXT_FIELD);
+
+        sprintf(buff, "%04u", settings->snap_axis[controller_page]);
+        n64_virtualpak_write_string(buff, SUBHEADING + 10,  MENU_EXT_FIELD);
+
         vpak->virtual_selected_row = -1;
     }
     vpak->virtual_update_req = 0;

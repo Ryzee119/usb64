@@ -23,14 +23,15 @@
 
 /*
  * N64 library wrapper function. The n64 library is intended to be as portable as possible within reason.
- * The hardware layer functions are provided here to hopefully make it easier to port to other microcontrollers
- * This file is provided for a Teensy4.1 using Teensyduino, an external Flash chip (access via FATFS file system)
+ * The hardware layer functions in this file are provided here to hopefully make it easier to port to other microcontrollers
+ * This file is provided for a Teensy4.1 using Teensyduino, an external Flash chip (access via FATFS file system) and
  * using the Teensy's generous internal RAM
  * 
  * Supported microcontrollers need >256kb RAM recommended, >256kb internal flash and >100Mhz clock speed or so
  * with high speed external flash (>4Mb)
  * 
  * TODO: Option to disable mempack/tpak features to remove the requirement for external flash or lots of ram
+ * TODO: Remove dependenceny on USBHOST_t36 and use TinyUSB instead (its more portable)
  */
 
 #include <stdint.h>
@@ -55,22 +56,21 @@ static DWORD clmt_clust(FIL *fp, FSIZE_t ofs)
 {
     DWORD cl, ncl, *tbl;
     FATFS *fs = fp->obj.fs;
-
-    tbl = fp->cltbl + 1;                       /* Top of CLMT */
-    cl = (DWORD)(ofs / FF_MAX_SS / fs->csize); /* Cluster order from top of the file */
+    tbl = fp->cltbl + 1;
+    cl = (DWORD)(ofs / FF_MAX_SS / fs->csize);
     for (;;)
     {
-        ncl = *tbl++; /* Number of cluters in the fragment */
-        if (ncl == 0) return 0; /* End of table? (error) */
-        if (cl < ncl) break; /* In this fragment? */
+        ncl = *tbl++;
+        if (ncl == 0) return 0;
+        if (cl < ncl) break;
         cl -= ncl;
-        tbl++; /* Next fragment */
+        tbl++;
     }
-    return cl + *tbl; /* Return the cluster number */
+    return cl + *tbl;
 }
 static LBA_t clst2sect(FATFS *fs, DWORD clst)
 {
-    clst -= 2; /* Cluster number is origin from 2 */
+    clst -= 2;
     if (clst >= fs->n_fatent - 2) return 0;
     return fs->database + (LBA_t)fs->csize * clst;
 }
