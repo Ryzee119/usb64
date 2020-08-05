@@ -21,6 +21,18 @@
  * SOFTWARE.
  */
 
+/*
+ * N64 library wrapper function. The n64 library is intended to be as portable as possible within reason.
+ * The hardware layer functions are provided here to hopefully make it easier to port to other microcontrollers
+ * This file is provided for a Teensy4.1 using Teensyduino, an external Flash chip (access via FATFS file system)
+ * using the Teensy's generous internal RAM
+ * 
+ * Supported microcontrollers need >256kb RAM recommended, >256kb internal flash and >100Mhz clock speed or so
+ * with high speed external flash (>4Mb)
+ * 
+ * TODO: Option to disable mempack/tpak features to remove the requirement for external flash or lots of ram
+ */
+
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
@@ -37,10 +49,8 @@
 
 FATFS fs;
 
-/* The following two low level functions have been copied from the FATFs ff.c file to be used in this wrapper. */
-/*-----------------------------------------------------------------------*/
-/* FAT handling - Convert offset into cluster with link map table        */
-/*-----------------------------------------------------------------------*/
+/* clmt_clust() and clst2sect() have been copied from the FATFs ff.c file to be used in this wrapper.
+   Unfortunately they are not visible outside of ff.c and I needed them :( */
 static DWORD clmt_clust(FIL *fp, FSIZE_t ofs)
 {
     DWORD cl, ncl, *tbl;
@@ -58,9 +68,6 @@ static DWORD clmt_clust(FIL *fp, FSIZE_t ofs)
     }
     return cl + *tbl; /* Return the cluster number */
 }
-/*-----------------------------------------------------------------------*/
-/* Get physical sector number from cluster number                        */
-/*-----------------------------------------------------------------------*/
 static LBA_t clst2sect(FATFS *fs, DWORD clst)
 {
     clst -= 2; /* Cluster number is origin from 2 */
@@ -77,18 +84,29 @@ static LBA_t clst2sect(FATFS *fs, DWORD clst)
  *   h: Pointer to an hour value (0-23)
  *   m: Pointer to a minute value (0-59)
  *   s: Pointer to a second value (0-59)
+ *   dst: Returns 1 if day light savings is active
  */
 void n64hal_rtc_read(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst)
 {
 }
 
+/*
+ * Function: Writes to a hardware realtime clock with day,h,m,s,dst
+ * ----------------------------
+ *   Returns void
+ *
+ *   day: Pointer to a day value (0-6)
+ *   h: Pointer to an hour value (0-23)
+ *   m: Pointer to a minute value (0-59)
+ *   s: Pointer to a second value (0-59)
+ *   dst: Write 1 to enable day light savings
+ */
 void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst)
 {
 }
 
 /*
  * Function: Reads a packet of data from src and places it in rxdata of length len.
- * If using external RAM, this can read from external memory etc.
  * Speed critical!
  * ----------------------------
  *   Returns void
@@ -108,7 +126,6 @@ void n64hal_sram_read(uint8_t *rxdata, uint8_t *src, uint16_t address, uint16_t 
 
 /*
  * Function: Writes a packet of data from txdata to dest of length len.
- * If using external RAM, this can write to external memory etc.
  * Speed critical!
  * ----------------------------
  *   Returns void
@@ -127,15 +144,15 @@ void n64hal_sram_write(uint8_t *txdata, uint8_t *dest, uint16_t address, uint16_
 }
 
 /*
- * Function: Reads a packet of data from a gameboy cart ROM located in external flash memory
+ * Function: Reads a packet of data from a gameboy cart ROM indicated by gb_cart.
  * Speed critical!
  *
  * ----------------------------
  *   Returns void
  *
- *   gb_cart: Pointer to the gb_cart object
- *   address: The address offset of the gb rom
- *   data: Pointer to the destination array
+ *   gb_cart: Pointer to the gb_cart object to read.
+ *   address: The address offset of the gb rom. 0 being the start of the ROM.
+ *   data: Pointer to the destination array.
  *   len: Length of data to read in bytes.
  */
 uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *data, uint32_t len)
@@ -227,15 +244,15 @@ uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *dat
 }
 
 /*
- * Function: Returns are array of strings for each gameboy rom (files with extension .gb and .gbc) up to max.
+ * Function: Returns are array of strings for each gameboy rom available to the system up to max.
  * Not speed critical
  * ----------------------------
- *   Returns: Number of files found.
+ *   Returns: Number of gb roms available.
  *
  *   array: array of char pointers of length greater than max.
  *   max: Max number of gb roms to find. Function exits with max is reached.
  */
-uint8_t n64hal_scan_flash_gbroms(char **array, int max)
+uint8_t n64hal_scan_for_gbroms(char **array, int max)
 {
     FRESULT res;
     DIR dir;
@@ -264,8 +281,7 @@ uint8_t n64hal_scan_flash_gbroms(char **array, int max)
 }
 
 /*
- * Function: Backup a SRAM file to flash. This will overwrite the file if it already exists in flash.
- * Not speed critical
+ * Function: Backup a SRAM file to non-volatile storage.
  * ----------------------------
  *   Returns: Void
  *
@@ -275,6 +291,8 @@ uint8_t n64hal_scan_flash_gbroms(char **array, int max)
  */
 void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len)
 {
+    //This function will overwrite the file if it already exists.
+
     if (fs.fs_type == 0)
     {
         printf("Mounting fs\r\n");
@@ -304,7 +322,7 @@ void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len)
 }
 
 /*
- * Function: Restore a SRAM file from flash. This will return 0x00's if the file does not exist.
+ * Function: Restore a SRAM file from non-volatile storage. This will return 0x00's if the file does not exist.
  * Not speed critical
  * ----------------------------
  *   Returns: Void
@@ -345,27 +363,63 @@ void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t le
     f_close(&fil);
 }
 
-static uint32_t clock_count = 0;
+/*
+ * Function: Enable a high speed clock (>20Mhz or so) which is used for low level accurate timings.
+ * Timer range should be atleast 32-bit.
+ * Not speed critical
+ * ----------------------------
+ *   Returns: Void
+ */
 void n64hal_hs_tick_init()
 {
     ARM_DWT_CTRL |= ARM_DWT_CTRL_CYCCNTENA;
 }
 
+/*
+ * Function: Returns to clock rate of the high speed clock in Hz.
+ * Speed critical!
+ * ----------------------------
+ *   Returns: The rate of the high speed clock in Hz
+ */
 uint32_t n64hal_hs_tick_get_speed()
 {
     return F_CPU;
 }
 
+/*
+ * Function: Resets the value of the high speed clock.
+ * Calling n64hal_hs_tick_get() instantanously (hypothetically) after this would return 0.
+ * Speed critical!
+ * ----------------------------
+ *   Returns: Void
+ */
+static uint32_t clock_count = 0;
 void n64hal_hs_tick_reset()
 {
     clock_count = ARM_DWT_CYCCNT;
 }
 
+/*
+ * Function: Get the current value of the high speed clock.
+ * Speed critical!
+ * ----------------------------
+ *   Returns: Number of clock ticks since n64hal_hs_tick_reset()
+ */
 uint32_t n64hal_hs_tick_get()
 {
     return ARM_DWT_CYCCNT - clock_count;
 }
 
+/*
+ * Function: Flips the gpio pin direction from an output (driven low) to an input (pulled up)
+ *           for the controller passed by controller.
+ * Speed critical!
+ * ----------------------------
+ *   Returns: void
+ *
+ *   controller: Pointer to the n64 controller struct which contains the gpio mapping
+ *   val: N64_OUTPUT or N64_INPUT
+ */
 void n64hal_input_swap(n64_controller *controller, uint8_t val)
 {
     switch (val)
@@ -380,6 +434,14 @@ void n64hal_input_swap(n64_controller *controller, uint8_t val)
     }
 }
 
+/*
+ * Function: Returns the data line level for the n64 controller passed to this function.
+ * Speed critical!
+ * ----------------------------
+ *   Returns: 1 of the line if high, or 0 if the line is low.
+ *
+ *   controller: Pointer to the n64 controller struct which contains the gpio mapping
+ */
 uint8_t n64hal_input_read(n64_controller *controller)
 {
     return digitalRead(controller->gpio_pin);

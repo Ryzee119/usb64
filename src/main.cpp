@@ -253,6 +253,7 @@ void loop()
     static uint16_t n64_buttons[MAX_CONTROLLERS] = {0};
     static int32_t axis[MAX_CONTROLLERS][6] = {0};
 
+    //Flush the ring buffer
     static uint32_t ring_buffer_print_pos = 0;
     while(ring_buffer[ring_buffer_print_pos] !=0xFF)
     {

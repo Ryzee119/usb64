@@ -16,7 +16,7 @@ jobs:
       run: |
         # Instead of recursively cloning the repo, I manually checkout each submodule as required
         # TinyUSB is a huge repo otherwise.
-        git submodule init src/USBHost_t36
+        git submodule init src/teensy41/USBHost_t36
         git submodule init src/printf
         git submodule init src/tinyusb
         git submodule update

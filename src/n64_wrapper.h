@@ -34,25 +34,24 @@ extern "C" {
 #define N64_OUTPUT 1
 #define N64_INPUT 2
 
-    uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *data, uint32_t len);
-    void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len);
-    void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t len);
-    void n64hal_sram_read(uint8_t *rxdata, uint8_t *src, uint16_t address, uint16_t len);
-    void n64hal_sram_write(uint8_t *txdata, uint8_t *dest, uint16_t address, uint16_t len);
-    void n64hal_rtc_read(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
-    void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
-    uint8_t n64hal_scan_flash_gbroms(char** array, int max);
+uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *data, uint32_t len);
+void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len);
+void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t len);
+void n64hal_sram_read(uint8_t *rxdata, uint8_t *src, uint16_t address, uint16_t len);
+void n64hal_sram_write(uint8_t *txdata, uint8_t *dest, uint16_t address, uint16_t len);
+void n64hal_rtc_read(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
+void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
+uint8_t n64hal_scan_for_gbroms(char** array, int max);
 
 
-    //High speed counter used for bit bang timing precision of N64 protocol output
-    //This clock needs to be count at >20Mhz as a minimum probably.
-    uint32_t n64hal_hs_tick_get_speed();
-    void n64hal_hs_tick_init();
-    void n64hal_hs_tick_reset();
-    uint32_t n64hal_hs_tick_get();
 
-    void n64hal_input_swap(n64_controller *controller, uint8_t val);
-    uint8_t n64hal_input_read(n64_controller *controller);
+uint32_t n64hal_hs_tick_get_speed();
+void n64hal_hs_tick_init();
+void n64hal_hs_tick_reset();
+uint32_t n64hal_hs_tick_get();
+
+void n64hal_input_swap(n64_controller *controller, uint8_t val);
+uint8_t n64hal_input_read(n64_controller *controller);
 
 #ifdef __cplusplus
 }

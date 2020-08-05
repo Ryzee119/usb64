@@ -238,7 +238,7 @@ void n64_virtualpak_init(n64_mempack *vpak)
         gbrom_titlenames[i] = NULL;
     }
 
-    num_roms = n64hal_scan_flash_gbroms(gbrom_filenames, MAX_GBROMS);
+    num_roms = n64hal_scan_for_gbroms(gbrom_filenames, MAX_GBROMS);
 
     //For each ROM, extract the ROM info and rom title
     for (int i = 0; i < num_roms; i++)
