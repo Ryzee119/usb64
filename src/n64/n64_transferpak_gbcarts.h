@@ -107,14 +107,14 @@ typedef struct
 
 typedef struct
 {
-    uint8_t powerState;         //Writing 0x84 to 0x8001 turns this on. Writing 0xFE to 0x8001 turns this off
-    uint8_t accessState;        //Writing 0x01 to 0xB010 turns this on. Writing 0x00 to 0xB010 turns this off.
-    uint8_t accessStateChanged; //This is set if the accessState was just changed.
-    uint8_t currentRAMBank;
-    uint8_t currentROMBank;
-    uint8_t currentMBCBank; //Banks to access the overall MBC space. 0x0000 up to 0x7FFF.
-    uint8_t ramEnabled;     //0x00 Disabled, 0x0A Enabled
-    uint8_t bankingMode;    //0x00 ROM Banking Mode:
+    uint8_t power_state;         //Writing 0x84 to 0x8001 turns this on. Writing 0xFE to 0x8001 turns this off
+    uint8_t access_state;        //Writing 0x01 to 0xB010 turns this on. Writing 0x00 to 0xB010 turns this off.
+    uint8_t access_state_changed; //This is set if the access_state was just changed.
+    uint8_t current_ram_bank;
+    uint8_t current_rom_bank;
+    uint8_t current_mbc_bank; //Banks to access the overall MBC space. 0x0000 up to 0x7FFF.
+    uint8_t ram_enabled;     //0x00 Disabled, 0x0A Enabled
+    uint8_t banking_mode;    //0x00 ROM Banking Mode:
                             //When 0x00, 0x4000 is the RAM Bank Number from 00 to 03),
                             //When 0x01 RAM Banking Mode (The RAM Bank is used as the two upper bits of the ROM Bank)
     gameboycart *gbcart;
@@ -122,26 +122,10 @@ typedef struct
 } n64_transferpak;
 
 //Prototypes
-void gb_initGameBoyCart(gameboycart *cart, uint8_t *gb_header, char *filename);
-uint32_t gb_getRomSize(uint8_t rom_type);
-uint32_t gb_getSramSize(uint8_t sram_type, uint8_t mbc_type);
-
-void gb_writeCartROMOnly(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *inBuffer);
-void gb_writeCartMBC1(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *inBuffer);
-void gb_writeCartMBC2(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *inBuffer);
-void gb_writeCartMBC3(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *inBuffer);
-void gb_writeCartMBC4(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *inBuffer);
-void gb_writeCartMBC5(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *inBuffer);
-
-void gb_readCartROMOnly(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuffer);
-void gb_readCartMBC1(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuffer);
-void gb_readCartMBC2(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuffer);
-void gb_readCartMBC3(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuffer);
-void gb_readCartMBC4(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuffer);
-void gb_readCartMBC5(uint16_t MBCAddress, n64_transferpak *tpak, uint8_t *outBuffer);
-
-uint16_t tpak_getMBCAddress(uint16_t tpakAddress, uint8_t bank);
+void tpak_write(n64_transferpak *tp, uint16_t raw_peri_address, uint8_t *data);
 void tpak_reset(n64_transferpak *tpak);
+
+void gb_init_cart(gameboycart *cart, uint8_t *gb_header, char *filename);
 
 #ifdef __cplusplus
 }

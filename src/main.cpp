@@ -43,7 +43,6 @@ typedef struct
     int non_volatile;
 } sram_storage;
 
-#define serial_port Serial1
 n64_controller n64_c[MAX_CONTROLLERS];
 n64_settings* settings;
 
@@ -72,6 +71,11 @@ JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3};
 JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3, &joy4};
 #endif
 
+
+//This function allocates and manages SRAM for mempak and gameboy roms (tpak) for the system.
+//SRAM is malloced into slots. Each slot stores a pointer to the memory location, its size, and
+//a string name to identify what that slot is used for.
+//A flag is set to determine wether that memory is non volatile and should be backed up/restored from flash.
 sram_storage sram[10] = {0};
 static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
 {
@@ -83,7 +87,6 @@ static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
     {
         if (strcmp(sram[i].name, (const char *)name) == 0)
         {
-            printf("SRAM already malloced at slot %u\n", i);
             //Already malloced, check len is ok
             if (sram[i].len <= alloc_len)
                 return sram[i].data;
@@ -100,8 +103,8 @@ static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
     {
         if (sram[i].len == 0)
         {
-            printf("SRAM slot %u is free, allocating %u bytes\n", i, alloc_len);
             sram[i].data = (uint8_t *)malloc(alloc_len);
+            if (sram[i].data == NULL) break;
             sram[i].len = alloc_len;
             strcpy(sram[i].name, name);
             if(non_volatile)
@@ -119,33 +122,30 @@ static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
             return sram[i].data;
         }
     }
-    //Not allocated, or no spots left. You need to flush RAM to Flash
-    printf("No SRAM allocs left. Flush RAM to Flash!\n");
+    printf("ERROR: No SRAM space or slots left. Flush RAM to Flash!\n");
     return NULL;
 }
 
+//Flush SRAM to flash memory if the non volatile flag is set
 static void flush_sram()
 {
     for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
     {
-        if(sram[i].len == 0)
+        if(sram[i].len == 0 || sram[i].data == NULL || sram[i].non_volatile == 0)
             continue;
-
-        if(sram[i].data == NULL)
-            continue;
-
-        if(sram[i].non_volatile == 0)
-            continue;
-
         n64hal_sram_backup_to_file((uint8_t*)sram[i].name, sram[i].data, sram[i].len);
     }
 }
 
+
+//TinyUSB interrupt handler (Used for CDC and MSC)
 static void tusbd_interrupt(void)
 {
     tud_int_handler(0);
 }
 
+//Ring buffer is used to buffer printf outputs to the terminal
+//Printing to the serial port is handles in main()
 static uint32_t ring_buffer_pos = 0;
 static char ring_buffer[4096];
 void _putchar(char character)
@@ -182,14 +182,17 @@ void n64_controller4_clock_edge()
 
 void setup()
 {
-    serial_port.begin(9600);
+    //Init the serial port and ring buffer
+    serial_port.begin(115200);
+    memset(ring_buffer,0xFF,sizeof(ring_buffer));
+
     //Check that the flash chip is formatted for FAT access
     //If it's not, format it! Should only happen once
     extern FATFS fs; 
     qspi_init(NULL, NULL);
     if (f_mount(&fs, "", 1) != FR_OK)
     {
-        printf("Error mounting, probably not formatted correctly. Formatting flash...\n");
+        printf("ERROR: Could not mount FATFS, probably not formatted correctly. Formatting flash...\n");
         MKFS_PARM defopt = {FM_FAT, 1, 0, 0, 4096};
         BYTE work[256];
         f_mkfs("", &defopt, work, sizeof(work));
@@ -209,7 +212,6 @@ void setup()
     }
 
     usbh.begin();
-    memset(ring_buffer,0xFF,sizeof(ring_buffer));
 
     n64_init_subsystem(n64_c);
 
@@ -350,15 +352,9 @@ void loop()
             if (n64_c[c].current_peripheral == PERI_NONE)
                 break;
 
-            /* HANDLE CURRENT PERIPHERAL */
-            //Changing peripheral from MEMPAK
-            if (n64_c[c].current_peripheral == PERI_MEMPAK)
-            {
-                n64_c[c].mempack->data = NULL;
-            }
-
-            //Changing peripheral from TPAK
-            if (n64_c[c].current_peripheral == PERI_TPAK)
+            /* CLEAR CURRENT PERIPHERALS */
+            n64_c[c].mempack->data = NULL;
+            if (n64_c[c].tpak->gbcart != NULL)
             {
                 n64_c[c].tpak->gbcart->romsize = 0;
                 n64_c[c].tpak->gbcart->ramsize = 0;
@@ -372,14 +368,14 @@ void loop()
             if (n64_buttons[c] & N64_LB)
             {
                 n64_c[c].next_peripheral = PERI_RUMBLE;
-                printf("Changing controller %u's peripheral to rumblepak\n", c);
+                printf("C%u to rpak\n", c);
             }
 
             //Changing peripheral to TPAK
             if (n64_buttons[c] & N64_RB)
             {
                 n64_c[c].next_peripheral = PERI_TPAK;
-                printf("Changing controller %u's peripheral to tpak\n", c);
+                printf("C%u to tpak\n", c);
 
                 gameboycart *gb_cart = n64_c[c].tpak->gbcart;
                 uint8_t gb_header[0x100];
@@ -389,7 +385,7 @@ void loop()
                 if (n64hal_rom_fastread(gb_cart, 0x100, gb_header, sizeof(gb_header)))
                 {
                     //Init the gb_cart struct using header info
-                    gb_initGameBoyCart(gb_cart,
+                    gb_init_cart(gb_cart,
                                        gb_header,
                                        settings->default_tpak_rom[c]);
 
@@ -402,6 +398,7 @@ void loop()
                         strcpy(strrchr(save_filename, '.'), ".sav");
 
                         uint8_t mbc = gb_cart->mbc;
+                        uint8_t volatile_flag = 0;
                         //Only the MBC has a battery, set the non volatile flag for the SRAM.
                         if (mbc == ROM_RAM_BAT      || mbc == ROM_RAM_BAT  ||
                             mbc == MBC1_RAM_BAT     || mbc == MBC2_BAT     ||
@@ -409,14 +406,12 @@ void loop()
                             mbc == MBC3_TIM_RAM_BAT || mbc == MBC4_RAM_BAT ||
                             mbc == MBC5_RAM_BAT     || mbc == MBC5_RUM_RAM_BAT)
                         {
-                            gb_cart->ram = alloc_sram(save_filename, gb_cart->ramsize, 1);
+                            volatile_flag = 1;
                         }
-                        else
-                        {
-                            gb_cart->ram = alloc_sram(save_filename, gb_cart->ramsize, 0);
-                        }
+
+                        gb_cart->ram = alloc_sram(save_filename, gb_cart->ramsize, volatile_flag);
                         if (gb_cart->ram == NULL)
-                            printf("ERROR: Could not alloc memory for %s\n", save_filename);
+                            n64_c[c].next_peripheral = PERI_RUMBLE; //Error, set to rumblepak
                     }
                 }
                 else
@@ -436,12 +431,12 @@ void loop()
 
                 //Allocate mempack based on combo if available
                 int8_t mempak_bank = 0;
-                uint16_t dpad = n64_buttons[c];
-                (dpad & N64_DU) ? mempak_bank = 0 : (0);
-                (dpad & N64_DR) ? mempak_bank = 1 : (0);
-                (dpad & N64_DD) ? mempak_bank = 2 : (0);
-                (dpad & N64_DL) ? mempak_bank = 3 : (0);
-                (dpad & N64_ST) ? mempak_bank = VIRTUAL_PAK : (0);
+                uint16_t b = n64_buttons[c];
+                (b & N64_DU) ? mempak_bank = 0 : (0);
+                (b & N64_DR) ? mempak_bank = 1 : (0);
+                (b & N64_DD) ? mempak_bank = 2 : (0);
+                (b & N64_DL) ? mempak_bank = 3 : (0);
+                (b & N64_ST) ? mempak_bank = VIRTUAL_PAK : (0);
                 
                 //Create the filename
                 uint8_t filename[32];
@@ -452,12 +447,12 @@ void loop()
                 {
                     if (n64_c[i].mempack->id == mempak_bank && mempak_bank != VIRTUAL_PAK)
                     {
-                        printf("Mempak already in use by controller setting to rumble %u\n", i);
+                        printf("WARNING: Mempak already in use by controller setting to rumble %u\n", i);
                         n64_c[c].next_peripheral = PERI_RUMBLE;
                     }
                 }
 
-                //Mempack wasn't in use
+                //Mempack wasn't in use, so allocate it in ram
                 if (n64_c[c].next_peripheral != PERI_RUMBLE && mempak_bank != VIRTUAL_PAK)
                 {
                     n64_c[c].mempack->data = alloc_sram((const char *)filename, MEMPAK_SIZE, 1);
@@ -465,20 +460,23 @@ void loop()
 
                 if (n64_c[c].mempack->data != NULL)
                 {
-                    printf("Changing controller %u's peripheral to mempak %u\n", c, mempak_bank);
+                    printf("C%u to mpak %u\n", c, mempak_bank);
                     n64_c[c].mempack->virtual_is_active = 0;
+                }
+                else
+                {
+                    n64_c[c].next_peripheral = PERI_RUMBLE; //Error, set to rumblepak
                 }
 
                 if (mempak_bank == VIRTUAL_PAK)
                 {
-
                     n64_virtualpak_init(n64_c[c].mempack);
                 }
             }
             timer_peri_change[c] = millis();
         }
 
-        //We simulate a peripheral change time. The peripheral goes to NONE
+        //Simulate a peripheral change time. The peripheral goes to NONE
         //for a short period. Some games need this.
         if (n64_c[c].current_peripheral == PERI_NONE &&
             (millis() - timer_peri_change[c]) > 750)
@@ -486,16 +484,24 @@ void loop()
             n64_c[c].current_peripheral = n64_c[c].next_peripheral;
         }
 
+        //Update the virtual pak if required
         if (n64_c[c].mempack->virtual_update_req == 1)
         {
             n64_virtualpak_update(n64_c[c].mempack);
         }
 
-        if (n64_combo && (n64_buttons[c] & (N64_A | N64_B)))
+        //If you pressed the combo to flush sram to flash, handle it here
+        static uint8_t flushing = 0;
+        if (n64_combo && (n64_buttons[c] & (N64_A | N64_B)) && !flushing)
         {
             printf("Flushing SRAM to Flash!\n");
             flush_sram();
-            delay(1000);
+            flushing = 1;
         }
+        else
+        {
+            flushing = 0;
+        }
+
     } //END FOR LOOP
 } // MAIN LOOP
