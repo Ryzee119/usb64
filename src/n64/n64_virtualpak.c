@@ -355,13 +355,13 @@ void n64_virtualpak_update(n64_mempack *vpak)
             }
         }
 
-        //Print a * next to the selected ROM
+        //Print a * next to the selected ROM. //FIXME. I think this will cause a bug with two roms with the same title
         for (int i = 0; i < num_roms; i++)
         {
             n64_virtualpak_write_string(gbrom_titlenames[i], SUBHEADING + 2 + i, MENU_NAME_FIELD);
             //This ROM matches default!
             if (strcmp(gbrom_filenames[i], settings->default_tpak_rom[controller_page]) == 0)
-                n64_virtualpak_write_string("*", SUBHEADING + 2 + i, MENU_EXT_FIELD);
+                n64_virtualpak_write_string("****", SUBHEADING + 2 + i, MENU_EXT_FIELD);
         }
         vpak->virtual_selected_row = -1;
     }
