@@ -38,6 +38,8 @@
 
 #define MENU_TPAK MENU_LINE4
 #define MENU_CONTROLLER_SETTINGS MENU_LINE5
+#define MENU_INFO0 MENU_LINE6
+#define MENU_INFO1 MENU_LINE7
 
 #define CHANGE_CONTROLLER MENU_LINE15
 #define MENU_MAIN MENU_LINE16
@@ -49,6 +51,9 @@ static char buff[64];
 static uint8_t num_roms = 0;
 static char *gbrom_filenames[MAX_GBROMS] = {NULL};  //Gameboy ROM file name list
 static char *gbrom_titlenames[MAX_GBROMS] = {NULL}; //Gameboy ROM cart title list
+
+char info_text_0[256];
+char info_text_1[256];
 
 //First 32 bytes of mempak. First byte must be 0x81. This small section is in RAM as the console writes to it
 uint8_t n64_virtualpak_scratch[0x20] = {
@@ -330,9 +335,17 @@ void n64_virtualpak_update(n64_mempack *vpak)
         case MENU_CONTROLLER_SETTINGS:
             current_menu = MENU_CONTROLLER_SETTINGS;
             break;
+        case MENU_INFO0:
+            current_menu = MENU_INFO0;
+            break;
+        case MENU_INFO1:
+            current_menu = MENU_INFO1;
+            break;
         default:
             n64_virtualpak_write_string("TPAK SETTINGS", MENU_TPAK, MENU_NAME_FIELD);
             n64_virtualpak_write_string("CONT SETTINGS", MENU_CONTROLLER_SETTINGS, MENU_NAME_FIELD);
+            n64_virtualpak_write_string("USB64 INFO1", MENU_INFO0, MENU_NAME_FIELD);
+            n64_virtualpak_write_string("USB64 INFO2", MENU_INFO1, MENU_NAME_FIELD);
             break;
         }
         vpak->virtual_selected_row = -1;
@@ -410,5 +423,48 @@ void n64_virtualpak_update(n64_mempack *vpak)
 
         vpak->virtual_selected_row = -1;
     }
+
+    if (current_menu == MENU_INFO0 || current_menu == MENU_INFO1)
+    {
+        n64_virtualpak_write_string("INFO PAGE", SUBHEADING + 2, MENU_NAME_FIELD);
+        char *msg = NULL;
+        char line_text[17] = {0};
+        uint8_t pos = 0;
+        uint8_t line = SUBHEADING + 3;
+
+        if(current_menu == MENU_INFO0)
+            msg = info_text_0;
+        if(current_menu == MENU_INFO1)
+            msg = info_text_1;
+
+        while(msg && pos < sizeof(info_text_0))
+        {
+            //On a line break or end of line print that line and prep to print on next line
+            if ((*msg == '\n' || pos == 16) && line < 15)
+            {
+                n64_virtualpak_write_string(line_text, line, MENU_NAME_FIELD);
+                memset(line_text, 0x00, sizeof(line_text));
+                line += 1;
+                pos = 0;
+            }
+            else if (pos < 16)
+            {
+                line_text[pos++] = *msg;
+            }
+            msg++;
+        }
+        vpak->virtual_selected_row = -1;
+    }
+
     vpak->virtual_update_req = 0;
+}
+
+void n64_virtualpak_write_info_1(char* msg)
+{
+    strncpy(info_text_0, msg, sizeof(info_text_0));
+}
+
+void n64_virtualpak_write_info_2(char* msg)
+{
+    strncpy(info_text_1, msg, sizeof(info_text_1));
 }

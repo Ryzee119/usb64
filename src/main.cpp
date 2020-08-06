@@ -488,6 +488,17 @@ void loop()
         //Update the virtual pak if required
         if (n64_c[c].mempack->virtual_update_req == 1)
         {
+            char msg[256];
+            snprintf(msg, sizeof(msg),
+            "0x%04x/0x%04x\n%s\n%s\n"
+            "0x%04x/0x%04x\n%s\n%s\n"
+            "0x%04x/0x%04x\n%s\n%s\n"
+            "0x%04x/0x%04x\n%s\n%s\n",
+            joy1.idVendor(), joy1.idProduct(), joy1.manufacturer(), joy1.product(),
+            joy2.idVendor(), joy2.idProduct(), joy2.manufacturer(), joy2.product(),
+            joy3.idVendor(), joy3.idProduct(), joy3.manufacturer(), joy3.product(),
+            joy4.idVendor(), joy4.idProduct(), joy4.manufacturer(), joy4.product());
+            n64_virtualpak_write_info_1(msg);
             n64_virtualpak_update(n64_c[c].mempack);
         }
 

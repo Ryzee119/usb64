@@ -52,6 +52,8 @@ void n64_virtualpak_init(n64_mempack *vpak);
 void n64_virtualpak_update(n64_mempack *vpak);
 void n64_virtualpak_read32(uint16_t address, uint8_t *rx_buff);
 void n64_virtualpak_write32(uint16_t address, uint8_t *tx_buff);
+void n64_virtualpak_write_info_1(char* msg);
+void n64_virtualpak_write_info_2(char* msg);
 
 #ifdef __cplusplus
 }
