@@ -34,7 +34,7 @@
 
 /* N64 LIB */
 #define MAX_CONTROLLERS 4 //Max is 4
-#define MAX_GBROMS 10 //ROMS over this will just get ignored
+#define MAX_GBROMS 10 //ROMS over this will just get ignored FIXME: This uses ALOT of ram
 
 /* PIN MAPPING */
 #define N64_CONTROLLER_1_PIN 41

@@ -38,10 +38,10 @@
 //cause issues
 //#define USE_N64_ADDRESS_CRC
 
-n64_rumblepak n64_rpak[4];
-n64_mempack n64_mpack[4];
-n64_transferpak n64_tpak[4];
-gameboycart gb_cart[4];
+n64_rumblepak n64_rpak[MAX_CONTROLLERS];
+n64_mempack n64_mpack[MAX_CONTROLLERS];
+n64_transferpak n64_tpak[MAX_CONTROLLERS];
+gameboycart gb_cart[MAX_CONTROLLERS];
 
 void n64_init_subsystem(n64_controller *controllers)
 {
