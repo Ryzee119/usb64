@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "printf.h"
-#include "n64_conf.h"
+#include "usb64_conf.h"
 #include "n64_mempak.h"
 #include "n64_virtualpak.h"
 #include "n64_rumblepak.h"
@@ -176,10 +176,10 @@ void n64_controller_hande_new_edge(n64_controller *cont)
     static uint32_t bus_timer[MAX_CONTROLLERS] = {0};
 
     //Hardcoded controller responses for indentify requests
-    static const uint8_t n64_mouse[]          = {0x02, 0x00, 0x00};
-    static const uint8_t n64_cont_no_peri[]   = {0x05, 0x00, 0x02};
-    static const uint8_t n64_cont_with_peri[] = {0x05, 0x00, 0x04};
-    static const uint8_t n64_cont_crc_error[] = {0x05, 0x00, 0x01};
+    static uint8_t n64_mouse[]          = {0x02, 0x00, 0x00};
+    static uint8_t n64_cont_no_peri[]   = {0x05, 0x00, 0x02};
+    static uint8_t n64_cont_with_peri[] = {0x05, 0x00, 0x01};
+    static uint8_t n64_cont_crc_error[] = {0x05, 0x00, 0x04};
 
     //If bus has been idle for 300us, start of a new stream.
     if ((n64hal_hs_tick_get() - bus_timer[cont->id]) >
@@ -227,8 +227,9 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             else
                 memcpy(&cont->data_buffer[N64_DATA_POS], n64_cont_no_peri, 3);
 
+            cont->crc_error = 0;
             n64_wait_micros(2);
-            n64_send_stream(cont->data_buffer + N64_DATA_POS, 3, cont);
+            n64_send_stream(&cont->data_buffer[N64_DATA_POS], 3, cont);
             n64_reset_stream(cont);
             break;
 
@@ -263,7 +264,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             if (!n64_compare_addr_crc(peri_address))
             {
                 cont->crc_error = 1;
-                printf("ERROR: Address CRC Error %04x\r\n", peri_address);
+                debug_print_error("ERROR: Address CRC Error %04x\r\n", peri_address);
             }
 
             peri_address &= 0xFFE0;
@@ -347,7 +348,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                 }
                 else
                 {
-                    printf("Error: Unknown access command 0x%02x\n", cont->data_buffer[N64_DATA_POS]);
+                    debug_print_error("ERROR: Unknown access command 0x%02x\n", cont->data_buffer[N64_DATA_POS]);
                 }
             }
 
@@ -413,7 +414,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             if (!n64_compare_addr_crc(peri_address))
             {
                 cont->crc_error = 1;
-                printf("Address CRC Error %04x\r\n", peri_address);
+                debug_print_error("ERROR: Address CRC Error %04x\r\n", peri_address);
             }
 #endif
 

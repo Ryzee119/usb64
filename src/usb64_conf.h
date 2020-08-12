@@ -20,11 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef _N64_CONF_h
-#define _N64_CONF_h
+#ifndef _USB64_CONF_h
+#define _USB64_CONF_h
 
 /* DEBUGGING OUTPUT */
 #define serial_port Serial1
+#define DEBUG_STATUS 0 //General prints
+#define DEBUG_N64 0 //For debugging N64 low level info
+#define DEBUG_USBHOST 0 //For debugging the USB Host Stack
+#define DEBUG_TINYUSB 0 //For debugging the USB Device Stack (MSC and CDC)
+#define DEBUG_FATFS 0 //For debugging the FATFS filesystem
+#define DEBUG_ERROR 1 //For showing critical errors
 
 /* N64 LIB */
 #define MAX_CONTROLLERS 4 //Max is 4
@@ -43,8 +49,16 @@
 #define SETTINGS_FILENAME "SETTINGS.DAT"
 
 /* FIRMWARE DEFAULTS (CONFIGURABLE DURING USE) */
-#define DEFAULT_SENSITIVITY 3 //0 to 6 (0 = low sensitivity, 6 = max)
+#define DEFAULT_SENSITIVITY 2 //0 to 4 (0 = low sensitivity, 4 = max)
 #define DEFAULT_DEADZONE 2    //0 to 4 (0 = no deadzone correction, 4 = max (40%))
 #define DEFAULT_SNAP 1        //0 or 1 (0 = will output raw analog stick angle, 1 will snap to 45deg angles)
+#define SNAP_RANGE 10         //+/- what angle range will snap. 10 will be +/-10 degrees from a 45 degree angle
 
+#include "printf.h"
+#define debug_print_status(fmt, ...)     do { if (DEBUG_STATUS)  printf(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_n64(fmt, ...)        do { if (DEBUG_N64)     printf(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_usbhost(fmt, ...)    do { if (DEBUG_USBHOST) printf(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_tinyusb(fmt, ...)    do { if (DEBUG_TINYUSB) printf(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_fatfs(fmt, ...)      do { if (DEBUG_FATFS)   printf(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_error(fmt, ...)      do { if (DEBUG_ERROR)   printf(fmt, ##__VA_ARGS__); } while (0)
 #endif

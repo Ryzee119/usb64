@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "printf.h"
-#include "n64_conf.h"
+#include "usb64_conf.h"
 #include "n64_mempak.h"
 #include "n64_virtualpak.h"
 #include "n64_settings.h"
@@ -289,7 +289,6 @@ void n64_virtualpak_update(n64_mempack *vpak)
     n64_settings *settings = n64_settings_get();
     if (settings == NULL)
     {
-        printf("ERROR: settings not initialised (n64_virtualpak_update)\n");
         return;
     }
     //Clear the screen;
@@ -394,11 +393,13 @@ void n64_virtualpak_update(n64_mempack *vpak)
 
         n64_virtualpak_write_string("SNAP TOGGLE",      SUBHEADING + 10, MENU_NAME_FIELD);
 
+        n64_virtualpak_write_string("RESTORE DEFAULT",  SUBHEADING + 12, MENU_NAME_FIELD);
+
         //A row has been selected, adjust settings accordingly
         uint8_t selected_row = vpak->virtual_selected_row;
         if (selected_row != -1)
         {
-            if(selected_row == SUBHEADING + 4 && settings->sensitivity[controller_page] < 6)
+            if(selected_row == SUBHEADING + 4 && settings->sensitivity[controller_page] < 4)
                  settings->sensitivity[controller_page]++;
             if(selected_row == SUBHEADING + 5 && settings->sensitivity[controller_page] > 0)
                  settings->sensitivity[controller_page]--;
@@ -408,17 +409,23 @@ void n64_virtualpak_update(n64_mempack *vpak)
                  settings->deadzone[controller_page]--;
             if(selected_row == SUBHEADING + 10)
                  settings->snap_axis[controller_page] ^= 1;
+            if(selected_row == SUBHEADING + 12)
+            {
+                settings->deadzone[controller_page]    = DEFAULT_DEADZONE;
+                settings->sensitivity[controller_page] = DEFAULT_SENSITIVITY;
+                settings->snap_axis[controller_page]   = DEFAULT_SNAP;
+            }
             n64_settings_update_checksum(settings);
         }
 
         //Print the current values of each setting
-        sprintf(buff, "%04u", settings->sensitivity[controller_page]);
+        sprintf(buff, "%03u\0", settings->sensitivity[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 4,  MENU_EXT_FIELD);
 
-        sprintf(buff, "%04u", settings->deadzone[controller_page]);
+        sprintf(buff, "%03u\0", settings->deadzone[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 7,  MENU_EXT_FIELD);
 
-        sprintf(buff, "%04u", settings->snap_axis[controller_page]);
+        sprintf(buff, "%03u\0", settings->snap_axis[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 10,  MENU_EXT_FIELD);
 
         vpak->virtual_selected_row = -1;
@@ -435,15 +442,15 @@ void n64_virtualpak_update(n64_mempack *vpak)
         if(current_menu == MENU_INFO0)
             msg = info_text_0;
         if(current_menu == MENU_INFO1)
-            msg = info_text_1;
+            msg = info_text_0;
 
-        while(msg && pos < sizeof(info_text_0))
+        while(*msg && msg != NULL && pos < sizeof(info_text_0))
         {
             //On a line break or end of line print that line and prep to print on next line
             if ((*msg == '\n' || pos == 16) && line < 15)
             {
                 n64_virtualpak_write_string(line_text, line, MENU_NAME_FIELD);
-                memset(line_text, 0x00, sizeof(line_text));
+                memset(line_text,0x00,sizeof(line_text));
                 line += 1;
                 pos = 0;
             }

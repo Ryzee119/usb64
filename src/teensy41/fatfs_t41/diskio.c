@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "qspi.h"
-#include "printf.h"
+#include "usb64_conf.h"
 
 static uint32_t sector_size = 0;
 static uint32_t flash_size = 0;
@@ -43,6 +43,7 @@ DSTATUS disk_initialize(
 	BYTE pdrv /* Physical drive number to identify the drive */
 )
 {
+	debug_print_fatfs("FATFS: Initialise disk\n");
 	qspi_init(&sector_size, &flash_size);
 	return RES_OK;
 }
@@ -57,6 +58,7 @@ DRESULT disk_read(
 	if (sector_size == 0)
 		return RES_NOTRDY;
 
+	debug_print_fatfs("FATFS: Read from sector %i for %i sector(s)\n", sector, count);
 	qspi_read(sector * sector_size, count * sector_size, buff);
 	return RES_OK;
 }
@@ -82,6 +84,7 @@ DRESULT disk_write(
 	//Check if sector has changed
 	if (memcmp(temp, buff, blen) != 0)
 	{
+		debug_print_fatfs("FATFS: Wrote to sector %i for %i sector(s)\n", sector, count);
 		qspi_erase(bAddress, blen);
 		qspi_write(bAddress, blen, (uint8_t *)buff);
 	}
@@ -104,12 +107,15 @@ DRESULT disk_ioctl(
 	switch (cmd)
 	{
 	case GET_SECTOR_SIZE:
+		debug_print_fatfs("FATFS: disk_ioctl: Sector size %i\n", sector_size);
 		*(WORD *)buff = sector_size;
 		break;
 	case GET_BLOCK_SIZE:
+		debug_print_fatfs("FATFS: disk_ioctl: Block size %i\n", 1);
 		*(WORD *)buff = 1;
 		break;
 	case GET_SECTOR_COUNT:
+		debug_print_fatfs("FATFS: disk_ioctl: Sector count %i\n", flash_size / sector_size);
 		*(WORD *)buff = flash_size /
 						sector_size;
 		break;

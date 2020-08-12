@@ -28,13 +28,13 @@
 extern "C" {
 #endif
 
-#include "n64_conf.h"
+#include "usb64_conf.h"
 
 typedef struct
 {
     uint8_t start;
     char default_tpak_rom[MAX_CONTROLLERS][MAX_FILENAME_LEN]; //Filename
-    uint8_t sensitivity[MAX_CONTROLLERS];        //0 to 6
+    uint8_t sensitivity[MAX_CONTROLLERS];        //0 to 4
     uint8_t deadzone[MAX_CONTROLLERS];           //0 to 4
     uint8_t snap_axis[MAX_CONTROLLERS];          //0 or 1
     uint8_t checksum;

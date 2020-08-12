@@ -43,7 +43,7 @@ void n64_settings_init(n64_settings *settings)
 {
     if (settings->checksum != _calc_checksum(settings))
     {
-        printf("%s not found or invalid, setting to default\n", SETTINGS_FILENAME);
+        debug_print_n64("%s not found or invalid, setting to default\n", SETTINGS_FILENAME);
         for (int i = 0; i < MAX_CONTROLLERS; i++)
         {
             settings->start = 0x64; //N64 :)
@@ -66,7 +66,7 @@ n64_settings *n64_settings_get()
 {
     if (_settings == NULL)
     {
-        printf("ERROR: n64_settings_get returning null. Did you init?\n");
+        debug_print_error("ERROR: n64_settings_get returning null. Did you init?\n");
     }
     return _settings;
 }

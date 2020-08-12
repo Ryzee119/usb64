@@ -57,7 +57,7 @@ static uint32_t _gb_get_rom_size(uint8_t rom_type)
     case (KB_1536): rom_len = 1572864UL; break;
     default:
         rom_len = 0;
-        printf("ERROR: Unknown ROM size\n");
+        debug_print_error("ERROR: Unknown ROM size\n");
         break;
     }
     return rom_len;
@@ -98,24 +98,24 @@ static void gb_read_cart_rom_only(uint16_t mbc_address, n64_transferpak *tpak, u
 /* MBC1 */
 static void gb_write_cart_mbc1(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *inBuffer)
 {
-    printf("gb_write_cart_mbc1 not implemented\n");
+    debug_print_n64("gb_write_cart_mbc1 not implemented\n");
 }
 
 static void gb_read_cart_mbc1(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *outBuffer)
 {
-    printf("gb_read_cart_mbc1 not implemented\n");
+    debug_print_n64("gb_read_cart_mbc1 not implemented\n");
 }
 /* END MBC1 */
 
 /* MBC2 */
 static void gb_write_cart_mbc2(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *inBuffer)
 {
-    printf("gb_write_cart_mbc2 not implemented\n");
+    debug_print_n64("gb_write_cart_mbc2 not implemented\n");
 }
 
 static void gb_read_cart_mbc2(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *outBuffer)
 {
-    printf("gb_read_cart_mbc2 not implemented\n");
+    debug_print_n64("gb_read_cart_mbc2 not implemented\n");
 }
 /* END MBC2 */
 
@@ -136,7 +136,7 @@ static void gb_write_cart_mbc3(uint16_t mbc_address, n64_transferpak *tpak, uint
         }
         else
         {
-            printf("Error: Unknown RAM enable command\n");
+            debug_print_error("ERROR: Unknown RAM enable command\n");
         }
     }
     //2000-3FFF - Control ROM Bank Number
@@ -170,7 +170,7 @@ static void gb_write_cart_mbc3(uint16_t mbc_address, n64_transferpak *tpak, uint
     {
         if (inBuffer[0] == 0x01)
         {
-            //printf("Latch RTC Registers\n"); 
+            //debug_print_n64("Latch RTC Registers\n"); 
         }
     }
     //0xA000-0xBFFF Cart RAM Write OR RTC Register Write
@@ -190,7 +190,7 @@ static void gb_write_cart_mbc3(uint16_t mbc_address, n64_transferpak *tpak, uint
                 cart->rtc_day |= ((uint16_t)inBuffer[0]) << 8;
                 break;
             default:
-                printf("Invalid write RTC banking_mode\n");
+                debug_print_n64("Invalid write RTC banking_mode\n");
                 break;
             }
             cart->rtc_update = 1;
@@ -204,12 +204,12 @@ static void gb_write_cart_mbc3(uint16_t mbc_address, n64_transferpak *tpak, uint
         }
         else
         {
-            printf("ERROR: Could not write RAM. %u\n", tpak->ram_enabled);
+            debug_print_error("ERROR: Could not write RAM. %u\n", tpak->ram_enabled);
         }
     }
     else
     {
-        printf("ERROR: Bad read at MBC address 0x%04x and ROMBank %u\n", mbc_address,
+        debug_print_error("ERROR: Bad read at MBC address 0x%04x and ROMBank %u\n", mbc_address,
                                                                          tpak->current_rom_bank);
     }
 }
@@ -269,13 +269,13 @@ static void gb_read_cart_mbc3(uint16_t mbc_address, n64_transferpak *tpak, uint8
             memset(outBuffer, (uint8_t)(cart->rtc_day >> 8), 32);
             break;
         default:
-            printf("ERROR: Invalid Read banking_mode ");
+            debug_print_error("ERROR: Invalid Read banking_mode ");
             break;
         }
     }
     else
     {
-        printf("ERROR: Bad read at MBC address 0x%04x and ROMBank %u\n", mbc_address,
+        debug_print_error("ERROR: Bad read at MBC address 0x%04x and ROMBank %u\n", mbc_address,
                                                                          tpak->current_rom_bank);
     }
 }
@@ -284,24 +284,24 @@ static void gb_read_cart_mbc3(uint16_t mbc_address, n64_transferpak *tpak, uint8
 /* MBC4 */
 static void gb_write_cart_mbc4(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *inBuffer)
 {
-    printf("gb_write_cart_mbc4 not implemented\n");
+    debug_print_n64("gb_write_cart_mbc4 not implemented\n");
 }
 
 static void gb_read_cart_mbc4(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *outBuffer)
 {
-    printf("gb_read_cart_mbc4 not implemented\n");
+    debug_print_n64("gb_read_cart_mbc4 not implemented\n");
 }
 /* END MBC4 */
 
 /* MBC5 */
 static void gb_write_cart_mbc5(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *inBuffer)
 {
-    printf("gb_write_cart_mbc5 not implemented\n");
+    debug_print_n64("gb_write_cart_mbc5 not implemented\n");
 }
 
 static void gb_read_cart_mbc5(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *outBuffer)
 {
-    printf("gb_read_cart_mbc5 not implemented\n");
+    debug_print_n64("gb_read_cart_mbc5 not implemented\n");
 }
 /* END MBC5 */
 
@@ -362,7 +362,7 @@ static void _tpak_access(n64_transferpak *tp, uint16_t mbc_address, uint8_t *dat
             gb_read_cart_mbc5(mbc_address, tp, data);
         break;
     default:
-        printf("WARNING: Unsupported MBC %u\n", tp->gbcart->mbc);
+        debug_print_n64("WARNING: Unsupported MBC %u\n", tp->gbcart->mbc);
         break;
     }
 }
@@ -410,15 +410,15 @@ void gb_init_cart(gameboycart *cart, uint8_t *gb_header, char *filename)
         cart->ramsize = _gb_gb_get_rom_size(gb_header[GB_RAMSIZE_OFFSET - 0x100], cart->mbc);
         memcpy(cart->filename, filename, sizeof(cart->filename));
         #if (0)
-        printf("GB Name: %.15s\r\n", (char *)cart->title);
-        printf("ROM Bytes: %lu\r\n", cart->romsize);
-        printf("SRAM Bytes: %lu\r\n", cart->ramsize);
-        printf("MBC Type: 0x%02x\r\n", cart->mbc);
+        debug_print_n64("GB Name: %.15s\r\n", (char *)cart->title);
+        debug_print_n64("ROM Bytes: %lu\r\n", cart->romsize);
+        debug_print_n64("SRAM Bytes: %lu\r\n", cart->ramsize);
+        debug_print_n64("MBC Type: 0x%02x\r\n", cart->mbc);
         #endif
     }
     else
     {
-        printf("GB header not valid\r\n");
+        debug_print_n64("GB header not valid\r\n");
     }
 }
 
@@ -464,12 +464,12 @@ void gb_set_pokemon_time(gameboycart *cart)
     n64hal_sram_read(&baseMin,  cart->ram, 0x2046, 1);
     n64hal_sram_read(&baseSec,  cart->ram, 0x2047, 1);
 
-    printf("Base d:%u h:%u m:%u s:%u\r\n",baseDay,baseHour,baseMin,baseSec);
+    debug_print_n64("Base d:%u h:%u m:%u s:%u\r\n",baseDay,baseHour,baseMin,baseSec);
 
     uint16_t d;
     uint8_t h, m, s;
     n64hal_rtc_read(&d, &h, &m, &s);
 
-    printf("Actual d:%u h:%u m:%u s:%u\r\n",d,h,m,s);
+    debug_print_n64("Actual d:%u h:%u m:%u s:%u\r\n",d,h,m,s);
     */
 }

@@ -28,7 +28,7 @@
 #include "qspi.h"
 #include "printf.h"
 #include "n64_wrapper.h"
-#include "n64_conf.h"
+#include "usb64_conf.h"
 #include "n64_controller.h"
 #include "n64_transferpak_gbcarts.h"
 #include "n64_virtualpak.h"
@@ -71,6 +71,24 @@ JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3};
 JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3, &joy4};
 #endif
 
+static void apply_deadzone(float* out_x, float* out_y, float x, float y, float dz_low, float dz_high) {
+    float magnitude = sqrtf(x * x + y * y);
+    if (magnitude > dz_low) {
+        //Scale such that output magnitude is in the range [0.0f, 1.0f]
+        float allowed_range = 1.0f - dz_high - dz_low;
+        float normalised_magnitude = (magnitude - dz_low) / allowed_range;
+        if (normalised_magnitude > 1.0f)
+            normalised_magnitude = 1.0f;
+        float scale = normalised_magnitude / magnitude;
+        *out_x = x * scale;
+        *out_y = y * scale;
+    }
+    else {
+        //Stick is in the inner dead zone
+        *out_x = 0.0f;
+        *out_y = 0.0f;
+    }
+}
 
 //This function allocates and manages SRAM for mempak and gameboy roms (tpak) for the system.
 //SRAM is malloced into slots. Each slot stores a pointer to the memory location, its size, and
@@ -251,6 +269,8 @@ void loop()
 {
     static uint32_t usb_buttons[MAX_CONTROLLERS] = {0};
     static uint16_t n64_buttons[MAX_CONTROLLERS] = {0};
+    static int8_t n64_x_axis[MAX_CONTROLLERS] = {0};
+    static int8_t n64_y_axis[MAX_CONTROLLERS] = {0};
     static int32_t axis[MAX_CONTROLLERS][6] = {0};
 
     //Flush the ring buffer
@@ -304,9 +324,9 @@ void loop()
                                                               N64_CD | //all C usb_buttons
                                                               N64_CL |
                                                               N64_CR;
-            //Analog stick
-            n64_c[c].bState.x_axis = axis[c][0] * 85 / 32768;
-            n64_c[c].bState.y_axis = axis[c][1] * 85 / 32768;
+            //Analog stick (Normalise 0 to +/-100)
+            n64_x_axis[c] = axis[c][0] * 100 / 32768;
+            n64_y_axis[c] = axis[c][1] * 100 / 32768;
 
             //Z button
             if (axis[c][4] > 10) n64_buttons[c] |= N64_Z; //LT
@@ -326,9 +346,62 @@ void loop()
             break;
         }
 
-        //Apply digital buttons to n64 controller if combo button isnt pressed
+        /* Apply analog stick options */
+        n64_settings *settings = n64_settings_get();
+        float x, y, deadzone;
+
+        //Apply Deadzone
+        deadzone = settings->deadzone[c] / 10.0f; //(0 to 40%)
+        apply_deadzone(&x, &y, n64_x_axis[c] / 100.0f, n64_y_axis[c] / 100.0f, deadzone, 0.05f);
+
+        //Apply Sensitivity
+        float range = 100.0f;
+        switch (settings->sensitivity[c])
+        {
+        case 4: range=1.10f; break; // +/-110
+        case 3: range=0.95f; break;
+        case 2: range=0.85f; break;
+        case 1: range=0.75f; break;
+        case 0: range=0.65f; break; // +/-65
+        }
+        x*=range; y*=range;
+
+        //Apply angle snap (some controllers will do this internally so I can't really disable it if they do)
+        if (settings->snap_axis[c])
+        {
+            int angle = atan2f(y, x) * 180.0f / 3.14f;
+            float magnitude = sqrtf(powf(x,2) + powf(y,2));
+            if (angle < 0)
+                angle = 360 + angle;
+
+            //Snap to 45°C segments
+            const int snap = SNAP_RANGE; //+/- 10 degrees within a 45 degree angle will snap
+            int a = angle;
+            while (a > 45) a-=45;
+            if ((a <= 0 + snap) || (a >= 45 - snap))
+            {
+                angle += snap;
+                angle -= angle % 45;
+                //Only snap if near max range
+                if (magnitude >= 0.90f * range)
+                {
+                    x = magnitude * cosf(angle * 3.14f/180.0f);
+                    y = magnitude * sinf(angle * 3.14f/180.0f);
+                }
+            }
+        }
+
+        //Apply corrected values to axis variables
+        n64_x_axis[c] = x * 100.0f;
+        n64_y_axis[c] = y * 100.0f;
+
+        //Apply digital buttons and axis to n64 controller if combo button isnt pressed
         if (n64_combo == 0)
+        {
             n64_c[c].bState.dButtons = n64_buttons[c];
+            n64_c[c].bState.x_axis = n64_x_axis[c];
+            n64_c[c].bState.y_axis = n64_y_axis[c];
+        }
 
         //Apply rumble if required
         if (n64_c[c].rpak != NULL)
@@ -464,7 +537,7 @@ void loop()
                     printf("C%u to mpak %u\n", c, mempak_bank);
                     n64_c[c].mempack->virtual_is_active = 0;
                 }
-                else
+                else if (mempak_bank != VIRTUAL_PAK)
                 {
                     n64_c[c].next_peripheral = PERI_RUMBLE; //Error, set to rumblepak
                 }
@@ -488,31 +561,53 @@ void loop()
         //Update the virtual pak if required
         if (n64_c[c].mempack->virtual_update_req == 1)
         {
+            //Print the Connected USB devices to the virtual pak for info
             char msg[256];
+            const char *nc = "NOT CONNECTED";
             snprintf(msg, sizeof(msg),
-            "0x%04x/0x%04x\n%s\n%s\n"
-            "0x%04x/0x%04x\n%s\n%s\n"
-            "0x%04x/0x%04x\n%s\n%s\n"
-            "0x%04x/0x%04x\n%s\n%s\n",
-            joy1.idVendor(), joy1.idProduct(), joy1.manufacturer(), joy1.product(),
-            joy2.idVendor(), joy2.idProduct(), joy2.manufacturer(), joy2.product(),
-            joy3.idVendor(), joy3.idProduct(), joy3.manufacturer(), joy3.product(),
-            joy4.idVendor(), joy4.idProduct(), joy4.manufacturer(), joy4.product());
+            "1:0x%04x/0x%04x\n%.15s\n%.15s\n"
+            #if (MAX_CONTROLLERS >= 2)
+            "2:0x%04x/0x%04x\n%.15s\n%.15s\n"
+            #endif
+            #if (MAX_CONTROLLERS >= 3)
+            "3:0x%04x/0x%04x\n%.15s\n%.15s\n"
+            #endif
+            #if (MAX_CONTROLLERS >= 4)
+            "4:0x%04x/0x%04x\n%.15s\n%.15s\n"
+            #endif
+            ,joy1.idVendor(), joy1.idProduct(), (joy1.manufacturer() != NULL) ? (const char*)joy1.manufacturer() : nc,
+                                                (joy1.product()      != NULL) ? (const char*)joy1.product()      : " "
+            #if (MAX_CONTROLLERS >= 2)
+            ,joy2.idVendor(), joy2.idProduct(), (joy2.manufacturer() != NULL) ? (const char*)joy2.manufacturer() : nc,
+                                                (joy2.product()      != NULL) ? (const char*)joy2.product()      : " "
+            #endif
+            #if (MAX_CONTROLLERS >= 3)
+            ,joy3.idVendor(), joy3.idProduct(), (joy3.manufacturer() != NULL) ? (const char*)joy3.manufacturer() : nc,
+                                                (joy3.product()      != NULL) ? (const char*)joy3.product()      : " "
+            #endif
+            #if (MAX_CONTROLLERS >= 4)
+            ,joy4.idVendor(), joy4.idProduct(), (joy4.manufacturer() != NULL) ? (const char*)joy4.manufacturer() : nc,
+                                                (joy4.product()      != NULL) ? (const char*)joy4.product()      : " "
+            #endif
+            );
             n64_virtualpak_write_info_1(msg);
             n64_virtualpak_update(n64_c[c].mempack);
         }
 
         //If you pressed the combo to flush sram to flash, handle it here
-        static uint8_t flushing = 0;
-        if (n64_combo && (n64_buttons[c] & (N64_A | N64_B)) && !flushing)
+        static uint8_t flushing[4] = {0};
+        if (n64_combo && (n64_buttons[c] & (N64_A | N64_B)))
         {
-            printf("Flushing SRAM to Flash!\n");
-            flush_sram();
-            flushing = 1;
+            if (!flushing[c])
+            {
+                printf("Flushing SRAM to Flash!\n");
+                flush_sram();
+                flushing[c] = 1;
+            }
         }
-        else
+        else if (n64_combo)
         {
-            flushing = 0;
+            flushing[c] = 0;
         }
 
     } //END FOR LOOP
