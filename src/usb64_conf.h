@@ -23,14 +23,15 @@
 #ifndef _USB64_CONF_h
 #define _USB64_CONF_h
 
-/* DEBUGGING OUTPUT */
+/* DEBUGGING OUTPUT - WARNING SOME OF THESE MAY BREAK TIMING AND CAUSE ISSUES
+   USE ONLY FOR DEBUGGING */
 #define serial_port Serial1
-#define DEBUG_STATUS 0 //General prints
-#define DEBUG_N64 0 //For debugging N64 low level info
+#define DEBUG_STATUS 1  //General information
+#define DEBUG_N64 0     //For debugging N64 low level info
 #define DEBUG_USBHOST 0 //For debugging the USB Host Stack
 #define DEBUG_TINYUSB 0 //For debugging the USB Device Stack (MSC and CDC)
-#define DEBUG_FATFS 0 //For debugging the FATFS filesystem
-#define DEBUG_ERROR 1 //For showing critical errors
+#define DEBUG_FATFS 0   //For debugging the FATFS io
+#define DEBUG_ERROR 1   //For showing critical errors
 
 /* N64 LIB */
 #define MAX_CONTROLLERS 4 //Max is 4
@@ -54,6 +55,7 @@
 #define DEFAULT_SNAP 1        //0 or 1 (0 = will output raw analog stick angle, 1 will snap to 45deg angles)
 #define SNAP_RANGE 10         //+/- what angle range will snap. 10 will be +/-10 degrees from a 45 degree angle
 
+/* DEBUG PRINTERS */
 #include "printf.h"
 #define debug_print_status(fmt, ...)     do { if (DEBUG_STATUS)  printf(fmt, ##__VA_ARGS__); } while (0)
 #define debug_print_n64(fmt, ...)        do { if (DEBUG_N64)     printf(fmt, ##__VA_ARGS__); } while (0)
