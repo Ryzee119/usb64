@@ -24,7 +24,6 @@
 #include <stdint.h>
 #include "n64_settings.h"
 #include "n64_wrapper.h"
-#include "printf.h"
 
 n64_settings *_settings = NULL;
 
@@ -43,7 +42,7 @@ void n64_settings_init(n64_settings *settings)
 {
     if (settings->checksum != _calc_checksum(settings))
     {
-        debug_print_n64("%s not found or invalid, setting to default\n", SETTINGS_FILENAME);
+        debug_print_status("%s not found or invalid, setting to default\n", SETTINGS_FILENAME);
         for (int i = 0; i < MAX_CONTROLLERS; i++)
         {
             settings->start = 0x64; //N64 :)

@@ -31,7 +31,6 @@
 #include "n64_transferpak_gbcarts.h"
 #include "n64_controller.h"
 #include "n64_wrapper.h"
-#include "printf.h"
 
 static uint16_t _tpak_get_mbc_address(uint16_t tpakAddress, uint8_t bank)
 {
