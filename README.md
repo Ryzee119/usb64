@@ -3,13 +3,12 @@
 A project developed to use USB controllers on the Nintendo 64 console.  
 Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee119/usb64/releases).  
 
-- [x] 4 x Simulatenous N64 controller emulation.
-- [x] 4 x Simulatenous N64 mouse emulation (Use a USB Mouse!).
-- [x] 4 x Simulatenous Rumblepak emulation.
-- [x] 4 x Simulatenous Mempak Emulation or 4 Selectable Banks
-- [x] 4 x Simulatenous Transferpak Emulation with 16MB internal storage for Gameboy ROMs.
-- [x] Configurable deadzones, sensitivity and analog stick shape.
-- [x] USB Mass Storage driver to backup mempaks, gameboy ROMs over USB.
+- [x] N64 controller emulation.
+- [x] Rumblepak emulation.
+- [x] Mempak emulation or 4 selectable banks
+- [x] Transferpak emulation with 16MB internal storage for Gameboy ROMs.
+- [x] Configurable deadzones and sensitivity.
+- [x] USB mass storage driver to backup mempaks and gameboy ROMs over USB.
 
 ## Todo
 - [ ] Teensy 4.1 is overkill. Port to other platforms.
@@ -18,6 +17,9 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - [ ] Additional Gameboy MBCs.
 - [ ] Raspberry Pi interface or similar for all other USB controllers.
 - [ ] Gameboy Camera.
+- [ ] Touch LCD (Optional).
+- [ ] Remove USBHOST_t36 dependency. (TinyUSB is more portable)
+- [ ] N64 mouse emulation (Use a USB Mouse!).
 
 ## Supported USB Controllers
 - Bluetooth 8bitdo/compatible controllers via the [8BitDo Wireless USB Adapter](https://www.8bitdo.com/wireless-usb-adapter/)
