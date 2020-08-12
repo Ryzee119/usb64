@@ -48,6 +48,9 @@ See [COMPILE.md](https://github.com/Ryzee119/usb64/blob/dev/COMPILE.md).
 ## Install
 See [INSTALL.md](https://github.com/Ryzee119/usb64/blob/dev/INSTALL.md).
 
+## How to Use
+See [USAGE.md](https://github.com/Ryzee119/usb64/blob/dev/USAGE.md).
+
 ## License and Attribution
 usb64 is shared under the [MIT license](https://github.com/Ryzee119/usb64/blob/dev/LICENSE), however this project includes code by others. Refer to the list below.
 * [mpaland](https://github.com/mpaland)/**[printf](https://github.com/mpaland/printf)** shared under the [MIT License](https://github.com/mpaland/printf/blob/d3b984684bb8a8bdc48cc7a1abecb93ce59bbe3e/LICENSE).
