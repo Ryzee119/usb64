@@ -391,6 +391,8 @@ void loop()
             }
         }
 
+        //Apply Octagonal correct FIXME
+
         //Apply corrected values to axis variables
         n64_x_axis[c] = x * 100.0f;
         n64_y_axis[c] = y * 100.0f;
