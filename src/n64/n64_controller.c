@@ -214,7 +214,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
         {
         case N64_IDENTIFY:
         case N64_CONTROLLER_RESET:
-            if (cont->isMouse)
+            if (cont->is_mouse)
                 memcpy(&cont->data_buffer[N64_DATA_POS], n64_mouse, 3);
 
             else if (cont->current_peripheral != PERI_NONE && !cont->crc_error)
@@ -234,9 +234,9 @@ void n64_controller_hande_new_edge(n64_controller *cont)
 
         case N64_CONTROLLER_STATUS:
             n64_wait_micros(2);
-            n64_send_stream((uint8_t *)&cont->bState, 4, cont);
+            n64_send_stream((uint8_t *)&cont->b_state, 4, cont);
             n64_reset_stream(cont);
-            cont->bState.dButtons = 0x0000;
+            cont->b_state.dButtons = 0x0000;
             break;
         case N64_PERI_READ:
         case N64_PERI_WRITE:

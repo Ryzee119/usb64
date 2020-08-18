@@ -49,7 +49,6 @@
 #include "usb64_conf.h"
 
 FATFS fs;
-static FIL fil;
 
 /* clmt_clust() and clst2sect() have been copied from the FATFs ff.c file to be used in this wrapper.
    Unfortunately they are not visible outside of ff.c and I needed them :( */
@@ -170,6 +169,7 @@ uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *dat
     static DWORD clmt[MAX_GBROMS][32];
 
     FRESULT res;
+    FIL fil;
     uint32_t sector_size;
     qspi_get_flash_properties(&sector_size, NULL);
 
@@ -298,6 +298,7 @@ void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len)
     //Trying open the file
     FRESULT res;
     UINT br;
+    FIL fil;
     res = f_open(&fil, (const TCHAR *)filename, FA_WRITE | FA_CREATE_ALWAYS);
     if (res != FR_OK)
     {
@@ -337,6 +338,7 @@ void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t le
     //Trying open the file
     FRESULT res;
     UINT br;
+    FIL fil;
     res = f_open(&fil, (const TCHAR *)filename, FA_READ);
     if (res != FR_OK)
     {

@@ -48,31 +48,36 @@ n64_settings* settings;
 
 //USB Host Interface
 USBHost usbh;
-#if (ENABLE_USB_HUB)
+
+#if (ENABLE_USB_HUB == 1)
 USBHub hub1(usbh);
 #endif
+
 #if (MAX_CONTROLLERS >= 1)
 JoystickController joy1(usbh);
-#if (MAX_MOUSE >= 1)
-MouseController mouse1(usbh);
+#if (MAX_MICE >= 1)
 USBHIDParser hid1(usbh);
+MouseController mouse1(usbh);
 #endif
 #endif
 #if (MAX_CONTROLLERS >= 2)
 JoystickController joy2(usbh);
-#if (MAX_MOUSE >= 3)
+#if (MAX_MICE >= 2)
+USBHIDParser hid2(usbh);
 MouseController mouse2(usbh);
 #endif
 #endif
 #if (MAX_CONTROLLERS >= 3)
 JoystickController joy3(usbh);
-#if (MAX_MOUSE >= 3)
+#if (MAX_MICE >= 3)
+USBHIDParser hid3(usbh);
 MouseController mouse3(usbh);
 #endif
 #endif
 #if (MAX_CONTROLLERS >= 4)
 JoystickController joy4(usbh);
-#if (MAX_MOUSE >= 4)
+#if (MAX_MICE >= 4)
+USBHIDParser hid4(usbh);
 MouseController mouse4(usbh);
 #endif
 #endif
@@ -87,13 +92,13 @@ JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3};
 JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3, &joy4};
 #endif
 
-#if MAX_MOUSE == 1
+#if MAX_MICE == 1
 MouseController *mousecontroller[] = {&mouse1, NULL, NULL, NULL};
-#elif MAX_MOUSE == 2
+#elif MAX_MICE == 2
 MouseController *mousecontroller[] = {&mouse1, &mouse2, NULL, NULL};
-#elif MAX_MOUSE == 3
+#elif MAX_MICE == 3
 MouseController *mousecontroller[] = {&mouse1, &mouse2, &mouse3. NULL};
-#elif MAX_MOUSE == 4
+#elif MAX_MICE == 4
 MouseController *mousecontroller[] = {&mouse1, &mouse2, &mouse3, &mouse4};
 #endif
 
@@ -321,7 +326,7 @@ void loop()
         //If a change in buttons or axis has been detected
         if (gamecontroller[c]->available())
         {
-            n64_c[c].isMouse = false;
+            n64_c[c].is_mouse = false;
             for (uint8_t i = 0; i < (sizeof(axis[c]) / sizeof(axis[c][0])); i++)
             {
                 axis[c][i] = gamecontroller[c]->getAxis(i);
@@ -330,9 +335,10 @@ void loop()
             gamecontroller[c]->joystickDataClear();
         }
 
+#if (MAX_MICE >= 1)
         if(mousecontroller[c]!=NULL && mousecontroller[c]->available())
         {
-            n64_c[c].isMouse = true;
+            n64_c[c].is_mouse = true;
             n64_x_axis[c] = mousecontroller[c]->getMouseX() * MOUSE_SENSITIVITY;
             n64_y_axis[c] = -mousecontroller[c]->getMouseY() * MOUSE_SENSITIVITY;
 
@@ -344,9 +350,10 @@ void loop()
             mousecontroller[c]->mouseDataClear();
             debug_print_status("%04x\n", n64_buttons[c]);
         }
+#endif
 
         //Map usb controllers to n64 controller
-        if (n64_c[c].isMouse == false)
+        if (n64_c[c].is_mouse == false)
         {
             switch (gamecontroller[c]->joystickType())
             {
@@ -451,9 +458,9 @@ void loop()
         if (n64_combo == 0)
         {
             debug_print_status("%04x\n", n64_buttons[c]);
-            n64_c[c].bState.dButtons = n64_buttons[c];
-            n64_c[c].bState.x_axis = n64_x_axis[c];
-            n64_c[c].bState.y_axis = n64_y_axis[c];
+            n64_c[c].b_state.dButtons = n64_buttons[c];
+            n64_c[c].b_state.x_axis = n64_x_axis[c];
+            n64_c[c].b_state.y_axis = n64_y_axis[c];
         }
 
         //Apply rumble if required
