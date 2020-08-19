@@ -300,14 +300,6 @@ void n64_virtualpak_update(n64_mempack *vpak)
         alpha[0]++;
     }
 
-    //Print generic headers and footers
-    n64_virtualpak_write_string("USB64 - RYZEE119", HEADING, MENU_NAME_FIELD);
-    sprintf(buff, "CONTROLLER %u", controller_page + 1);
-    n64_virtualpak_write_string(buff, SUBHEADING, MENU_NAME_FIELD);
-    n64_virtualpak_write_string("________________", SUBHEADING + 1, MENU_NAME_FIELD);
-    n64_virtualpak_write_string("CHANGE CONT", CHANGE_CONTROLLER, MENU_NAME_FIELD);
-    n64_virtualpak_write_string("RETURN", RETURN, MENU_NAME_FIELD);
-
     //Handle generic header and footer options
     switch (vpak->virtual_selected_row)
     {
@@ -322,6 +314,14 @@ void n64_virtualpak_update(n64_mempack *vpak)
         current_menu = MENU_MAIN;
         break;
     }
+
+    //Print generic headers and footers
+    n64_virtualpak_write_string("USB64 - RYZEE119", HEADING, MENU_NAME_FIELD);
+    sprintf(buff, "CONTROLLER %u", controller_page + 1);
+    n64_virtualpak_write_string(buff, SUBHEADING, MENU_NAME_FIELD);
+    n64_virtualpak_write_string("________________", SUBHEADING + 1, MENU_NAME_FIELD);
+    n64_virtualpak_write_string("CHANGE CONT", CHANGE_CONTROLLER, MENU_NAME_FIELD);
+    n64_virtualpak_write_string("RETURN", RETURN, MENU_NAME_FIELD);
 
     /* Print the required menu and handle actions specific to each menu */
     if (current_menu == MENU_MAIN)

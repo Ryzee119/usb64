@@ -518,7 +518,7 @@ void loop()
                 (b & N64_DD) ? mempak_bank = 2 : (0);
                 (b & N64_DL) ? mempak_bank = 3 : (0);
                 (b & N64_ST) ? mempak_bank = VIRTUAL_PAK : (0);
-                
+
                 //Create the filename
                 uint8_t filename[32];
                 snprintf((char *)filename, sizeof(filename), "MEMPAK%02u.MPK", mempak_bank);
