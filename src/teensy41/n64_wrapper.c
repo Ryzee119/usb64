@@ -49,6 +49,7 @@
 #include "usb64_conf.h"
 
 FATFS fs;
+static FIL fil;
 
 /* clmt_clust() and clst2sect() have been copied from the FATFs ff.c file to be used in this wrapper.
    Unfortunately they are not visible outside of ff.c and I needed them :( */
@@ -164,7 +165,7 @@ uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *dat
     //Store a list of open filenames
     static uint8_t open_files[MAX_GBROMS][MAX_FILENAME_LEN];
 
-    static FIL fil;
+    
 
     //Store an array of the cluster link map table for each file.
     //FIXME, is 32 ok or should I dynamically alloc the correct length?
@@ -298,7 +299,6 @@ void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len)
     }
     //Trying open the file
     FRESULT res;
-    FIL fil;
     UINT br;
     res = f_open(&fil, (const TCHAR *)filename, FA_WRITE | FA_CREATE_ALWAYS);
     if (res != FR_OK)
@@ -338,7 +338,6 @@ void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t le
     }
     //Trying open the file
     FRESULT res;
-    FIL fil;
     UINT br;
     res = f_open(&fil, (const TCHAR *)filename, FA_READ);
     if (res != FR_OK)

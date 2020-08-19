@@ -36,13 +36,16 @@
 /* N64 LIB */
 #define MAX_CONTROLLERS 4 //Max is 4
 #define MAX_GBROMS 10 //ROMS over this will just get ignored FIXME: This uses ALOT of ram
+#define ENABLE_I2C_CONTROLLERS 0 //Received button presses over I2C, useful for integrating with a rasp pi etc.
+#define ENABLE_HARDWIRED_CONTROLLER 0 //Ability to hardware a N64 controller into the usb64.
 
 /* PIN MAPPING */
+#define N64_CONSOLE_SENSE 37 //High when usb64 is connected to the n64 console
+#define N64_CONSOLE_SENSE_DELAY 2000 //ms to wait at power up for n64 console to power on
 #define N64_CONTROLLER_1_PIN 36
 #define N64_CONTROLLER_2_PIN 35
 #define N64_CONTROLLER_3_PIN 34
 #define N64_CONTROLLER_4_PIN 33
-#define USER_BUTTON_PIN 40
 #define USER_LED_PIN 13
 
 /* FILESYSTEM */

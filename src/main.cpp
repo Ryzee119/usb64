@@ -229,10 +229,10 @@ void setup()
         f_mkfs("", &defopt, work, sizeof(work));
     }
 
-    //If holding the button down on power up, start the USB Device MSC driver
-    pinMode(USER_BUTTON_PIN, INPUT_PULLUP);
-    delay(50);
-    if (digitalRead(USER_BUTTON_PIN) == 0)
+    //If a n64 console isn't detected, start the USB Device MSC driver
+    pinMode(N64_CONSOLE_SENSE, INPUT_PULLDOWN);
+    delay(N64_CONSOLE_SENSE_DELAY);
+    if (digitalRead(N64_CONSOLE_SENSE) == 1)
     {
         attachInterruptVector(IRQ_USB1, &tusbd_interrupt);
         tusb_init();
@@ -552,6 +552,7 @@ void loop()
 
                 if (mempak_bank == VIRTUAL_PAK)
                 {
+                    debug_print_status("C%u to virtual pak\n", c);
                     n64_virtualpak_init(n64_c[c].mempack);
                 }
             }
