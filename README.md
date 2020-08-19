@@ -46,13 +46,13 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 | Case | To do |
 
 ## Compile and Program
-See [COMPILE.md](https://github.com/Ryzee119/usb64/blob/dev/COMPILE.md).
+See [COMPILE.md](./COMPILE.md).
 
 ## Install
-See [INSTALL.md](https://github.com/Ryzee119/usb64/blob/dev/INSTALL.md).
+See [INSTALL.md](./INSTALL.md).
 
 ## How to Use
-See [USAGE.md](https://github.com/Ryzee119/usb64/blob/dev/USAGE.md).
+See [USAGE.md](./USAGE.md).
 
 ## License and Attribution
 usb64 is shared under the [MIT license](https://github.com/Ryzee119/usb64/blob/dev/LICENSE), however this project includes code by others. Refer to the list below.

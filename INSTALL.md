@@ -1,10 +1,11 @@
 # Hardware Setup
-* Install W25Q126 SPI Flash Chip on the designated footprint.
+* Install a W25Q126 SPI Flash Chip on the designated footprint.
 * Install a 5 x 0.1" pin header on the USB OTG Header.  
 
 <img src="./images/install_setup.svg" alt="setup" width="50%"/>
 
 # Quick Start
+* Program the usb64 as per [compilation instructions](./COMPILE.md).
 * Connect the player data lines to the N64 Console.
 * Connect a usb64 compatible USB controller.
 * Connect a MicroUSB cable to supply 5V.  
