@@ -12,7 +12,7 @@
 
 #include <stdint.h>
 #include <Arduino.h>
-#include "printf.h"
+#include "usb64_conf.h"
 #include "qspi.h"
 
 #define LUT0(opcode, pads, operand) (FLEXSPI_LUT_INSTRUCTION((opcode), (pads), (operand)))
@@ -91,7 +91,7 @@ static void setupFlexSPI2()
     IOMUXC_FLEXSPI2_IPP_IND_SCK_FA_SELECT_INPUT = 1;     // GPIO_EMC_25 for Mode: ALT8
 
     // turn on clock
-    //clocks[4] = {396.0f, 720.0f, 664.62f, 528.0f} / CCM_CBCMR_FLEXSPI2_PODF + 1
+    //frequency is CCM_CBCMR_FLEXSPI2_CLK_SEL[4] = {396.0f, 720.0f, 664.62f, 528.0f} / (CCM_CBCMR_FLEXSPI2_PODF + 1)
     CCM_CBCMR = (CCM_CBCMR & ~(CCM_CBCMR_FLEXSPI2_PODF_MASK | CCM_CBCMR_FLEXSPI2_CLK_SEL_MASK)) | CCM_CBCMR_FLEXSPI2_PODF(7) | CCM_CBCMR_FLEXSPI2_CLK_SEL(0); // 49.5 MHz
     CCM_CCGR7 |= CCM_CCGR7_FLEXSPI2(CCM_CCGR_ON);
 
@@ -203,7 +203,7 @@ static void flexspi_ip_command(uint32_t index, uint32_t addr)
         ; // wait
     if (n & FLEXSPI_INTR_IPCMDERR)
     {
-        printf("Error: FLEXSPI2_IPRXFSTS=%08lX\n", FLEXSPI2_IPRXFSTS);
+        debug_print_error("ERROR: FLEXSPI2_IPRXFSTS=%08lX\n", FLEXSPI2_IPRXFSTS);
     }
     FLEXSPI2_INTR = FLEXSPI_INTR_IPCMDDONE;
 }
@@ -242,7 +242,7 @@ static void flexspi_ip_read(uint32_t index, uint32_t addr, void *data, uint32_t 
     }
     if (n & FLEXSPI_INTR_IPCMDERR)
     {
-        printf("Error: FLEXSPI2_IPRXFSTS=%08lX\r\n", FLEXSPI2_IPRXFSTS);
+        debug_print_error("ERROR: FLEXSPI2_IPRXFSTS=%08lX\r\n", FLEXSPI2_IPRXFSTS);
     }
     FLEXSPI2_INTR = FLEXSPI_INTR_IPCMDDONE;
     src = (const uint8_t *)&FLEXSPI2_RFDR0;
@@ -289,7 +289,7 @@ static void flexspi_ip_write(uint32_t index, uint32_t addr, const void *data, ui
 
     if (n & FLEXSPI_INTR_IPCMDERR)
     {
-        printf("Error: FLEXSPI2_IPRXFSTS=%08lX\r\n", FLEXSPI2_IPRXFSTS);
+        debug_print_error("Error: FLEXSPI2_IPRXFSTS=%08lX\r\n", FLEXSPI2_IPRXFSTS);
     }
 
     FLEXSPI2_INTR = FLEXSPI_INTR_IPCMDDONE;
@@ -301,15 +301,15 @@ static void printStatusRegs()
     uint8_t val;
 
     flexspi_ip_read(8, flashBaseAddr, &val, 1);
-    printf("Status 1:");
-    printf(" %02X", val);
-    printf("\n");
+    debug_print_status("Status 1:");
+    debug_print_status(" %02X", val);
+    debug_print_status("\n");
 
     // cmd index 9 = read Status register #2 SPI
     flexspi_ip_read(9, flashBaseAddr, &val, 1);
-    printf("Status 2:");
-    printf(" %02X", val);
-    printf("\n");
+    debug_print_status("Status 2:");
+    debug_print_status(" %02X", val);
+    debug_print_status("\n");
 #endif
 }
 
@@ -343,16 +343,16 @@ static void setupFlexSPI2Flash()
     flexspi_ip_read(7, flashBaseAddr, flashID, sizeof(flashID));
 
 #if 0
-    printf("ID:");
+    debug_print_status("ID:");
     for (unsigned i = 0; i < sizeof(flashID); i++)
-        printf(" %02X", flashID[i]);
-    printf("\n");
+        debug_print_status(" %02X", flashID[i]);
+    debug_print_status("\n");
 #endif
 
     printStatusRegs();
     //TODO!!!!! set QPI enable bit in status reg #2 if not factory set!!!!!
 
-    //  printf("ENTER QPI MODE");
+    //  debug_print_status("ENTER QPI MODE");
     flexspi_ip_command(15, flashBaseAddr);
 
     //patch LUT for QPI:
@@ -378,7 +378,7 @@ void qspi_erase_chip()
     waitFlash(0);
     flexspi_ip_command(11, flashBaseAddr);
 
-    printf("Erasing... (may take some time)\r\n");
+    debug_print_status("Erasing... (may take some time)\r\n");
     uint32_t t = millis();
     FLEXSPI2_LUT60 = LUT0(CMD_SDR, PINS4, 0x60); //Chip erase
     flexspi_ip_command(15, flashBaseAddr);
@@ -389,11 +389,11 @@ void qspi_erase_chip()
 
     while (waitFlash(500))
     {
-        printf(".");
+        debug_print_status(".");
     }
 
     t = millis() - t;
-    printf("\nChip erased in %d seconds.\n", t / 1000);
+    debug_print_status("\nChip erased in %d seconds.\n", t / 1000);
 }
 
 //********************************************************************************************************

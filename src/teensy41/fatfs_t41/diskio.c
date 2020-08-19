@@ -78,18 +78,10 @@ DRESULT disk_write(
 	//Because writing is quite slow, this should actually speed things up a bit on average.
 	uint32_t blen = count * sector_size;
 	uint32_t bAddress = sector * sector_size;
-	uint8_t *temp = malloc(blen);
-	qspi_read(bAddress, blen, temp);
 
-	//Check if sector has changed
-	if (memcmp(temp, buff, blen) != 0)
-	{
-		debug_print_fatfs("FATFS: Wrote to sector %i for %i sector(s)\n", sector, count);
-		qspi_erase(bAddress, blen);
-		qspi_write(bAddress, blen, (uint8_t *)buff);
-	}
-	if (temp)
-		free(temp);
+	debug_print_fatfs("FATFS: Wrote to sector %i for %i sector(s)\n", sector, count);
+	qspi_erase(bAddress, blen);
+	qspi_write(bAddress, blen, (uint8_t *)buff);
 
 	return RES_OK;
 }

@@ -109,7 +109,7 @@ static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
             if (sram[i].len <= alloc_len)
                 return sram[i].data;
 
-            printf("ERROR: SRAM malloced memory isnt right, resetting memory\n");
+            debug_print_error("ERROR: SRAM malloced memory isnt right, resetting memory\n");
             //Allocated length isnt long enough. Reset it to be memory safe
             free(sram[i].data);
             sram[i].data = NULL;
@@ -140,7 +140,7 @@ static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
             return sram[i].data;
         }
     }
-    printf("ERROR: No SRAM space or slots left. Flush RAM to Flash!\n");
+    debug_print_error("ERROR: No SRAM space or slots left. Flush RAM to Flash!\n");
     return NULL;
 }
 
@@ -171,6 +171,19 @@ void _putchar(char character)
     ring_buffer[ring_buffer_pos++] = character;
     if (ring_buffer_pos >= sizeof(ring_buffer))
         ring_buffer_pos = 0;
+}
+
+static void flush_ring_buffer()
+{
+    static uint32_t ring_buffer_print_pos = 0;
+    while (ring_buffer[ring_buffer_print_pos] != 0xFF)
+    {
+        serial_port.write(ring_buffer[ring_buffer_print_pos]);
+        ring_buffer[ring_buffer_print_pos] = 0xFF;
+        ring_buffer_print_pos++;
+        if (ring_buffer_print_pos >= sizeof(ring_buffer))
+            ring_buffer_print_pos = 0;
+    }
 }
 
 #if (MAX_CONTROLLERS >= 1)
@@ -210,7 +223,7 @@ void setup()
     qspi_init(NULL, NULL);
     if (f_mount(&fs, "", 1) != FR_OK)
     {
-        printf("ERROR: Could not mount FATFS, probably not formatted correctly. Formatting flash...\n");
+        debug_print_error("ERROR: Could not mount FATFS, probably not formatted correctly. Formatting flash...\n");
         MKFS_PARM defopt = {FM_FAT, 1, 0, 0, 4096};
         BYTE work[256];
         f_mkfs("", &defopt, work, sizeof(work));
@@ -226,6 +239,7 @@ void setup()
         while (1)
         {
             tud_task();
+            flush_ring_buffer();
         }
     }
 
@@ -273,17 +287,8 @@ void loop()
     static int8_t n64_y_axis[MAX_CONTROLLERS] = {0};
     static int32_t axis[MAX_CONTROLLERS][6] = {0};
 
-    //Flush the ring buffer
-    static uint32_t ring_buffer_print_pos = 0;
-    while(ring_buffer[ring_buffer_print_pos] !=0xFF)
-    {
-        serial_port.write(ring_buffer[ring_buffer_print_pos]);
-        ring_buffer[ring_buffer_print_pos] = 0xFF;
-        ring_buffer_print_pos++;
-        if (ring_buffer_print_pos >= sizeof(ring_buffer))
-            ring_buffer_print_pos = 0;
-    }
-    
+    flush_ring_buffer();
+
     for (int c = 0; c < MAX_CONTROLLERS; c++)
     {
         //If a change in buttons or axis has been detected
@@ -444,14 +449,14 @@ void loop()
             if (n64_buttons[c] & N64_LB)
             {
                 n64_c[c].next_peripheral = PERI_RUMBLE;
-                printf("C%u to rpak\n", c);
+                debug_print_status("C%u to rpak\n", c);
             }
 
             //Changing peripheral to TPAK
             if (n64_buttons[c] & N64_RB)
             {
                 n64_c[c].next_peripheral = PERI_TPAK;
-                printf("C%u to tpak\n", c);
+                debug_print_status("C%u to tpak\n", c);
 
                 gameboycart *gb_cart = n64_c[c].tpak->gbcart;
                 uint8_t gb_header[0x100];
@@ -492,7 +497,7 @@ void loop()
                 }
                 else
                 {
-                    printf("ERROR: Could not read %s\n", gb_cart->filename);
+                    debug_print_error("ERROR: Could not read %s\n", gb_cart->filename);
                 }
                 tpak_reset(n64_c[c].tpak);
             }
@@ -523,7 +528,7 @@ void loop()
                 {
                     if (n64_c[i].mempack->id == mempak_bank && mempak_bank != VIRTUAL_PAK)
                     {
-                        printf("WARNING: Mempak already in use by controller setting to rumble %u\n", i);
+                        debug_print_status("WARNING: map in use by C%u. Setting to rpak\n", i);
                         n64_c[c].next_peripheral = PERI_RUMBLE;
                     }
                 }
@@ -536,8 +541,9 @@ void loop()
 
                 if (n64_c[c].mempack->data != NULL)
                 {
-                    printf("C%u to mpak %u\n", c, mempak_bank);
+                    debug_print_status("C%u to mpak %u\n", c, mempak_bank);
                     n64_c[c].mempack->virtual_is_active = 0;
+                    n64_c[c].mempack->id = mempak_bank;
                 }
                 else if (mempak_bank != VIRTUAL_PAK)
                 {
@@ -602,7 +608,7 @@ void loop()
         {
             if (!flushing[c])
             {
-                printf("Flushing SRAM to Flash!\n");
+                debug_print_status("Flushing SRAM to Flash!\n");
                 flush_sram();
                 flushing[c] = 1;
             }

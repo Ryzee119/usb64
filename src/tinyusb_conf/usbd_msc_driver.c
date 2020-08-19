@@ -27,7 +27,7 @@
 #include "bsp/board.h"
 #include "qspi.h"
 #include "tusb.h"
-#include "printf.h"
+#include "usb64_conf.h"
 
 #if CFG_TUD_MSC
 
@@ -45,7 +45,7 @@ static uint8_t block_cache[DISK_BLOCK_SIZE];
 void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16], uint8_t product_rev[4])
 {
     (void)lun;
-
+    debug_print_tinyusb("TUSB: tud_msc_inquiry_cb\n");
     const char _vid[] = "usb64 By Ryzee119";
     const char _pid[] = "Mass Storage";
     const char _rev[] = "1.0";
@@ -68,6 +68,7 @@ bool tud_msc_test_unit_ready_cb(uint8_t lun)
 void tud_msc_capacity_cb(uint8_t lun, uint32_t *block_count, uint16_t *block_size)
 {
     (void)lun;
+    debug_print_tinyusb("TUSB: Block_count: %u block_size: %u\n", DISK_BLOCK_NUM, DISK_BLOCK_SIZE);
     *block_count = DISK_BLOCK_NUM;
     *block_size  = DISK_BLOCK_SIZE;
 }
@@ -88,7 +89,7 @@ bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, boo
         }
         else
         {
-            printf("Unload MSC disk storage\n"); //FIXME (Requires you to 'safely remove hardware')
+            debug_print_tinyusb("TUSB: Unload MSC disk storage\n");
             if (cached_block != -1)
             {
                 qspi_erase(cached_block * DISK_BLOCK_SIZE, DISK_BLOCK_SIZE);
@@ -106,6 +107,7 @@ bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, boo
 int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buffer, uint32_t bufsize)
 {
     (void)lun;
+    debug_print_tinyusb("TUSB: Read from sector %i with offset %i bytes for %i bytes\n", lba, offset, bufsize);
     //If lba is the cached block, read from the cache instead of flash.
     if (lba == cached_block)
         memcpy(buffer, block_cache + offset, bufsize);
@@ -120,6 +122,7 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buff
 int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize)
 {
     (void)lun;
+    debug_print_tinyusb("TUSB: Wrote to sector %i with offset %i bytes for %i bytes\n", lba, offset, bufsize);
     //Addressing a new block, we need to flush the old block to flash.
     if (lba != cached_block)
     {
@@ -142,9 +145,9 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *
 int32_t tud_msc_scsi_cb(uint8_t lun, uint8_t const scsi_cmd[16], void *buffer, uint16_t bufsize)
 {
     // read10 & write10 has their own callback and MUST not be handled here
-
     void const *response = NULL;
     uint16_t resplen = 0;
+    debug_print_tinyusb("TUSB: SCSI Command 0x%02x received\n", scsi_cmd[0]);
 
     // most scsi handled is input
     bool in_xfer = true;

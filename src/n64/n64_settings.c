@@ -40,9 +40,9 @@ static uint8_t _calc_checksum(n64_settings *settings)
 //*settings should be a globally available allocated block of memory
 void n64_settings_init(n64_settings *settings)
 {
-    if (settings->checksum != _calc_checksum(settings))
+    if (settings->start != 0x64 || settings->checksum != _calc_checksum(settings))
     {
-        debug_print_status("%s not found or invalid, setting to default\n", SETTINGS_FILENAME);
+        debug_print_error("ERROR: %s not found or invalid, setting to default\n", SETTINGS_FILENAME);
         for (int i = 0; i < MAX_CONTROLLERS; i++)
         {
             settings->start = 0x64; //N64 :)

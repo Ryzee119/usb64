@@ -31,10 +31,12 @@ extern "C"
 {
 #endif
 
+#include "usb64_conf.h"
+
 //--------------------------------------------------------------------
 // COMMON CONFIGURATION
 //--------------------------------------------------------------------
-#define CFG_TUSB_DEBUG 0
+#define CFG_TUSB_DEBUG DEBUG_TINYUSB
 #define CFG_TUSB_DEBUG_PRINTF tusb_printf_hook
 
 // defined by board.mk
@@ -106,7 +108,7 @@ extern "C"
 #define CFG_TUD_CDC_TX_BUFSIZE (TUD_OPT_HIGH_SPEED ? 512 : 64)
 
 // MSC Buffer size of Device Mass storage
-#define CFG_TUD_MSC_BUFSIZE 512 //FIXME: Check if 4096 is ok
+#define CFG_TUD_MSC_BUFSIZE 4096 //FIXME: Check if 4096 is ok
 
 // HID buffer size Should be sufficient to hold ID (if any) + Data
 #define CFG_TUD_HID_BUFSIZE 16

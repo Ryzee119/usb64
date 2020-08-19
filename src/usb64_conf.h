@@ -29,7 +29,7 @@
 #define DEBUG_STATUS 1  //General information
 #define DEBUG_N64 0     //For debugging N64 low level info
 #define DEBUG_USBHOST 0 //For debugging the USB Host Stack
-#define DEBUG_TINYUSB 0 //For debugging the USB Device Stack (MSC and CDC)
+#define DEBUG_TINYUSB 0 //For debugging the USB Device Stack (MSC and CDC) Set to 2 for even more info
 #define DEBUG_FATFS 0   //For debugging the FATFS io
 #define DEBUG_ERROR 1   //For showing critical errors
 
@@ -38,10 +38,10 @@
 #define MAX_GBROMS 10 //ROMS over this will just get ignored FIXME: This uses ALOT of ram
 
 /* PIN MAPPING */
-#define N64_CONTROLLER_1_PIN 41
-#define N64_CONTROLLER_2_PIN 27
-#define N64_CONTROLLER_3_PIN 3 //FIXME
-#define N64_CONTROLLER_4_PIN 4 //FIXME
+#define N64_CONTROLLER_1_PIN 36
+#define N64_CONTROLLER_2_PIN 35
+#define N64_CONTROLLER_3_PIN 34
+#define N64_CONTROLLER_4_PIN 33
 #define USER_BUTTON_PIN 40
 #define USER_LED_PIN 13
 

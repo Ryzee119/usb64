@@ -40,24 +40,23 @@
 #include <Arduino.h>
 #include "ff.h"
 #include "qspi.h"
-#include "printf.h"
 #include "n64_mempak.h"
 #include "n64_virtualpak.h"
 #include "n64_settings.h"
 #include "n64_transferpak_gbcarts.h"
 #include "n64_controller.h"
 #include "n64_wrapper.h"
+#include "usb64_conf.h"
 
 FATFS fs;
 
 /* clmt_clust() and clst2sect() have been copied from the FATFs ff.c file to be used in this wrapper.
    Unfortunately they are not visible outside of ff.c and I needed them :( */
-static DWORD clmt_clust(FIL *fp, FSIZE_t ofs)
+static DWORD clmt_clust(DWORD *clmt, FSIZE_t ofs)
 {
     DWORD cl, ncl, *tbl;
-    FATFS *fs = fp->obj.fs;
-    tbl = fp->cltbl + 1;
-    cl = (DWORD)(ofs / FF_MAX_SS / fs->csize);
+    tbl = clmt + 1;
+    cl = (DWORD)(ofs / FF_MAX_SS / 1);
     for (;;)
     {
         ncl = *tbl++;
@@ -165,11 +164,10 @@ uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *dat
     //Store a list of open filenames
     static uint8_t open_files[MAX_GBROMS][MAX_FILENAME_LEN];
 
-    //Store a list of open file pointers
-    static FIL fil[MAX_GBROMS];
+    static FIL fil;
 
     //Store an array of the cluster link map table for each file.
-    //FIXME, is 32 ok or should I dynamically alloc the correct length
+    //FIXME, is 32 ok or should I dynamically alloc the correct length?
     static DWORD clmt[MAX_GBROMS][32];
 
     FRESULT res;
@@ -179,7 +177,7 @@ uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *dat
     //If FATFS isn't mounted, mount it now
     if (fs.fs_type == 0)
     {
-        printf("Mounting fs\n");
+        debug_print_status("Mounting fs\n");
         f_mount(&fs, "", 1);
     }
 
@@ -193,10 +191,9 @@ uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *dat
     int i = 0;
     for (i = 0; i < MAX_GBROMS; i++)
     {
-        const char *filename = (char *)gb_cart->filename;
-        if (strcmp((const char *)open_files[i], filename) == 0)
+        if (strcmp((const char *)open_files[i], (char *)gb_cart->filename) == 0)
         {
-            //printf("Found file at slot %u\n", i);
+            //debug_print_status("Found %s at slot %u\n", (char *)gb_cart->filename, i);
             break;
         }
     }
@@ -209,36 +206,37 @@ uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *dat
             const char *filename = (char *)gb_cart->filename;
             if (open_files[i][0] == '\0')
             {
-                printf("%s allocated at slot %u\n", filename, i);
+                debug_print_status("%s allocated at slot %u\n", filename, i);
                 strcpy((char *)open_files[i], (char *)filename);
                 break;
             }
         }
         if (i == MAX_GBROMS)
         {
-            printf("ERROR: File not opened. Too many files already open\n");
+            debug_print_error("ERROR: File not opened. Too many files already open\n");
             return 0;
         }
     }
 
     //If the file is newly opened, build cluster link map table for fast seek
-    if (fil[i].cltbl == NULL)
+    if (clmt[i][0] == 0)
     {
         const char *filename = (char *)gb_cart->filename;
-        printf("Building cluster link map table for %s\n", filename);
-        res = f_open(&fil[i], (const TCHAR *)filename, FA_READ);
+        debug_print_status("Building cluster link map table for %s\n", filename);
+        res = f_open(&fil, (const TCHAR *)filename, FA_READ);
         if (res != FR_OK)
         {
             open_files[i][0] = '\0';
             return 0;
         }
-        fil[i].cltbl = clmt[i];
+        fil.cltbl = clmt[i];
         clmt[i][0] = sizeof(clmt);
-        res = f_lseek(&fil[i], CREATE_LINKMAP);
+        res = f_lseek(&fil, CREATE_LINKMAP);
+        f_close(&fil);
     }
 
     //For speed, skip the fatfs f_read/f_seek and read with the backend QSPI at the address
-    DWORD sector = clst2sect(&fs, clmt_clust(&fil[i], address));
+    DWORD sector = clst2sect(&fs, clmt_clust(clmt[i], address));
     qspi_read(sector * sector_size + (address % sector_size), len, data);
     return 1;
 }
@@ -295,7 +293,7 @@ void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len)
 
     if (fs.fs_type == 0)
     {
-        printf("Mounting fs\r\n");
+        debug_print_status("Mounting fs\n");
         f_mount(&fs, "", 1);
     }
     //Trying open the file
@@ -305,18 +303,18 @@ void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len)
     res = f_open(&fil, (const TCHAR *)filename, FA_WRITE | FA_CREATE_ALWAYS);
     if (res != FR_OK)
     {
-        printf("Error opening %s for WRITE\r\n", filename);
+        debug_print_error("ERROR: Could not open %s for WRITE\n", filename);
         return;
     }
     //Cool, try write to the file
     res = f_write(&fil, data, len, &br);
     if (res != FR_OK || br != len)
     {
-        printf("Error writing %s\r\n", filename);
+        debug_print_error("ERROR: Could not write %s\n", filename);
     }
     else
     {
-        printf("Writing %s ok!\n", filename);
+        debug_print_status("Writing %s ok!\n", filename);
     }
     f_close(&fil);
 }
@@ -335,7 +333,7 @@ void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t le
 {
     if (fs.fs_type == 0)
     {
-        printf("Mounting fs\r\n");
+        debug_print_status("Mounting fs\n");
         f_mount(&fs, "", 1);
     }
     //Trying open the file
@@ -345,7 +343,7 @@ void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t le
     res = f_open(&fil, (const TCHAR *)filename, FA_READ);
     if (res != FR_OK)
     {
-        //printf("Error opening %s for READ, probably doesn't exist\r\n", filename);
+        debug_print_status("WARNING: Could not open %s for READ\n", filename);
         memset(data, 0x00, len);
         return;
     }
@@ -353,12 +351,12 @@ void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t le
     res = f_read(&fil, data, len, &br);
     if (res != FR_OK)
     {
-        printf("Error reading %s with error %i\r\n", filename, res); //Not good!
+        debug_print_error("ERROR: Could not read %s with error %i\n", filename, res);
         memset(data, 0x00, len);
     }
     else
     {
-        printf("Reading %s ok!\n", filename);
+        debug_print_status("Reading %s ok!\n", filename);
     }
     f_close(&fil);
 }

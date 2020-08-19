@@ -65,11 +65,11 @@ void n64_init_subsystem(n64_controller *controllers)
     n64hal_hs_tick_init();
 }
 
-static unsigned char n64_get_crc(unsigned char *data)
+static uint8_t n64_get_crc(uint8_t *data)
 {
     //Generated from http://www.sunshine2k.de/coding/javascript/crc/crc_js.html
     //N64 CRC poly is x^7 + x^2 + x^0 (0x85), initial value = 0
-    static const unsigned char crctable[256] = {
+    uint8_t crctable[256] = {
         0x00, 0x85, 0x8F, 0x0A, 0x9B, 0x1E, 0x14, 0x91, 0xB3, 0x36, 0x3C,
         0xB9, 0x28, 0xAD, 0xA7, 0x22, 0xE3, 0x66, 0x6C, 0xE9, 0x78, 0xFD,
         0xF7, 0x72, 0x50, 0xD5, 0xDF, 0x5A, 0xCB, 0x4E, 0x44, 0xC1, 0x43,
@@ -94,10 +94,10 @@ static unsigned char n64_get_crc(unsigned char *data)
         0xDD, 0xFF, 0x7A, 0x70, 0xF5, 0x64, 0xE1, 0xEB, 0x6E, 0xAF, 0x2A,
         0x20, 0xA5, 0x34, 0xB1, 0xBB, 0x3E, 0x1C, 0x99, 0x93, 0x16, 0x87,
         0x02, 0x08, 0x8D};
-    unsigned char crc = 0;
-    for (unsigned char byte = 0; byte < 32; byte++)
+    uint8_t crc = 0;
+    for (uint8_t byte = 0; byte < 32; byte++)
     {
-        crc = (unsigned char)(crctable[(unsigned char)(data[byte] ^ crc)]);
+        crc = (uint8_t)(crctable[(uint8_t)(data[byte] ^ crc)]);
     }
     return crc; //Returns the non-inverted CRC of a 32-byte data stream
 }
@@ -107,7 +107,7 @@ static unsigned char n64_get_crc(unsigned char *data)
 static uint8_t n64_compare_addr_crc(uint16_t encoded_add_console)
 {
     //See http://svn.navi.cx/misc/trunk/wasabi/devices/cube64/notes/addr_encoder.py
-    static const uint8_t crctable[11] = {
+    uint8_t crctable[11] = {
         0x15, 0x1F, 0x0B, 0x16, 0x19, 0x07, 0x0E, 0x1C, 0x0D, 0x1A, 0x01};
     uint16_t encoded_add_cont = encoded_add_console & 0xFFE0;
     for (uint8_t i = 0; i < sizeof(crctable); i++)
