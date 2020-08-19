@@ -165,8 +165,6 @@ uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *dat
     //Store a list of open filenames
     static uint8_t open_files[MAX_GBROMS][MAX_FILENAME_LEN];
 
-    
-
     //Store an array of the cluster link map table for each file.
     //FIXME, is 32 ok or should I dynamically alloc the correct length?
     static DWORD clmt[MAX_GBROMS][32];
@@ -351,7 +349,15 @@ void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t le
     if (res != FR_OK)
     {
         debug_print_error("ERROR: Could not read %s with error %i\n", filename, res);
-        memset(data, 0x00, len);
+        int attempts = 3;
+        while (res != FR_OK && attempts-- > 0)
+            res = f_read(&fil, data, len, &br);
+
+        if(res != FR_OK)
+        {
+            debug_print_error("ERROR: Could not read %s with 3 attempts\n", filename);
+            memset(data, 0x00, len);
+        }
     }
     else
     {
