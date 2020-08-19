@@ -48,17 +48,33 @@ n64_settings* settings;
 
 //USB Host Interface
 USBHost usbh;
+#if (ENABLE_USB_HUB)
+USBHub hub1(usbh);
+#endif
 #if (MAX_CONTROLLERS >= 1)
 JoystickController joy1(usbh);
+#if (MAX_MOUSE >= 1)
+MouseController mouse1(usbh);
+USBHIDParser hid1(usbh);
+#endif
 #endif
 #if (MAX_CONTROLLERS >= 2)
 JoystickController joy2(usbh);
+#if (MAX_MOUSE >= 3)
+MouseController mouse2(usbh);
+#endif
 #endif
 #if (MAX_CONTROLLERS >= 3)
 JoystickController joy3(usbh);
+#if (MAX_MOUSE >= 3)
+MouseController mouse3(usbh);
+#endif
 #endif
 #if (MAX_CONTROLLERS >= 4)
 JoystickController joy4(usbh);
+#if (MAX_MOUSE >= 4)
+MouseController mouse4(usbh);
+#endif
 #endif
 
 #if MAX_CONTROLLERS == 1
@@ -69,6 +85,16 @@ JoystickController *gamecontroller[] = {&joy1, &joy2};
 JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3};
 #elif MAX_CONTROLLERS == 4
 JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3, &joy4};
+#endif
+
+#if MAX_MOUSE == 1
+MouseController *mousecontroller[] = {&mouse1, NULL, NULL, NULL};
+#elif MAX_MOUSE == 2
+MouseController *mousecontroller[] = {&mouse1, &mouse2, NULL, NULL};
+#elif MAX_MOUSE == 3
+MouseController *mousecontroller[] = {&mouse1, &mouse2, &mouse3. NULL};
+#elif MAX_MOUSE == 4
+MouseController *mousecontroller[] = {&mouse1, &mouse2, &mouse3, &mouse4};
 #endif
 
 static void apply_deadzone(float* out_x, float* out_y, float x, float y, float dz_low, float dz_high) {
@@ -291,9 +317,11 @@ void loop()
 
     for (int c = 0; c < MAX_CONTROLLERS; c++)
     {
+        n64_buttons[c] = 0x0000;
         //If a change in buttons or axis has been detected
         if (gamecontroller[c]->available())
         {
+            n64_c[c].isMouse = false;
             for (uint8_t i = 0; i < (sizeof(axis[c]) / sizeof(axis[c][0])); i++)
             {
                 axis[c][i] = gamecontroller[c]->getAxis(i);
@@ -302,109 +330,127 @@ void loop()
             gamecontroller[c]->joystickDataClear();
         }
 
+        if(mousecontroller[c]!=NULL && mousecontroller[c]->available())
+        {
+            n64_c[c].isMouse = true;
+            n64_x_axis[c] = mousecontroller[c]->getMouseX() * MOUSE_SENSITIVITY;
+            n64_y_axis[c] = -mousecontroller[c]->getMouseY() * MOUSE_SENSITIVITY;
+
+            usb_buttons[c] = mousecontroller[c]->getButtons();
+            
+            if (usb_buttons[c] & (1 << 0)) n64_buttons[c] |= N64_A;   //A
+            if (usb_buttons[c] & (1 << 1)) n64_buttons[c] |= N64_B;   //B
+            if (usb_buttons[c] & (1 << 2)) n64_buttons[c] |= N64_ST;  //ST
+            mousecontroller[c]->mouseDataClear();
+            debug_print_status("%04x\n", n64_buttons[c]);
+        }
+
         //Map usb controllers to n64 controller
-        n64_buttons[c] = 0x0000;
-        switch (gamecontroller[c]->joystickType())
+        if (n64_c[c].isMouse == false)
         {
-        case JoystickController::XBOX360:
-        case JoystickController::XBOX360_WIRED:
-            //Digital usb_buttons
-            if (usb_buttons[c] & (1 << 0))  n64_buttons[c] |= N64_DU;  //DUP
-            if (usb_buttons[c] & (1 << 1))  n64_buttons[c] |= N64_DD;  //DDOWN
-            if (usb_buttons[c] & (1 << 2))  n64_buttons[c] |= N64_DL;  //DLEFT
-            if (usb_buttons[c] & (1 << 3))  n64_buttons[c] |= N64_DR;  //DRIGHT
-            if (usb_buttons[c] & (1 << 4))  n64_buttons[c] |= N64_ST;  //START
-            if (usb_buttons[c] & (1 << 5))  n64_buttons[c] |= 0;       //BACK
-            if (usb_buttons[c] & (1 << 6))  n64_buttons[c] |= 0;       //LS
-            if (usb_buttons[c] & (1 << 7))  n64_buttons[c] |= 0;       //RS
-            if (usb_buttons[c] & (1 << 8))  n64_buttons[c] |= N64_LB;  //LB
-            if (usb_buttons[c] & (1 << 9))  n64_buttons[c] |= N64_RB;  //RB
-            if (usb_buttons[c] & (1 << 10)) n64_buttons[c] |= 0;       //XBOX BUTTON
-            if (usb_buttons[c] & (1 << 11)) n64_buttons[c] |= 0;       //XBOX SYNC
-            if (usb_buttons[c] & (1 << 12)) n64_buttons[c] |= N64_A;   //A
-            if (usb_buttons[c] & (1 << 13)) n64_buttons[c] |= N64_B;   //B
-            if (usb_buttons[c] & (1 << 14)) n64_buttons[c] |= N64_B;   //X
-            if (usb_buttons[c] & (1 << 15)) n64_buttons[c] |= 0;       //Y
-            if (usb_buttons[c] & (1 << 7))  n64_buttons[c] |= N64_CU | //RS triggers
-                                                              N64_CD | //all C usb_buttons
-                                                              N64_CL |
-                                                              N64_CR;
-            //Analog stick (Normalise 0 to +/-100)
-            n64_x_axis[c] = axis[c][0] * 100 / 32768;
-            n64_y_axis[c] = axis[c][1] * 100 / 32768;
-
-            //Z button
-            if (axis[c][4] > 10) n64_buttons[c] |= N64_Z; //LT
-            if (axis[c][5] > 10) n64_buttons[c] |= N64_Z; //RT
-
-            //C usb_buttons
-            if (axis[c][2] > 16000)  n64_buttons[c] |= N64_CR;
-            if (axis[c][2] < -16000) n64_buttons[c] |= N64_CL;
-            if (axis[c][3] > 16000)  n64_buttons[c] |= N64_CU;
-            if (axis[c][3] < -16000) n64_buttons[c] |= N64_CD;
-
-            //Button to hold for 'combos'
-            n64_combo = (usb_buttons[c] & (1 << 5)); //back
-            break;
-        //TODO: OTHER USB CONTROLLERS
-        default:
-            break;
-        }
-
-        /* Apply analog stick options */
-        n64_settings *settings = n64_settings_get();
-        float x, y, deadzone;
-
-        //Apply Deadzone
-        deadzone = settings->deadzone[c] / 10.0f; //(0 to 40%)
-        apply_deadzone(&x, &y, n64_x_axis[c] / 100.0f, n64_y_axis[c] / 100.0f, deadzone, 0.05f);
-
-        //Apply Sensitivity
-        float range = 100.0f;
-        switch (settings->sensitivity[c])
-        {
-        case 4: range=1.10f; break; // +/-110
-        case 3: range=0.95f; break;
-        case 2: range=0.85f; break;
-        case 1: range=0.75f; break;
-        case 0: range=0.65f; break; // +/-65
-        }
-        x*=range; y*=range;
-
-        //Apply angle snap (some controllers will do this internally so I can't really disable it if they do)
-        if (settings->snap_axis[c])
-        {
-            int angle = atan2f(y, x) * 180.0f / 3.14f;
-            float magnitude = sqrtf(powf(x,2) + powf(y,2));
-            if (angle < 0)
-                angle = 360 + angle;
-
-            //Snap to 45°C segments
-            const int snap = SNAP_RANGE; //+/- 10 degrees within a 45 degree angle will snap
-            int a = angle;
-            while (a > 45) a-=45;
-            if ((a <= 0 + snap) || (a >= 45 - snap))
+            switch (gamecontroller[c]->joystickType())
             {
-                angle += snap;
-                angle -= angle % 45;
-                //Only snap if near max range
-                if (magnitude >= 0.90f * range)
+            case JoystickController::XBOX360:
+            case JoystickController::XBOX360_WIRED:
+                //Digital usb_buttons
+                if (usb_buttons[c] & (1 << 0))  n64_buttons[c] |= N64_DU;  //DUP
+                if (usb_buttons[c] & (1 << 1))  n64_buttons[c] |= N64_DD;  //DDOWN
+                if (usb_buttons[c] & (1 << 2))  n64_buttons[c] |= N64_DL;  //DLEFT
+                if (usb_buttons[c] & (1 << 3))  n64_buttons[c] |= N64_DR;  //DRIGHT
+                if (usb_buttons[c] & (1 << 4))  n64_buttons[c] |= N64_ST;  //START
+                if (usb_buttons[c] & (1 << 5))  n64_buttons[c] |= 0;       //BACK
+                if (usb_buttons[c] & (1 << 6))  n64_buttons[c] |= 0;       //LS
+                if (usb_buttons[c] & (1 << 7))  n64_buttons[c] |= 0;       //RS
+                if (usb_buttons[c] & (1 << 8))  n64_buttons[c] |= N64_LB;  //LB
+                if (usb_buttons[c] & (1 << 9))  n64_buttons[c] |= N64_RB;  //RB
+                if (usb_buttons[c] & (1 << 10)) n64_buttons[c] |= 0;       //XBOX BUTTON
+                if (usb_buttons[c] & (1 << 11)) n64_buttons[c] |= 0;       //XBOX SYNC
+                if (usb_buttons[c] & (1 << 12)) n64_buttons[c] |= N64_A;   //A
+                if (usb_buttons[c] & (1 << 13)) n64_buttons[c] |= N64_B;   //B
+                if (usb_buttons[c] & (1 << 14)) n64_buttons[c] |= N64_B;   //X
+                if (usb_buttons[c] & (1 << 15)) n64_buttons[c] |= 0;       //Y
+                if (usb_buttons[c] & (1 << 7))  n64_buttons[c] |= N64_CU | //RS triggers
+                                                                N64_CD | //all C usb_buttons
+                                                                N64_CL |
+                                                                N64_CR;
+                //Analog stick (Normalise 0 to +/-100)
+                n64_x_axis[c] = axis[c][0] * 100 / 32768;
+                n64_y_axis[c] = axis[c][1] * 100 / 32768;
+
+                //Z button
+                if (axis[c][4] > 10) n64_buttons[c] |= N64_Z; //LT
+                if (axis[c][5] > 10) n64_buttons[c] |= N64_Z; //RT
+
+                //C usb_buttons
+                if (axis[c][2] > 16000)  n64_buttons[c] |= N64_CR;
+                if (axis[c][2] < -16000) n64_buttons[c] |= N64_CL;
+                if (axis[c][3] > 16000)  n64_buttons[c] |= N64_CU;
+                if (axis[c][3] < -16000) n64_buttons[c] |= N64_CD;
+
+                //Button to hold for 'combos'
+                n64_combo = (usb_buttons[c] & (1 << 5)); //back
+                break;
+            //TODO: OTHER USB CONTROLLERS
+            default:
+                break;
+            }
+
+            /* Apply analog stick options */
+            n64_settings *settings = n64_settings_get();
+            float x, y, deadzone;
+
+            //Apply Deadzone
+            deadzone = settings->deadzone[c] / 10.0f; //(0 to 40%)
+            apply_deadzone(&x, &y, n64_x_axis[c] / 100.0f, n64_y_axis[c] / 100.0f, deadzone, 0.05f);
+
+            //Apply Sensitivity
+            float range = 0.85f;
+            switch (settings->sensitivity[c])
+            {
+            case 4: range=1.10f; break; // +/-110
+            case 3: range=0.95f; break;
+            case 2: range=0.85f; break;
+            case 1: range=0.75f; break;
+            case 0: range=0.65f; break; // +/-65
+            }
+            x*=range; y*=range;
+
+            //Apply angle snap (some controllers will do this internally so I can't really disable it if they do)
+            if (settings->snap_axis[c])
+            {
+                int angle = atan2f(y, x) * 180.0f / 3.14f;
+                float magnitude = sqrtf(powf(x,2) + powf(y,2));
+                if (angle < 0)
+                    angle = 360 + angle;
+
+                //Snap to 45°C segments
+                const int snap = SNAP_RANGE; //+/- 10 degrees within a 45 degree angle will snap
+                int a = angle;
+                while (a > 45) a-=45;
+                if ((a <= 0 + snap) || (a >= 45 - snap))
                 {
-                    x = magnitude * cosf(angle * 3.14f/180.0f);
-                    y = magnitude * sinf(angle * 3.14f/180.0f);
+                    angle += snap;
+                    angle -= angle % 45;
+                    //Only snap if near max range
+                    if (magnitude >= 0.90f * range)
+                    {
+                        x = magnitude * cosf(angle * 3.14f/180.0f);
+                        y = magnitude * sinf(angle * 3.14f/180.0f);
+                    }
                 }
             }
+
+            //Apply Octagonal correction FIXME
+
+            //Apply corrected values to axis variables
+            n64_x_axis[c] = x * 100.0f;
+            n64_y_axis[c] = y * 100.0f;
         }
-
-        //Apply Octagonal correct FIXME
-
-        //Apply corrected values to axis variables
-        n64_x_axis[c] = x * 100.0f;
-        n64_y_axis[c] = y * 100.0f;
 
         //Apply digital buttons and axis to n64 controller if combo button isnt pressed
         if (n64_combo == 0)
         {
+            debug_print_status("%04x\n", n64_buttons[c]);
             n64_c[c].bState.dButtons = n64_buttons[c];
             n64_c[c].bState.x_axis = n64_x_axis[c];
             n64_c[c].bState.y_axis = n64_y_axis[c];

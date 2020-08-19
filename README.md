@@ -12,14 +12,15 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - [x] USB mass storage driver to backup mempaks and gameboy ROMs over USB.
 
 ## Todo
-- [ ] Teensy 4.1 is overkill. Port to other platforms.
+- [ ] Teensy 4.1 is overkill. Port to other/cheaper platforms?
 - [ ] More USB controller drivers.
 - [ ] True dual analog sticks with GoldenEye and Perfect Dark.
-- [ ] Additional Gameboy MBCs.
+- [ ] Additional Gameboy MBCs. (Only MBC3 supported!)
 - [ ] Raspberry Pi interface or similar for all other USB controllers.
-- [ ] Gameboy Camera.
-- [ ] Touch LCD (Optional).
-- [ ] Remove USBHOST_t36 dependency. (TinyUSB is more portable)
+- [ ] Hardwired controller interface.
+- [ ] Gameboy Camera Support.
+- [ ] Touch LCD Support.
+- [ ] Remove USBHOST_t36 dependency. (TinyUSB is more portable).
 - [ ] N64 mouse emulation (Use a USB Mouse!).
 
 ## Supported USB Controllers
