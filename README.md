@@ -1,6 +1,6 @@
 <img src="./images/usb64_logo.png" alt="basic" width="208px"/>  
 
-![Build](https://github.com/Ryzee119/usb64/workflows/Build/badge.svg) ![badge](https://img.shields.io/badge/license-MIT-green)  
+![Build](./workflows/Build/badge.svg) ![badge](https://img.shields.io/badge/license-MIT-green)  
 A project developed to use USB controllers on the Nintendo 64 console.  
 Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee119/usb64/releases).  
 
@@ -41,8 +41,8 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 |--|--|
 | Teensy 4.1 | https://www.pjrc.com/store/teensy41.html |
 | USB Host Cable | https://www.pjrc.com/store/cable_usb_host_t36.html |
+| 3 x Pin Header | https://www.pjrc.com/store/header_24x1.html |
 | 128Mbit SPI Flash W25Q128 SOIC-8| https://www.digikey.com.au/short/zb3v27 |
-| Tactile Push Button (NO/Momentary) | https://www.digikey.com.au/short/z59wtp |
 | N64 Controller Extensions | [AliExpress](https://www.aliexpress.com/wholesale?catId=0&SearchText=n64%20controller%20extension) |
 | Case | To do |
 
@@ -63,4 +63,3 @@ usb64 is shared under the [MIT license](https://github.com/Ryzee119/usb64/blob/d
 * [QSPI](https://github.com/Ryzee119/usb64/tree/dev/src/qspi) is from [teensy41_extram](https://github.com/PaulStoffregen/teensy41_extram) shared under an '[MIT or MIT-like license](https://forum.pjrc.com/threads/29382-open-source-license-issues-when-using-teensy-products?p=79667&viewfull=1#post79667)'.
 * [USBHost_t36 fork](https://github.com/Ryzee119/USBHost_t36) shared under an '[MIT or MIT-like license](https://forum.pjrc.com/threads/29382-open-source-license-issues-when-using-teensy-products?p=79667&viewfull=1#post79667)'.
 * [Teensy cores](https://github.com/PaulStoffregen/cores) shared under an '[MIT or MIT-like license](https://forum.pjrc.com/threads/29382-open-source-license-issues-when-using-teensy-products?p=79667&viewfull=1#post79667)'.
-* [N64 Console artwork](https://icon-library.net/icon/nintendo-64-icon-23.html) shared under [CC0 Public Domain Licence](https://creativecommons.org/publicdomain/zero/1.0/)
