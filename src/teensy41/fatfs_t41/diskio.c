@@ -29,6 +29,11 @@
 #include "qspi.h"
 #include "usb64_conf.h"
 
+//Read sector first then compare to see if sector has actually changed
+//Can reduce flash wear and actually speed up larger writes as only small parts
+//of the file might change.
+#define READBEFOREWRITE 
+
 static uint32_t sector_size = 0;
 static uint32_t flash_size = 0;
 
@@ -74,14 +79,29 @@ DRESULT disk_write(
 	if (sector_size == 0)
 		return RES_NOTRDY;
 
-	//I read the sector first and see if it has been changed before writing.
-	//Because writing is quite slow, this should actually speed things up a bit on average.
 	uint32_t blen = count * sector_size;
+#ifdef READBEFOREWRITE
 	uint32_t bAddress = sector * sector_size;
+	uint8_t *temp = malloc(blen);
 
-	debug_print_fatfs("FATFS: Wrote to sector %i for %i sector(s)\n", sector, count);
+	qspi_read(bAddress, blen, temp);
+	if (memcmp(temp, buff, blen) != 0)
+	{
+		qspi_erase(bAddress, blen);
+		qspi_write(bAddress, blen, (uint8_t *)buff);
+		debug_print_fatfs("FATFS: Wrote to sector %i for %i sector(s)\n", sector, count);
+	}
+	else
+	{
+		debug_print_fatfs("FATFS: Sector %u unchanged for %i sector(s). Did not write\n", sector, count);
+	}
+	if (temp)
+		free(temp);
+#else
 	qspi_erase(bAddress, blen);
 	qspi_write(bAddress, blen, (uint8_t *)buff);
+	debug_print_fatfs("FATFS: Wrote to sector %i for %i sector(s)\n", sector, count);
+#endif
 
 	return RES_OK;
 }
