@@ -165,6 +165,7 @@ static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
             }
             else
             {
+                sram[i].non_volatile = 0;
                 memset(sram[i].data, 0x00, sram[i].len);
             }
 
