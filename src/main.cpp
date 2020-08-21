@@ -425,24 +425,29 @@ void loop()
             //Apply angle snap (some controllers will do this internally so I can't really disable it if they do)
             if (settings->snap_axis[c])
             {
-                int angle = atan2f(y, x) * 180.0f / 3.14f;
+                 //+/- SNAP_RANGE degrees within a 45 degree angle will snap (MAX is 45/2)
+                const int snap = SNAP_RANGE;
                 float magnitude = sqrtf(powf(x,2) + powf(y,2));
-                if (angle < 0)
-                    angle = 360 + angle;
 
-                //Snap to 45°C segments
-                const int snap = SNAP_RANGE; //+/- 10 degrees within a 45 degree angle will snap
-                int a = angle;
-                while (a > 45) a-=45;
-                if ((a <= 0 + snap) || (a >= 45 - snap))
+                //Only snap if magnitude is >=90%
+                if (magnitude >= 0.90f * range)
                 {
-                    angle += snap;
-                    angle -= angle % 45;
-                    //Only snap if near max range
-                    if (magnitude >= 0.90f * range)
+                    int angle = atan2f(y, x) * 180.0f / 3.14f;
+                
+                    //Between 0-360 degrees
+                    if (angle < 0) angle = 360 + angle;
+
+                    //Temp variable between 0-45 degrees
+                    int a = angle;
+                    while (a > 45) a-=45;
+
+                    //Snap to 45 degree segments
+                    if ((a <= 0 + snap) || (a >= 45 - snap))
                     {
-                        x = magnitude * cosf(angle * 3.14f/180.0f);
-                        y = magnitude * sinf(angle * 3.14f/180.0f);
+                        angle += snap;
+                        angle -= angle % 45;
+                        x = magnitude * cosf(angle * 3.14f / 180.0f);
+                        y = magnitude * sinf(angle * 3.14f / 180.0f);
                     }
                 }
             }
