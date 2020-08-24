@@ -1,5 +1,5 @@
 # Hardware Setup
-* Install a W25Q126 SPI Flash Chip on the designated footprint.
+* Install a W25Q128 SPI Flash Chip on the designated footprint.
 * Install a 5 x 0.1" pin header on the USB OTG Header.  
 
 <img src="./images/install_setup.png" alt="setup" width="50%"/>
