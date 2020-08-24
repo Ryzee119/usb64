@@ -16,6 +16,7 @@
 # Advanced Usage
 * Hardwire a custom N64 controller to the designated IO (Each digital pin is internally pulled-up, Analog input respect to VCC, VCC/2 is central position).
 * Hook up a Raspberrty Pi or similar via I2C and send button presses via I2C.  
+* Don't forget to add grounds ('G' pins on Teensy).
 
 <img src="./images/install_advanced.png" alt="advanced" width="75%"/>
 
