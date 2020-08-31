@@ -31,7 +31,6 @@
  * with high speed external flash (>4Mb)
  * 
  * TODO: Option to disable mempack/tpak features to remove the requirement for external flash or lots of ram
- * TODO: Remove dependenceny on USBHOST_t36 and use TinyUSB instead (its more portable)
  */
 
 #include <stdint.h>
@@ -49,30 +48,8 @@
 #include "usb64_conf.h"
 
 FATFS fs;
-
-/* clmt_clust() and clst2sect() have been copied from the FATFs ff.c file to be used in this wrapper.
-   Unfortunately they are not visible outside of ff.c and I needed them :( */
-static DWORD clmt_clust(DWORD *clmt, FSIZE_t ofs)
-{
-    DWORD cl, ncl, *tbl;
-    tbl = clmt + 1;
-    cl = (DWORD)(ofs / FF_MAX_SS / 1);
-    for (;;)
-    {
-        ncl = *tbl++;
-        if (ncl == 0) return 0;
-        if (cl < ncl) break;
-        cl -= ncl;
-        tbl++;
-    }
-    return cl + *tbl;
-}
-static LBA_t clst2sect(FATFS *fs, DWORD clst)
-{
-    clst -= 2;
-    if (clst >= fs->n_fatent - 2) return 0;
-    return fs->database + (LBA_t)fs->csize * clst;
-}
+static DWORD clmt_clust(DWORD *clmt, FSIZE_t ofs);
+static LBA_t clst2sect(FATFS *fs, DWORD clst);
 
 /*
  * Function: Reads a hardware realtime clock and populates day,h,m,s
@@ -117,6 +94,8 @@ void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_
  */
 void n64hal_sram_read(uint8_t *rxdata, uint8_t *src, uint16_t address, uint16_t len)
 {
+    //FIXME, need to be able to use external flash somehow, maybe *rxdata should be a UID?
+    //address renamed to offset?
     if (src != NULL)
     {
         memcpy(rxdata, src + address, len);
@@ -136,6 +115,8 @@ void n64hal_sram_read(uint8_t *rxdata, uint8_t *src, uint16_t address, uint16_t 
  */
 void n64hal_sram_write(uint8_t *txdata, uint8_t *dest, uint16_t address, uint16_t len)
 {
+    //FIXME, need to be able to use external flash somehow, maybe *dest should be a UID?
+    //address renamed to offset?
     if (dest != NULL)
     {
         memcpy(dest + address, txdata, len);
@@ -450,4 +431,31 @@ void n64hal_input_swap(n64_controller *controller, uint8_t val)
 uint8_t n64hal_input_read(n64_controller *controller)
 {
     return digitalRead(controller->gpio_pin);
+}
+
+/* Helper Fuctions */
+
+/* Function: Take a raw address and return the cluster in flash memory it is located in */
+static DWORD clmt_clust(DWORD *clmt, FSIZE_t ofs)
+{
+    DWORD cl, ncl, *tbl;
+    tbl = clmt + 1;
+    cl = (DWORD)(ofs / FF_MAX_SS / 1);
+    for (;;)
+    {
+        ncl = *tbl++;
+        if (ncl == 0) return 0;
+        if (cl < ncl) break;
+        cl -= ncl;
+        tbl++;
+    }
+    return cl + *tbl;
+}
+
+/* Function: Take a cluster and return the sector in flash memory it is located in */
+static LBA_t clst2sect(FATFS *fs, DWORD clst)
+{
+    clst -= 2;
+    if (clst >= fs->n_fatent - 2) return 0;
+    return fs->database + (LBA_t)fs->csize * clst;
 }
