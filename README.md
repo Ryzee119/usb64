@@ -12,16 +12,16 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - [x] USB mass storage driver to backup mempaks and gameboy ROMs over USB.
 
 ## Todo
-- [ ] Teensy 4.1 is overkill. Port to other/cheaper platforms?
-- [ ] More USB controller drivers.
-- [ ] True dual analog sticks with GoldenEye and Perfect Dark.
-- [ ] Additional Gameboy MBCs. (Only MBC3 supported!)
+- [ ] N64 mouse emulation (Use a USB Mouse!).
 - [ ] Raspberry Pi interface or similar for all other USB controllers.
 - [ ] Hardwired controller interface.
+- [ ] More USB controller drivers.
+- [ ] True dual analog sticks with GoldenEye and Perfect Dark.
+- [ ] Additional Gameboy MBCs. (Only MBC3 supported at the moment)
 - [ ] Gameboy Camera Support.
 - [ ] Touch LCD Support.
+- [ ] Teensy 4.1 is overkill. Port to other/cheaper platforms?
 - [ ] Remove USBHOST_t36 dependency. (TinyUSB is more portable).
-- [ ] N64 mouse emulation (Use a USB Mouse!).
 
 ## Supported USB Controllers
 - Bluetooth 8bitdo/compatible controllers via the [8BitDo Wireless USB Adapter](https://www.8bitdo.com/wireless-usb-adapter/)
@@ -30,7 +30,7 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - Xbox 360 Wireless (Via PC USB Receiver)
 
 ## Controls
-- Back + D-Pad = Insert mempak banks 1 to 4
+- Back + D-Pad = Insert Mempak banks 1 to 4
 - Back + LB = Insert Rumblepak
 - Back + RB = Insert Transferpak
 - Back + Start = Select *virtual pak* (Use in-game mempak managers to configure the device)
