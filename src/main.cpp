@@ -43,6 +43,10 @@ typedef struct
     int non_volatile;
 } sram_storage;
 
+static void apply_deadzone(float* out_x, float* out_y, float x, float y, float dz_low, float dz_high);
+static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile);
+static void flush_sram();
+
 n64_controller n64_c[MAX_CONTROLLERS];
 n64_settings* settings;
 
@@ -102,100 +106,13 @@ MouseController *mousecontroller[] = {&mouse1, &mouse2, &mouse3. NULL};
 MouseController *mousecontroller[] = {&mouse1, &mouse2, &mouse3, &mouse4};
 #endif
 
-static void apply_deadzone(float* out_x, float* out_y, float x, float y, float dz_low, float dz_high) {
-    float magnitude = sqrtf(x * x + y * y);
-    if (magnitude > dz_low) {
-        //Scale such that output magnitude is in the range [0.0f, 1.0f]
-        float allowed_range = 1.0f - dz_high - dz_low;
-        float normalised_magnitude = (magnitude - dz_low) / allowed_range;
-        if (normalised_magnitude > 1.0f)
-            normalised_magnitude = 1.0f;
-        float scale = normalised_magnitude / magnitude;
-        *out_x = x * scale;
-        *out_y = y * scale;
-    }
-    else {
-        //Stick is in the inner dead zone
-        *out_x = 0.0f;
-        *out_y = 0.0f;
-    }
-}
-
-//This function allocates and manages SRAM for mempak and gameboy roms (tpak) for the system.
-//SRAM is malloced into slots. Each slot stores a pointer to the memory location, its size, and
-//a string name to identify what that slot is used for.
-//A flag is set to determine wether that memory is non volatile and should be backed up/restored from flash.
-sram_storage sram[10] = {0};
-static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
-{
-    if (alloc_len == 0)
-        return NULL;
-
-    //Loop through to see if alloced memory already exists
-    for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
-    {
-        if (strcmp(sram[i].name, (const char *)name) == 0)
-        {
-            //Already malloced, check len is ok
-            if (sram[i].len <= alloc_len)
-                return sram[i].data;
-
-            debug_print_error("ERROR: SRAM malloced memory isnt right, resetting memory\n");
-            //Allocated length isnt long enough. Reset it to be memory safe
-            free(sram[i].data);
-            sram[i].data = NULL;
-            sram[i].len = 0;
-        }
-    }
-    //If nothing exists, loop again to find a spot and allocate
-    for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
-    {
-        if (sram[i].len == 0)
-        {
-            sram[i].data = (uint8_t *)malloc(alloc_len);
-            if (sram[i].data == NULL) break;
-            sram[i].len = alloc_len;
-            strcpy(sram[i].name, name);
-            if(non_volatile)
-            {
-                n64hal_sram_restore_from_file((uint8_t *)sram[i].name,
-                                            sram[i].data,
-                                            sram[i].len);
-                sram[i].non_volatile = 1;
-            }
-            else
-            {
-                sram[i].non_volatile = 0;
-                memset(sram[i].data, 0x00, sram[i].len);
-            }
-
-            return sram[i].data;
-        }
-    }
-    debug_print_error("ERROR: No SRAM space or slots left. Flush RAM to Flash!\n");
-    return NULL;
-}
-
-//Flush SRAM to flash memory if the non volatile flag is set
-static void flush_sram()
-{
-    for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
-    {
-        if(sram[i].len == 0 || sram[i].data == NULL || sram[i].non_volatile == 0)
-            continue;
-        n64hal_sram_backup_to_file((uint8_t*)sram[i].name, sram[i].data, sram[i].len);
-    }
-}
-
-
 //TinyUSB interrupt handler (Used for CDC and MSC)
 static void tusbd_interrupt(void)
 {
     tud_int_handler(0);
 }
 
-//Ring buffer is used to buffer printf outputs to the terminal
-//Printing to the serial port is handles in main()
+//Ring buffer is used to buffer printf outputs
 static uint32_t ring_buffer_pos = 0;
 static char ring_buffer[4096];
 void _putchar(char character)
@@ -259,6 +176,7 @@ void setup()
         MKFS_PARM defopt = {FM_FAT, 1, 0, 0, 4096};
         BYTE work[256];
         f_mkfs("", &defopt, work, sizeof(work));
+        f_mount(&fs, "", 1);
     }
 
     //If a n64 console isn't detected, start the USB Device MSC driver
@@ -337,6 +255,7 @@ void loop()
         }
 
 #if (MAX_MICE >= 1)
+        //Map usb mouse to n64 mouse
         if(mousecontroller[c]!=NULL && mousecontroller[c]->available())
         {
             n64_c[c].is_mouse = true;
@@ -353,7 +272,7 @@ void loop()
         }
 #endif
 
-        //Map usb controllers to n64 controller
+        //Map usb controller to n64 controller
         if (n64_c[c].is_mouse == false)
         {
             switch (gamecontroller[c]->joystickType())
@@ -405,23 +324,23 @@ void loop()
 
             /* Apply analog stick options */
             n64_settings *settings = n64_settings_get();
-            float x, y, deadzone;
+            float x, y, deadzone, range;
 
             //Apply Deadzone
             deadzone = settings->deadzone[c] / 10.0f; //(0 to 40%)
             apply_deadzone(&x, &y, n64_x_axis[c] / 100.0f, n64_y_axis[c] / 100.0f, deadzone, 0.05f);
 
             //Apply Sensitivity
-            float range = 0.85f;
             switch (settings->sensitivity[c])
             {
-            case 4: range=1.10f; break; // +/-110
-            case 3: range=0.95f; break;
-            case 2: range=0.85f; break;
-            case 1: range=0.75f; break;
-            case 0: range=0.65f; break; // +/-65
+            case 4:  range = 1.10f; break; // +/-110
+            case 3:  range = 0.95f; break;
+            case 2:  range = 0.85f; break;
+            case 1:  range = 0.75f; break;
+            case 0:  range = 0.65f; break; // +/-65
+            default: range = 0.85f; break;
             }
-            x*=range; y*=range;
+            x *= range; y *= range;
 
             //Apply angle snap (some controllers will do this internally so I can't really disable it if they do)
             if (settings->snap_axis[c])
@@ -525,9 +444,7 @@ void loop()
                 if (n64hal_rom_fastread(gb_cart, 0x100, gb_header, sizeof(gb_header)))
                 {
                     //Init the gb_cart struct using header info
-                    gb_init_cart(gb_cart,
-                                       gb_header,
-                                       settings->default_tpak_rom[c]);
+                    gb_init_cart(gb_cart, gb_header, settings->default_tpak_rom[c]);
 
                     char save_filename[MAX_FILENAME_LEN];
                     if (gb_cart->ramsize > 0)
@@ -539,7 +456,7 @@ void loop()
 
                         uint8_t mbc = gb_cart->mbc;
                         uint8_t volatile_flag = 0;
-                        //Only the MBC has a battery, set the non volatile flag for the SRAM.
+                        //Only if the MBC has a battery, set the non volatile flag for the SRAM.
                         if (mbc == ROM_RAM_BAT      || mbc == ROM_RAM_BAT  ||
                             mbc == MBC1_RAM_BAT     || mbc == MBC2_BAT     ||
                             mbc == MBC3_RAM_BAT     || mbc == MBC3_TIM_BAT ||
@@ -550,8 +467,11 @@ void loop()
                         }
 
                         gb_cart->ram = alloc_sram(save_filename, gb_cart->ramsize, volatile_flag);
-                        if (gb_cart->ram == NULL)
+                        if (gb_cart->ram == NULL && gb_cart->ramsize > 0)
+                        {
                             n64_c[c].next_peripheral = PERI_RUMBLE; //Error, set to rumblepak
+                            debug_print_error("ERROR: Could not allocate sram for %s\n", save_filename);
+                        }
                     }
                 }
                 else
@@ -607,6 +527,7 @@ void loop()
                 else if (mempak_bank != VIRTUAL_PAK)
                 {
                     n64_c[c].next_peripheral = PERI_RUMBLE; //Error, set to rumblepak
+                    debug_print_error("ERROR: Could not allocate sram for %s\n", save_filename);
                 }
 
                 if (mempak_bank == VIRTUAL_PAK)
@@ -663,7 +584,7 @@ void loop()
         }
 
         //If you pressed the combo to flush sram to flash, handle it here
-        static uint8_t flushing[4] = {0};
+        static uint8_t flushing[MAX_CONTROLLERS] = {0};
         if (n64_combo && (n64_buttons[c] & (N64_A | N64_B)))
         {
             if (!flushing[c])
@@ -680,3 +601,88 @@ void loop()
 
     } //END FOR LOOP
 } // MAIN LOOP
+
+static void apply_deadzone(float* out_x, float* out_y, float x, float y, float dz_low, float dz_high) {
+    float magnitude = sqrtf(x * x + y * y);
+    if (magnitude > dz_low) {
+        //Scale such that output magnitude is in the range [0.0f, 1.0f]
+        float allowed_range = 1.0f - dz_high - dz_low;
+        float normalised_magnitude = (magnitude - dz_low) / allowed_range;
+        if (normalised_magnitude > 1.0f)
+            normalised_magnitude = 1.0f;
+        float scale = normalised_magnitude / magnitude;
+        *out_x = x * scale;
+        *out_y = y * scale;
+    }
+    else {
+        //Stick is in the inner dead zone
+        *out_x = 0.0f;
+        *out_y = 0.0f;
+    }
+}
+
+//This function allocates and manages SRAM for mempak and gameboy roms (tpak) for the system.
+//SRAM is malloced into slots. Each slot stores a pointer to the memory location, its size, and
+//a string name to identify what that slot is used for.
+//A flag is set to determine wether that memory is non volatile and should be backed up/restored from flash.
+sram_storage sram[10] = {0};
+static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
+{
+    if (alloc_len == 0)
+        return NULL;
+
+    //Loop through to see if alloced memory already exists
+    for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
+    {
+        if (strcmp(sram[i].name, (const char *)name) == 0)
+        {
+            //Already malloced, check len is ok
+            if (sram[i].len <= alloc_len)
+                return sram[i].data;
+
+            debug_print_error("ERROR: SRAM malloced memory isnt right, resetting memory\n");
+            //Allocated length isnt long enough. Reset it to be memory safe
+            free(sram[i].data);
+            sram[i].data = NULL;
+            sram[i].len = 0;
+        }
+    }
+    //If nothing exists, loop again to find a spot and allocate
+    for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
+    {
+        if (sram[i].len == 0)
+        {
+            sram[i].data = (uint8_t *)malloc(alloc_len);
+            if (sram[i].data == NULL) break;
+            sram[i].len = alloc_len;
+            strcpy(sram[i].name, name);
+            if(non_volatile)
+            {
+                n64hal_sram_restore_from_file((uint8_t *)sram[i].name,
+                                            sram[i].data,
+                                            sram[i].len);
+                sram[i].non_volatile = 1;
+            }
+            else
+            {
+                sram[i].non_volatile = 0;
+                memset(sram[i].data, 0x00, sram[i].len);
+            }
+
+            return sram[i].data;
+        }
+    }
+    debug_print_error("ERROR: No SRAM space or slots left. Flush RAM to Flash!\n");
+    return NULL;
+}
+
+//Flush SRAM to flash memory if the non volatile flag is set
+static void flush_sram()
+{
+    for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
+    {
+        if(sram[i].len == 0 || sram[i].data == NULL || sram[i].non_volatile == 0)
+            continue;
+        n64hal_sram_backup_to_file((uint8_t*)sram[i].name, sram[i].data, sram[i].len);
+    }
+}
