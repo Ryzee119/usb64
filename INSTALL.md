@@ -7,7 +7,7 @@
 # Quick Start
 * Program the usb64 as per [compilation instructions](./COMPILE.md).
 * Connect a usb64 compatible USB controller.
-* Connect the player data lines to the N64 Console and atleast one ground line.
+* Connect the player data lines, atleast one ground line and one 3.3V line to/from the N64 Console
 * Power on the Nintendo 64 console.
 * Power on the usb64 (5V via MicroUSB cable).  
 
