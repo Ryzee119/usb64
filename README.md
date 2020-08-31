@@ -8,7 +8,7 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - [x] Rumblepak emulation.
 - [x] Mempak emulation or 4 selectable banks
 - [x] Transferpak emulation with 16MB internal storage for Gameboy ROMs.
-- [x] Configurable deadzones and sensitivity.
+- [x] Configurable deadzones and sensitivity from the N64 Console.
 - [x] USB mass storage driver to backup mempaks and gameboy ROMs over USB.
 
 ## Todo
