@@ -3,14 +3,8 @@ name: Build
 on:
   pull_request:
     branches: [ master ]
-    paths: |
-      src
-      .github/workflows
   push:
     branches: [ master ]
-    paths: |
-      src
-      .github/workflows
 
 jobs:
   build:
