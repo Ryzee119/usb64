@@ -325,56 +325,10 @@ void loop()
             /* Apply analog stick options */
             n64_settings *settings = n64_settings_get();
             float x, y, deadzone, range;
-
-            //Apply Deadzone
-            deadzone = settings->deadzone[c] / 10.0f; //(0 to 40%)
-            apply_deadzone(&x, &y, n64_x_axis[c] / 100.0f, n64_y_axis[c] / 100.0f, deadzone, 0.05f);
-
-            //Apply Sensitivity
-            switch (settings->sensitivity[c])
-            {
-            case 4:  range = 1.10f; break; // +/-110
-            case 3:  range = 0.95f; break;
-            case 2:  range = 0.85f; break;
-            case 1:  range = 0.75f; break;
-            case 0:  range = 0.65f; break; // +/-65
-            default: range = 0.85f; break;
-            }
-            x *= range; y *= range;
-
-            //Apply angle snap (some controllers will do this internally so I can't really disable it if they do)
-            if (settings->snap_axis[c])
-            {
-                 //+/- SNAP_RANGE degrees within a 45 degree angle will snap (MAX is 45/2)
-                const int snap = SNAP_RANGE;
-                float magnitude = sqrtf(powf(x,2) + powf(y,2));
-
-                //Only snap if magnitude is >=90%
-                if (magnitude >= 0.90f * range)
-                {
-                    int angle = atan2f(y, x) * 180.0f / 3.14f;
-                
-                    //Between 0-360 degrees
-                    if (angle < 0) angle = 360 + angle;
-
-                    //Temp variable between 0-45 degrees
-                    int a = angle;
-                    while (a > 45) a-=45;
-
-                    //Snap to 45 degree segments
-                    if ((a <= 0 + snap) || (a >= 45 - snap))
-                    {
-                        angle += snap;
-                        angle -= angle % 45;
-                        x = magnitude * cosf(angle * 3.14f / 180.0f);
-                        y = magnitude * sinf(angle * 3.14f / 180.0f);
-                    }
-                }
-            }
-
-            //Apply Octagonal correction FIXME
-
-            //Apply corrected values to axis variables
+            apply_deadzone(&x, &y, n64_x_axis[c] / 100.0f, n64_y_axis[c] / 100.0f, settings->deadzone[c] / 10.0f, 0.05f);
+            range = apply_sensitivity(settings->sensitivity[c], &x, &y);
+            if (settings->snap_axis[c]) apply_snap(range, &x, &y);
+            apply_octa_correction(&x, &y);
             n64_x_axis[c] = x * 100.0f;
             n64_y_axis[c] = y * 100.0f;
         }
