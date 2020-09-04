@@ -43,9 +43,10 @@ typedef struct
     int non_volatile;
 } sram_storage;
 
-static void apply_deadzone(float* out_x, float* out_y, float x, float y, float dz_low, float dz_high);
 static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile);
-static void flush_sram();
+static void flush_sram(void);
+static void init_ring_buffer(void);
+static void flush_ring_buffer();
 
 n64_controller n64_c[MAX_CONTROLLERS];
 n64_settings* settings;
@@ -112,29 +113,6 @@ static void tusbd_interrupt(void)
     tud_int_handler(0);
 }
 
-//Ring buffer is used to buffer printf outputs
-static uint32_t ring_buffer_pos = 0;
-static char ring_buffer[4096];
-void _putchar(char character)
-{
-    ring_buffer[ring_buffer_pos++] = character;
-    if (ring_buffer_pos >= sizeof(ring_buffer))
-        ring_buffer_pos = 0;
-}
-
-static void flush_ring_buffer()
-{
-    static uint32_t ring_buffer_print_pos = 0;
-    while (ring_buffer[ring_buffer_print_pos] != 0xFF)
-    {
-        serial_port.write(ring_buffer[ring_buffer_print_pos]);
-        ring_buffer[ring_buffer_print_pos] = 0xFF;
-        ring_buffer_print_pos++;
-        if (ring_buffer_print_pos >= sizeof(ring_buffer))
-            ring_buffer_print_pos = 0;
-    }
-}
-
 #if (MAX_CONTROLLERS >= 1)
 void n64_controller1_clock_edge()
 {
@@ -164,7 +142,7 @@ void setup()
 {
     //Init the serial port and ring buffer
     serial_port.begin(115200);
-    memset(ring_buffer,0xFF,sizeof(ring_buffer));
+    init_ring_buffer();
 
     //Check that the flash chip is formatted for FAT access
     //If it's not, format it! Should only happen once
@@ -556,24 +534,34 @@ void loop()
     } //END FOR LOOP
 } // MAIN LOOP
 
-static void apply_deadzone(float* out_x, float* out_y, float x, float y, float dz_low, float dz_high) {
-    float magnitude = sqrtf(x * x + y * y);
-    if (magnitude > dz_low) {
-        //Scale such that output magnitude is in the range [0.0f, 1.0f]
-        float allowed_range = 1.0f - dz_high - dz_low;
-        float normalised_magnitude = (magnitude - dz_low) / allowed_range;
-        if (normalised_magnitude > 1.0f)
-            normalised_magnitude = 1.0f;
-        float scale = normalised_magnitude / magnitude;
-        *out_x = x * scale;
-        *out_y = y * scale;
-    }
-    else {
-        //Stick is in the inner dead zone
-        *out_x = 0.0f;
-        *out_y = 0.0f;
+//Ring buffer is used to buffer printf outputs
+static uint32_t ring_buffer_pos = 0;
+static char ring_buffer[4096];
+void _putchar(char character)
+{
+    ring_buffer[ring_buffer_pos++] = character;
+    if (ring_buffer_pos >= sizeof(ring_buffer))
+        ring_buffer_pos = 0;
+}
+
+static void init_ring_buffer()
+{
+    memset(ring_buffer,0xFF,sizeof(ring_buffer));
+}
+
+static void flush_ring_buffer()
+{
+    static uint32_t ring_buffer_print_pos = 0;
+    while (ring_buffer[ring_buffer_print_pos] != 0xFF)
+    {
+        serial_port.write(ring_buffer[ring_buffer_print_pos]);
+        ring_buffer[ring_buffer_print_pos] = 0xFF;
+        ring_buffer_print_pos++;
+        if (ring_buffer_print_pos >= sizeof(ring_buffer))
+            ring_buffer_print_pos = 0;
     }
 }
+
 
 //This function allocates and manages SRAM for mempak and gameboy roms (tpak) for the system.
 //SRAM is malloced into slots. Each slot stores a pointer to the memory location, its size, and
