@@ -34,6 +34,7 @@
 #include "n64_virtualpak.h"
 #include "n64_settings.h"
 #include "tusb.h"
+#include "analog_stick.h"
 
 typedef struct
 {
@@ -203,7 +204,6 @@ void setup()
     attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_4_PIN), n64_controller4_clock_edge, FALLING);
     #endif
 
-    NVIC_SET_PRIORITY(IRQ_USB1, 1);
 }
 
 static bool n64_combo = false;
@@ -234,7 +234,7 @@ void loop()
 
 #if (MAX_MICE >= 1)
         //Map usb mouse to n64 mouse
-        if(mousecontroller[c]!=NULL && mousecontroller[c]->available())
+        else if (mousecontroller[c] != NULL && mousecontroller[c]->available())
         {
             n64_c[c].is_mouse = true;
             n64_x_axis[c] = mousecontroller[c]->getMouseX() * MOUSE_SENSITIVITY;
@@ -302,7 +302,7 @@ void loop()
 
             /* Apply analog stick options */
             n64_settings *settings = n64_settings_get();
-            float x, y, deadzone, range;
+            float x, y, range;
             apply_deadzone(&x, &y, n64_x_axis[c] / 100.0f, n64_y_axis[c] / 100.0f, settings->deadzone[c] / 10.0f, 0.05f);
             range = apply_sensitivity(settings->sensitivity[c], &x, &y);
             if (settings->snap_axis[c]) apply_snap(range, &x, &y);
@@ -314,7 +314,6 @@ void loop()
         //Apply digital buttons and axis to n64 controller if combo button isnt pressed
         if (n64_combo == 0)
         {
-            debug_print_status("%04x\n", n64_buttons[c]);
             n64_c[c].b_state.dButtons = n64_buttons[c];
             n64_c[c].b_state.x_axis = n64_x_axis[c];
             n64_c[c].b_state.y_axis = n64_y_axis[c];
@@ -459,7 +458,7 @@ void loop()
                 else if (mempak_bank != VIRTUAL_PAK)
                 {
                     n64_c[c].next_peripheral = PERI_RUMBLE; //Error, set to rumblepak
-                    debug_print_error("ERROR: Could not allocate sram for %s\n", save_filename);
+                    debug_print_error("ERROR: Could not allocate sram for %s\n", filename);
                 }
 
                 if (mempak_bank == VIRTUAL_PAK)

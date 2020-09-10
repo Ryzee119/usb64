@@ -47,6 +47,7 @@ void apply_deadzone(float *out_x, float *out_y, float x, float y, float dz_low, 
 
 float apply_sensitivity(int sensitivity, float *x, float *y)
 {
+    float range;
     switch (sensitivity)
     {
         case 4:  range = 1.10f; break; // +/-110
@@ -57,18 +58,20 @@ float apply_sensitivity(int sensitivity, float *x, float *y)
         default: range = 0.85f; break;
     }
     *x *= range; *y *= range;
+
+    return range;
 }
 
 void apply_snap(float range, float *x, float *y)
 {
      //+/- SNAP_RANGE degrees within a 45 degree angle will snap (MAX is 45/2)
     const int snap = SNAP_RANGE;
-    float magnitude = sqrtf(powf(x,2) + powf(y,2));
+    float magnitude = sqrtf(powf(*x,2) + powf(*y,2));
 
     //Only snap if magnitude is >=90%
     if (magnitude >= 0.90f * range)
     {
-        int angle = atan2f(y, x) * 180.0f / 3.14f;
+        int angle = atan2f(*y, *x) * 180.0f / 3.14f;
 
         //Between 0-360 degrees
         if (angle < 0) angle = 360 + angle;
@@ -82,8 +85,8 @@ void apply_snap(float range, float *x, float *y)
         {
             angle += snap;
             angle -= angle % 45;
-            x = magnitude * cosf(angle * 3.14f / 180.0f);
-            y = magnitude * sinf(angle * 3.14f / 180.0f);
+            *x = magnitude * cosf(angle * 3.14f / 180.0f);
+            *y = magnitude * sinf(angle * 3.14f / 180.0f);
         }
     }
 }
