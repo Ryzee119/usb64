@@ -251,13 +251,13 @@ void n64_virtualpak_init(n64_mempack *vpak)
         uint8_t gb_header[0x100];
         gameboycart gb_cart;
         //Copy the cart filename into an array
-        strcpy((char *)gb_cart.filename, gbrom_filenames[i]);
+        strcpy(gb_cart.filename, gbrom_filenames[i]);
         if (n64hal_rom_fastread(&gb_cart, 0x100, gb_header, sizeof(gb_header)))
         {
             gb_init_cart(&gb_cart, gb_header, gbrom_filenames[i]);
             //Copy the gb cart title (from the rom header into an array)
-            gbrom_titlenames[i] = (char *)malloc(strlen((char *)gb_cart.title) + 1);
-            strcpy(gbrom_titlenames[i], (char *)gb_cart.title);
+            gbrom_titlenames[i] = (char *)malloc(strlen(gb_cart.title) + 1);
+            strcpy(gbrom_titlenames[i], gb_cart.title);
         }
     }
     n64_virtualpak_update(vpak);

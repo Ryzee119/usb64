@@ -344,6 +344,7 @@ void loop()
 
             /* CLEAR CURRENT PERIPHERALS */
             n64_c[c].mempack->data = NULL;
+            n64_c[c].mempack->id = VIRTUAL_PAK;
             if (n64_c[c].tpak->gbcart != NULL)
             {
                 n64_c[c].tpak->gbcart->romsize = 0;
@@ -371,8 +372,8 @@ void loop()
                 uint8_t gb_header[0x100];
                 gb_cart->ram = NULL;
                 //Read the ROM header
-                strcpy((char *)gb_cart->filename, settings->default_tpak_rom[c]);
-                if (n64hal_rom_fastread(gb_cart, 0x100, gb_header, sizeof(gb_header)))
+                strcpy(gb_cart->filename, settings->default_tpak_rom[c]);
+                if (gb_cart->filename[0] != '\0' && n64hal_rom_fastread(gb_cart, 0x100, gb_header, sizeof(gb_header)))
                 {
                     //Init the gb_cart struct using header info
                     gb_init_cart(gb_cart, gb_header, settings->default_tpak_rom[c]);
@@ -381,7 +382,7 @@ void loop()
                     if (gb_cart->ramsize > 0)
                     {
                         //Readback savefile from Flash, replace .gb or .gbc with .sav
-                        char *file_name = (char *)n64_c[c].tpak->gbcart->filename;
+                        char *file_name = n64_c[c].tpak->gbcart->filename;
                         strcpy(save_filename, file_name);
                         strcpy(strrchr(save_filename, '.'), ".sav");
 
@@ -409,7 +410,10 @@ void loop()
                 else
                 {
                     n64_c[c].next_peripheral = PERI_RUMBLE; //Error, just set to rumblepak
-                    debug_print_error("ERROR: Could not read %s\n", gb_cart->filename);
+                    if (gb_cart->filename[0] == '\0')
+                        debug_print_error("ERROR: No default TPAK set or no ROMs found\n");
+                    else
+                        debug_print_error("ERROR: Could not read %s\n", gb_cart->filename);
                 }
             }
 
@@ -431,8 +435,8 @@ void loop()
                 (b & N64_ST) ? mempak_bank = VIRTUAL_PAK : (0);
 
                 //Create the filename
-                uint8_t filename[32];
-                snprintf((char *)filename, sizeof(filename), "MEMPAK%02u.MPK", mempak_bank);
+                char filename[32];
+                snprintf(filename, sizeof(filename), "MEMPAK%02u.MPK", mempak_bank);
 
                 //Scan controllers to see if mempack is in use
                 for (int i = 0; i < MAX_CONTROLLERS; i++)
@@ -447,7 +451,7 @@ void loop()
                 //Mempack wasn't in use, so allocate it in ram
                 if (n64_c[c].next_peripheral != PERI_RUMBLE && mempak_bank != VIRTUAL_PAK)
                 {
-                    n64_c[c].mempack->data = alloc_sram((const char *)filename, MEMPAK_SIZE, 1);
+                    n64_c[c].mempack->data = alloc_sram(filename, MEMPAK_SIZE, 1);
                 }
 
                 if (n64_c[c].mempack->data != NULL)
@@ -461,10 +465,9 @@ void loop()
                     debug_print_status("C%u to virtual pak\n", c);
                     n64_virtualpak_init(n64_c[c].mempack);
                 }
-                else (mempak_bank != VIRTUAL_PAK)
+                else
                 {
                     n64_c[c].next_peripheral = PERI_RUMBLE; //Error, set to rumblepak
-                    debug_print_error("ERROR: Could not allocate sram for %s\n", filename);
                 }
             }
             timer_peri_change[c] = millis();
@@ -538,7 +541,8 @@ static uint32_t ring_buffer_pos = 0;
 static char ring_buffer[4096];
 void _putchar(char character)
 {
-    ring_buffer[ring_buffer_pos++] = character;
+    ring_buffer[ring_buffer_pos] = character;
+    ring_buffer_pos++;
     if (ring_buffer_pos >= sizeof(ring_buffer))
         ring_buffer_pos = 0;
 }
@@ -575,7 +579,7 @@ static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
     //Loop through to see if alloced memory already exists
     for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
     {
-        if (strcmp(sram[i].name, (const char *)name) == 0)
+        if (strcmp(sram[i].name, name) == 0)
         {
             //Already malloced, check len is ok
             if (sram[i].len <= alloc_len)
@@ -620,10 +624,14 @@ static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
 //Flush SRAM to flash memory if the non volatile flag is set
 static void flush_sram()
 {
+    noInterrupts();
     for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
     {
         if(sram[i].len == 0 || sram[i].data == NULL || sram[i].non_volatile == 0)
             continue;
+        debug_print_status("Writing %s %u bytes\n", (uint8_t*)sram[i].name, sram[i].len);
         n64hal_sram_backup_to_file((uint8_t*)sram[i].name, sram[i].data, sram[i].len);
     }
+    interrupts();
+    flush_ring_buffer();
 }

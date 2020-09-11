@@ -143,7 +143,7 @@ uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *dat
     //Arrays are used to manage multiple tpaks simulatenously (multiple roms being accessed).
 
     //Store a list of open filenames
-    static uint8_t open_files[MAX_GBROMS][MAX_FILENAME_LEN];
+    static char open_files[MAX_GBROMS][MAX_FILENAME_LEN];
 
     //Store an array of the cluster link map table for each file.
     //FIXME, is 32 ok or should I dynamically alloc the correct length?
@@ -171,9 +171,9 @@ uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *dat
     int i = 0;
     for (i = 0; i < MAX_GBROMS; i++)
     {
-        if (strcmp((const char *)open_files[i], (char *)gb_cart->filename) == 0)
+        if (strcmp(open_files[i], gb_cart->filename) == 0)
         {
-            //debug_print_status("Found %s at slot %u\n", (char *)gb_cart->filename, i);
+            //debug_print_status("Found %s at slot %u\n", gb_cart->filename, i);
             break;
         }
     }
@@ -183,11 +183,11 @@ uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *dat
     {
         for (i = 0; i < MAX_GBROMS; i++)
         {
-            const char *filename = (char *)gb_cart->filename;
+            const char *filename = gb_cart->filename;
             if (open_files[i][0] == '\0')
             {
                 debug_print_status("%s allocated at slot %u\n", filename, i);
-                strcpy((char *)open_files[i], (char *)filename);
+                strcpy(open_files[i], filename);
                 break;
             }
         }
@@ -201,9 +201,9 @@ uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *dat
     //If the file is newly opened, build cluster link map table for fast seek
     if (clmt[i][0] == 0)
     {
-        const char *filename = (char *)gb_cart->filename;
-        debug_print_status("Building cluster link map table for %s\n", filename);
-        res = f_open(&fil, (const TCHAR *)filename, FA_READ);
+        const char *filename = gb_cart->filename;
+        debug_print_status("Building CLMT for %s\n", filename);
+        res = f_open(&fil, filename, FA_READ);
         if (res != FR_OK)
         {
             debug_print_error("ERROR: Could not open %s for READ\n", filename);
@@ -289,6 +289,7 @@ void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len)
     }
     //Cool, try write to the file
     res = f_write(&fil, data, len, &br);
+    f_close(&fil);
     if (res != FR_OK || br != len)
     {
         debug_print_error("ERROR: Could not write %s\n", filename);
@@ -297,7 +298,6 @@ void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len)
     {
         debug_print_status("Writing %s ok!\n", filename);
     }
-    f_close(&fil);
 }
 
 /*
@@ -335,8 +335,11 @@ void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t le
         debug_print_error("ERROR: Could not read %s with error %i\n", filename, res);
         int attempts = 3;
         while (res != FR_OK && attempts-- > 0)
+        {
+            f_lseek(&fil, 0);
             res = f_read(&fil, data, len, &br);
-
+        }
+        f_close(&fil);
         if(res != FR_OK)
         {
             debug_print_error("ERROR: Could not read %s with 3 attempts\n", filename);
@@ -347,7 +350,6 @@ void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t le
     {
         debug_print_status("Reading %s ok!\n", filename);
     }
-    f_close(&fil);
 }
 
 /*

@@ -137,11 +137,11 @@ static void gb_write_cart_mbc3(uint16_t mbc_address, n64_transferpak *tpak, uint
     //Probably dont need to do anything
     if (mbc_address >= 0x0000 && mbc_address <= 0x1FFF)
     {
-        if (inBuffer[31] & 0x0F == 0x0A)
+        if ((inBuffer[31] & 0x0F) == 0x0A)
         { 
             tpak->ram_enabled = 1;
         }
-        else if (inBuffer[31] & 0x0F == 0x00)
+        else if ((inBuffer[31] & 0x0F) == 0x00)
         {
             tpak->ram_enabled = 0;
         }
@@ -433,7 +433,7 @@ void gb_init_cart(gameboycart *cart, uint8_t *gb_header, char *filename)
         cart->ramsize = _gb_gb_get_rom_size(gb_header[GB_RAMSIZE_OFFSET - 0x100], cart->mbc);
         memcpy(cart->filename, filename, sizeof(cart->filename));
         #if (0)
-        debug_print_n64("GB Name: %.15s\r\n", (char *)cart->title);
+        debug_print_n64("GB Name: %.15s\r\n", cart->title);
         debug_print_n64("ROM Bytes: %lu\r\n", cart->romsize);
         debug_print_n64("SRAM Bytes: %lu\r\n", cart->ramsize);
         debug_print_n64("MBC Type: 0x%02x\r\n", cart->mbc);

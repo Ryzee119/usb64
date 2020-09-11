@@ -86,7 +86,7 @@ extern "C" {
 typedef struct
 {
     uint8_t mbc;       //What mbc the cart uses, extracted from the ROM header
-    uint8_t title[15]; //The cart game title extracted from the ROM header
+    char title[15]; //The cart game title extracted from the ROM header
     uint32_t romsize;  //The cart rom size extracted from the ROM header
     uint32_t ramsize;  //The cart ram size extracted from the ROM header
     uint8_t *ram;      //Pointer to RAM data (if used)
@@ -100,7 +100,7 @@ typedef struct
     uint8_t rtc_update; //Flag is set when the STM RTC should be updated due to a request from the GB game.
 
     //FATFS
-    uint8_t filename[256]; //Filename of ROM in FATFS flash
+    char filename[256]; //Filename of ROM in FATFS flash
     uint8_t dirty;         //If RAM data has changed. So we know if we need to backup to Flash
 
 } gameboycart;
