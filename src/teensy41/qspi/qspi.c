@@ -92,34 +92,82 @@ static void setupFlexSPI2()
 
     // turn on clock
     //frequency is CCM_CBCMR_FLEXSPI2_CLK_SEL[4] = {396.0f, 720.0f, 664.62f, 528.0f} / (CCM_CBCMR_FLEXSPI2_PODF + 1)
-    CCM_CBCMR = (CCM_CBCMR & ~(CCM_CBCMR_FLEXSPI2_PODF_MASK | CCM_CBCMR_FLEXSPI2_CLK_SEL_MASK)) | CCM_CBCMR_FLEXSPI2_PODF(7) | CCM_CBCMR_FLEXSPI2_CLK_SEL(0); // 49.5 MHz
+    CCM_CBCMR = (CCM_CBCMR & ~(CCM_CBCMR_FLEXSPI2_PODF_MASK |
+                               CCM_CBCMR_FLEXSPI2_CLK_SEL_MASK)) |
+                               CCM_CBCMR_FLEXSPI2_PODF(7) |
+                               CCM_CBCMR_FLEXSPI2_CLK_SEL(0); // 49.5 MHz
+
     CCM_CCGR7 |= CCM_CCGR7_FLEXSPI2(CCM_CCGR_ON);
 
     FLEXSPI2_MCR0 |= FLEXSPI_MCR0_MDIS;
-    FLEXSPI2_MCR0 = (FLEXSPI2_MCR0 & ~(FLEXSPI_MCR0_AHBGRANTWAIT_MASK | FLEXSPI_MCR0_IPGRANTWAIT_MASK | FLEXSPI_MCR0_SCKFREERUNEN | FLEXSPI_MCR0_COMBINATIONEN | FLEXSPI_MCR0_DOZEEN | FLEXSPI_MCR0_HSEN | FLEXSPI_MCR0_ATDFEN | FLEXSPI_MCR0_ARDFEN | FLEXSPI_MCR0_RXCLKSRC_MASK | FLEXSPI_MCR0_SWRESET)) | FLEXSPI_MCR0_AHBGRANTWAIT(0xFF) | FLEXSPI_MCR0_IPGRANTWAIT(0xFF) | FLEXSPI_MCR0_RXCLKSRC(1) | FLEXSPI_MCR0_MDIS;
-    FLEXSPI2_MCR1 = FLEXSPI_MCR1_SEQWAIT(0xFFFF) | FLEXSPI_MCR1_AHBBUSWAIT(0xFFFF);
-    FLEXSPI2_MCR2 = (FLEXSPI_MCR2 & ~(FLEXSPI_MCR2_RESUMEWAIT_MASK | FLEXSPI_MCR2_SCKBDIFFOPT | FLEXSPI_MCR2_SAMEDEVICEEN | FLEXSPI_MCR2_CLRLEARNPHASE | FLEXSPI_MCR2_CLRAHBBUFOPT)) | FLEXSPI_MCR2_RESUMEWAIT(0x20) /*| FLEXSPI_MCR2_SAMEDEVICEEN*/;
+    FLEXSPI2_MCR0 = (FLEXSPI2_MCR0 & ~(FLEXSPI_MCR0_AHBGRANTWAIT_MASK |
+                                       FLEXSPI_MCR0_IPGRANTWAIT_MASK |
+                                       FLEXSPI_MCR0_SCKFREERUNEN |
+                                       FLEXSPI_MCR0_COMBINATIONEN |
+                                       FLEXSPI_MCR0_DOZEEN |
+                                       FLEXSPI_MCR0_HSEN |
+                                       FLEXSPI_MCR0_ATDFEN |
+                                       FLEXSPI_MCR0_ARDFEN |
+                                       FLEXSPI_MCR0_RXCLKSRC_MASK |
+                                       FLEXSPI_MCR0_SWRESET)) |
+                                       FLEXSPI_MCR0_AHBGRANTWAIT(0xFF) |
+                                       FLEXSPI_MCR0_IPGRANTWAIT(0xFF) |
+                                       FLEXSPI_MCR0_RXCLKSRC(1) |
+                                       FLEXSPI_MCR0_MDIS;
 
-    FLEXSPI2_AHBCR = FLEXSPI2_AHBCR & ~(FLEXSPI_AHBCR_READADDROPT | FLEXSPI_AHBCR_PREFETCHEN | FLEXSPI_AHBCR_BUFFERABLEEN | FLEXSPI_AHBCR_CACHABLEEN);
-    uint32_t mask = (FLEXSPI_AHBRXBUFCR0_PREFETCHEN | FLEXSPI_AHBRXBUFCR0_PRIORITY_MASK | FLEXSPI_AHBRXBUFCR0_MSTRID_MASK | FLEXSPI_AHBRXBUFCR0_BUFSZ_MASK);
-    FLEXSPI2_AHBRXBUF0CR0 = (FLEXSPI2_AHBRXBUF0CR0 & ~mask) | FLEXSPI_AHBRXBUFCR0_PREFETCHEN | FLEXSPI_AHBRXBUFCR0_BUFSZ(64);
-    FLEXSPI2_AHBRXBUF1CR0 = (FLEXSPI2_AHBRXBUF0CR0 & ~mask) | FLEXSPI_AHBRXBUFCR0_PREFETCHEN | FLEXSPI_AHBRXBUFCR0_BUFSZ(64);
+    FLEXSPI2_MCR1 = FLEXSPI_MCR1_SEQWAIT(0xFFFF) | FLEXSPI_MCR1_AHBBUSWAIT(0xFFFF);
+    FLEXSPI2_MCR2 = (FLEXSPI_MCR2 & ~(FLEXSPI_MCR2_RESUMEWAIT_MASK |
+                                      FLEXSPI_MCR2_SCKBDIFFOPT |
+                                      FLEXSPI_MCR2_SAMEDEVICEEN |
+                                      FLEXSPI_MCR2_CLRLEARNPHASE |
+                                      FLEXSPI_MCR2_CLRAHBBUFOPT)) |
+                                      FLEXSPI_MCR2_RESUMEWAIT(0x20) /*| FLEXSPI_MCR2_SAMEDEVICEEN*/;
+
+    FLEXSPI2_AHBCR = FLEXSPI2_AHBCR & ~(FLEXSPI_AHBCR_READADDROPT |
+                                        FLEXSPI_AHBCR_PREFETCHEN |
+                                        FLEXSPI_AHBCR_BUFFERABLEEN |
+                                        FLEXSPI_AHBCR_CACHABLEEN);
+
+    uint32_t mask = (FLEXSPI_AHBRXBUFCR0_PREFETCHEN |
+                     FLEXSPI_AHBRXBUFCR0_PRIORITY_MASK |
+                     FLEXSPI_AHBRXBUFCR0_MSTRID_MASK |
+                     FLEXSPI_AHBRXBUFCR0_BUFSZ_MASK);
+
+    FLEXSPI2_AHBRXBUF0CR0 = (FLEXSPI2_AHBRXBUF0CR0 & ~mask) |
+                             FLEXSPI_AHBRXBUFCR0_PREFETCHEN |
+                             FLEXSPI_AHBRXBUFCR0_BUFSZ(64);
+    FLEXSPI2_AHBRXBUF1CR0 = (FLEXSPI2_AHBRXBUF0CR0 & ~mask) |
+                             FLEXSPI_AHBRXBUFCR0_PREFETCHEN |
+                             FLEXSPI_AHBRXBUFCR0_BUFSZ(64);
     FLEXSPI2_AHBRXBUF2CR0 = mask;
     FLEXSPI2_AHBRXBUF3CR0 = mask;
 
     // RX watermark = one 64 bit line
-    FLEXSPI2_IPRXFCR = (FLEXSPI_IPRXFCR & 0xFFFFFFC0) | FLEXSPI_IPRXFCR_CLRIPRXF;
+    FLEXSPI2_IPRXFCR = (FLEXSPI_IPRXFCR & 0xFFFFFFC0) |
+                        FLEXSPI_IPRXFCR_CLRIPRXF;
     // TX watermark = one 64 bit line
-    FLEXSPI2_IPTXFCR = (FLEXSPI_IPTXFCR & 0xFFFFFFC0) | FLEXSPI_IPTXFCR_CLRIPTXF;
+    FLEXSPI2_IPTXFCR = (FLEXSPI_IPTXFCR & 0xFFFFFFC0) |
+                        FLEXSPI_IPTXFCR_CLRIPTXF;
 
     FLEXSPI2_INTEN = 0;
     FLEXSPI2_FLSHA1CR0 = 0x4000;
-    FLEXSPI2_FLSHA1CR1 = FLEXSPI_FLSHCR1_CSINTERVAL(2) | FLEXSPI_FLSHCR1_TCSH(3) | FLEXSPI_FLSHCR1_TCSS(3);
-    FLEXSPI2_FLSHA1CR2 = FLEXSPI_FLSHCR2_AWRSEQID(6) | FLEXSPI_FLSHCR2_AWRSEQNUM(0) | FLEXSPI_FLSHCR2_ARDSEQID(5) | FLEXSPI_FLSHCR2_ARDSEQNUM(0);
+    FLEXSPI2_FLSHA1CR1 = FLEXSPI_FLSHCR1_CSINTERVAL(2) |
+                         FLEXSPI_FLSHCR1_TCSH(3) |
+                         FLEXSPI_FLSHCR1_TCSS(3);
+    FLEXSPI2_FLSHA1CR2 = FLEXSPI_FLSHCR2_AWRSEQID(6) |
+                         FLEXSPI_FLSHCR2_AWRSEQNUM(0) |
+                         FLEXSPI_FLSHCR2_ARDSEQID(5) |
+                         FLEXSPI_FLSHCR2_ARDSEQNUM(0);
 
     FLEXSPI2_FLSHA2CR0 = 0x40000;
-    FLEXSPI2_FLSHA2CR1 = FLEXSPI_FLSHCR1_CSINTERVAL(2) | FLEXSPI_FLSHCR1_TCSH(3) | FLEXSPI_FLSHCR1_TCSS(3);
-    FLEXSPI2_FLSHA2CR2 = FLEXSPI_FLSHCR2_AWRSEQID(6) | FLEXSPI_FLSHCR2_AWRSEQNUM(0) | FLEXSPI_FLSHCR2_ARDSEQID(5) | FLEXSPI_FLSHCR2_ARDSEQNUM(0);
+    FLEXSPI2_FLSHA2CR1 = FLEXSPI_FLSHCR1_CSINTERVAL(2) |
+                         FLEXSPI_FLSHCR1_TCSH(3) |
+                         FLEXSPI_FLSHCR1_TCSS(3);
+
+    FLEXSPI2_FLSHA2CR2 = FLEXSPI_FLSHCR2_AWRSEQID(6) |
+                         FLEXSPI_FLSHCR2_AWRSEQNUM(0) |
+                         FLEXSPI_FLSHCR2_ARDSEQID(5) |
+                         FLEXSPI_FLSHCR2_ARDSEQNUM(0);
 
     FLEXSPI2_MCR0 &= ~FLEXSPI_MCR0_MDIS;
 
@@ -129,8 +177,8 @@ static void setupFlexSPI2()
     for (int i = 0; i < 64; i++)
         luttable[i] = 0;
     FLEXSPI2_MCR0 |= FLEXSPI_MCR0_SWRESET;
-    while (FLEXSPI2_MCR0 & FLEXSPI_MCR0_SWRESET)
-        ; // wait
+
+    while (FLEXSPI2_MCR0 & FLEXSPI_MCR0_SWRESET); // wait
 
     // CBCMR[FLEXSPI2_SEL]
     // CBCMR[FLEXSPI2_PODF]
@@ -199,8 +247,7 @@ static void flexspi_ip_command(uint32_t index, uint32_t addr)
     FLEXSPI2_IPCR0 = addr;
     FLEXSPI2_IPCR1 = FLEXSPI_IPCR1_ISEQID(index);
     FLEXSPI2_IPCMD = FLEXSPI_IPCMD_TRG;
-    while (!((n = FLEXSPI2_INTR) & FLEXSPI_INTR_IPCMDDONE))
-        ; // wait
+    while (!((n = FLEXSPI2_INTR) & FLEXSPI_INTR_IPCMDDONE)); // wait
     if (n & FLEXSPI_INTR_IPCMDERR)
     {
         debug_print_error("ERROR: FLEXSPI2_IPRXFSTS=%08lX\n", FLEXSPI2_IPRXFSTS);
@@ -396,20 +443,9 @@ void qspi_erase_chip()
     debug_print_status("\nChip erased in %d seconds.\n", t / 1000);
 }
 
-//********************************************************************************************************
-//********************************************************************************************************
-//********************************************************************************************************
-/*
-   SPIFFS interface
-*/
-
-#define LOG_PAGE_SIZE 256
-
-//********************************************************************************************************
 static const uint32_t _flashsize = 1024 * 1024 * 16; //16 Mbyte
 static const uint32_t _blocksize = 4096U;
 static const uint32_t _pagesize = 256U;
-
 void qspi_init(uint32_t *sector_size, uint32_t *flash_size)
 {
     spi_bitbang_init();
