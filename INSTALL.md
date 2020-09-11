@@ -13,10 +13,9 @@
 
 <img src="./images/install_basic.png" alt="basic" width="75%"/>
 
-# Advanced Usage
+# Advanced Usages
 * Hardwire a custom N64 controller to the designated IO (Each digital pin is internally pulled-up, Analog input respect to VCC, VCC/2 is central position).
 * Hook up a Raspberry Pi or similar via I2C and send button presses via I2C.  
-* Don't forget to link grounds.
 
 <img src="./images/install_advanced.png" alt="advanced" width="75%"/>
 
