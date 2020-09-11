@@ -43,8 +43,6 @@ void n64hal_rtc_read(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t
 void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
 uint8_t n64hal_scan_for_gbroms(char** array, int max);
 
-
-
 uint32_t n64hal_hs_tick_get_speed();
 void n64hal_hs_tick_init();
 void n64hal_hs_tick_reset();
