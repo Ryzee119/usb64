@@ -398,18 +398,19 @@ void loop()
                         }
 
                         gb_cart->ram = alloc_sram(save_filename, gb_cart->ramsize, volatile_flag);
-                        if (gb_cart->ram == NULL && gb_cart->ramsize > 0)
+                        if (gb_cart->ram == NULL)
                         {
-                            n64_c[c].next_peripheral = PERI_RUMBLE; //Error, set to rumblepak
+                            n64_c[c].next_peripheral = PERI_RUMBLE; //Error, just set to rumblepak
                             debug_print_error("ERROR: Could not allocate sram for %s\n", save_filename);
                         }
                     }
+                    tpak_reset(n64_c[c].tpak);
                 }
                 else
                 {
+                    n64_c[c].next_peripheral = PERI_RUMBLE; //Error, just set to rumblepak
                     debug_print_error("ERROR: Could not read %s\n", gb_cart->filename);
                 }
-                tpak_reset(n64_c[c].tpak);
             }
 
             //Changing peripheral to MEMPAK
@@ -455,16 +456,15 @@ void loop()
                     n64_c[c].mempack->virtual_is_active = 0;
                     n64_c[c].mempack->id = mempak_bank;
                 }
-                else if (mempak_bank != VIRTUAL_PAK)
-                {
-                    n64_c[c].next_peripheral = PERI_RUMBLE; //Error, set to rumblepak
-                    debug_print_error("ERROR: Could not allocate sram for %s\n", filename);
-                }
-
-                if (mempak_bank == VIRTUAL_PAK)
+                else if (mempak_bank == VIRTUAL_PAK)
                 {
                     debug_print_status("C%u to virtual pak\n", c);
                     n64_virtualpak_init(n64_c[c].mempack);
+                }
+                else (mempak_bank != VIRTUAL_PAK)
+                {
+                    n64_c[c].next_peripheral = PERI_RUMBLE; //Error, set to rumblepak
+                    debug_print_error("ERROR: Could not allocate sram for %s\n", filename);
                 }
             }
             timer_peri_change[c] = millis();
