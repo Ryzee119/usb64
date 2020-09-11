@@ -206,6 +206,7 @@ uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *dat
         res = f_open(&fil, (const TCHAR *)filename, FA_READ);
         if (res != FR_OK)
         {
+            debug_print_error("ERROR: Could not open %s for READ\n", filename);
             open_files[i][0] = '\0';
             return 0;
         }
