@@ -8,14 +8,14 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - [x] Rumblepak emulation.
 - [x] Mempak emulation or 4 selectable banks
 - [x] Transferpak emulation with 16MB internal storage for Gameboy ROMs.
+- [x] N64 mouse emulation (Use a USB Mouse!).
 - [x] Configurable deadzones and sensitivity from the N64 Console.
 - [x] USB mass storage driver to backup mempaks and gameboy ROMs over USB.
 
 ## Todo
-- [ ] N64 mouse emulation (Use a USB Mouse!).
 - [ ] Raspberry Pi interface or similar for all other USB controllers.
 - [ ] Hardwired controller interface.
-- [ ] More USB controller drivers.
+- [ ] More inbuilt USB controller drivers.
 - [ ] True dual analog sticks with GoldenEye and Perfect Dark.
 - [ ] Additional Gameboy MBCs. (Only MBC3 supported at the moment)
 - [ ] Gameboy Camera Support.

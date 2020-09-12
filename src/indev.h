@@ -21,37 +21,22 @@
  * SOFTWARE.
  */
 
-#ifndef N64_N64_WRAPPER_H_
-#define N64_N64_WRAPPER_H_
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef _USB_HOST_H
+#define _USB_HOST_H
 
 #include <Arduino.h>
-#include "n64_controller.h"
 
-#define N64_OUTPUT 1
-#define N64_INPUT 2
+void indev_init();
+void indev_update_input_devices();
+bool indev_is_connected(int id);
+bool indev_is_mouse(int id);
+bool indev_is_gamecontroller(int id);
+uint16_t indev_get_id_product(int id);
+uint16_t indev_get_id_vendor(int id);
+const char *indev_get_manufacturer_string(int id);
+const char *indev_get_product_string(int id);
+uint16_t indev_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis, uint32_t max_axis,
+                                       uint16_t *n64_buttons, int8_t *n64_x_axis, int8_t *n64_y_axis, bool *combo_pressed);
+void indev_apply_rumble(int id, uint8_t stength);
 
-uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t offset, uint8_t *data, uint32_t len);
-void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len);
-void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t len);
-void n64hal_sram_read(uint8_t *rxdata, uint8_t *src, uint16_t offset, uint16_t len);
-void n64hal_sram_write(uint8_t *txdata, uint8_t *dest, uint16_t offset, uint16_t len);
-void n64hal_rtc_read(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
-void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
-uint8_t n64hal_scan_for_gbroms(char** array, int max);
-
-uint32_t n64hal_hs_tick_get_speed();
-void n64hal_hs_tick_init();
-void n64hal_hs_tick_reset();
-uint32_t n64hal_hs_tick_get();
-
-void n64hal_input_swap(n64_controller *controller, uint8_t val);
-uint8_t n64hal_input_read(n64_controller *controller);
-
-#ifdef __cplusplus
-}
 #endif
-#endif /* N64_N64_WRAPPER_H_ */

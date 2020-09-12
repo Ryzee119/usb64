@@ -23,7 +23,7 @@
 
 #include <Arduino.h>
 #include <string.h>
-#include "USBHost_t36.h"
+#include "indev.h"
 #include "ff.h"
 #include "qspi.h"
 #include "printf.h"
@@ -50,63 +50,7 @@ static void init_ring_buffer(void);
 static void flush_ring_buffer();
 
 n64_controller n64_c[MAX_CONTROLLERS];
-n64_settings* settings;
-
-//USB Host Interface
-USBHost usbh;
-
-#if (ENABLE_USB_HUB == 1)
-USBHub hub1(usbh);
-#endif
-
-#if (MAX_CONTROLLERS >= 1)
-JoystickController joy1(usbh);
-#if (MAX_MICE >= 1)
-USBHIDParser hid1(usbh);
-MouseController mouse1(usbh);
-#endif
-#endif
-#if (MAX_CONTROLLERS >= 2)
-JoystickController joy2(usbh);
-#if (MAX_MICE >= 2)
-USBHIDParser hid2(usbh);
-MouseController mouse2(usbh);
-#endif
-#endif
-#if (MAX_CONTROLLERS >= 3)
-JoystickController joy3(usbh);
-#if (MAX_MICE >= 3)
-USBHIDParser hid3(usbh);
-MouseController mouse3(usbh);
-#endif
-#endif
-#if (MAX_CONTROLLERS >= 4)
-JoystickController joy4(usbh);
-#if (MAX_MICE >= 4)
-USBHIDParser hid4(usbh);
-MouseController mouse4(usbh);
-#endif
-#endif
-
-#if MAX_CONTROLLERS == 1
-JoystickController *gamecontroller[] = {&joy1};
-#elif MAX_CONTROLLERS == 2
-JoystickController *gamecontroller[] = {&joy1, &joy2};
-#elif MAX_CONTROLLERS == 3
-JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3};
-#elif MAX_CONTROLLERS == 4
-JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3, &joy4};
-#endif
-
-#if MAX_MICE == 1
-MouseController *mousecontroller[] = {&mouse1, NULL, NULL, NULL};
-#elif MAX_MICE == 2
-MouseController *mousecontroller[] = {&mouse1, &mouse2, NULL, NULL};
-#elif MAX_MICE == 3
-MouseController *mousecontroller[] = {&mouse1, &mouse2, &mouse3. NULL};
-#elif MAX_MICE == 4
-MouseController *mousecontroller[] = {&mouse1, &mouse2, &mouse3, &mouse4};
-#endif
+n64_settings *settings;
 
 //TinyUSB interrupt handler (Used for CDC and MSC)
 static void tusbd_interrupt(void)
@@ -147,7 +91,7 @@ void setup()
 
     //Check that the flash chip is formatted for FAT access
     //If it's not, format it! Should only happen once
-    extern FATFS fs; 
+    extern FATFS fs;
     qspi_init(NULL, NULL);
     if (f_mount(&fs, "", 1) != FR_OK)
     {
@@ -172,143 +116,82 @@ void setup()
         }
     }
 
-    usbh.begin();
-
+    indev_init(); //USB Host controller input devices
     n64_init_subsystem(n64_c);
 
     //Read in settings from flash
     settings = (n64_settings *)alloc_sram(SETTINGS_FILENAME, sizeof(n64_settings), 1);
     n64_settings_init(settings);
 
-    #if (MAX_CONTROLLERS >= 1)
+#if (MAX_CONTROLLERS >= 1)
     n64_c[0].gpio_pin = N64_CONTROLLER_1_PIN;
     pinMode(N64_CONTROLLER_1_PIN, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_1_PIN), n64_controller1_clock_edge, FALLING);
-    #endif
+#endif
 
-    #if (MAX_CONTROLLERS >= 2)
+#if (MAX_CONTROLLERS >= 2)
     n64_c[1].gpio_pin = N64_CONTROLLER_2_PIN;
     pinMode(N64_CONTROLLER_2_PIN, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_2_PIN), n64_controller2_clock_edge, FALLING);
-    #endif
+#endif
 
-    #if (MAX_CONTROLLERS >= 3)
+#if (MAX_CONTROLLERS >= 3)
     n64_c[2].gpio_pin = N64_CONTROLLER_3_PIN;
     pinMode(N64_CONTROLLER_3_PIN, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_3_PIN), n64_controller3_clock_edge, FALLING);
-    #endif
+#endif
 
-    #if (MAX_CONTROLLERS >= 4)
+#if (MAX_CONTROLLERS >= 4)
     n64_c[3].gpio_pin = N64_CONTROLLER_4_PIN;
     pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_4_PIN), n64_controller4_clock_edge, FALLING);
-    #endif
+#endif
 
+    NVIC_SET_PRIORITY(IRQ_GPIO6789, 1);
 }
 
 static bool n64_combo = false;
 void loop()
 {
     static uint32_t usb_buttons[MAX_CONTROLLERS] = {0};
+    static int32_t usb_axis[MAX_CONTROLLERS][6] = {0};
     static uint16_t n64_buttons[MAX_CONTROLLERS] = {0};
     static int8_t n64_x_axis[MAX_CONTROLLERS] = {0};
     static int8_t n64_y_axis[MAX_CONTROLLERS] = {0};
-    static int32_t axis[MAX_CONTROLLERS][6] = {0};
 
     flush_ring_buffer();
 
+    //Scan for controller input changes
+    indev_update_input_devices();
     for (int c = 0; c < MAX_CONTROLLERS; c++)
     {
         n64_buttons[c] = 0x0000;
-        //If a change in buttons or axis has been detected
-        if (gamecontroller[c]->available())
+        if (indev_is_connected(c))
         {
-            n64_c[c].is_mouse = false;
-            for (uint8_t i = 0; i < (sizeof(axis[c]) / sizeof(axis[c][0])); i++)
-            {
-                axis[c][i] = gamecontroller[c]->getAxis(i);
-            }
-            usb_buttons[c] = gamecontroller[c]->getButtons();
-            gamecontroller[c]->joystickDataClear();
-        }
+            int max_axis = sizeof(usb_axis[c]) / sizeof(usb_axis[c][0]);
+            indev_get_buttons(c, &usb_buttons[c], usb_axis[c], max_axis,                    //Raw usb output (if wanted)
+                              &n64_buttons[c], &n64_x_axis[c], &n64_y_axis[c], &n64_combo); //Mapped n64 output
 
+            if (indev_is_gamecontroller(c))
+            {
+                /* Apply analog stick options */
+                n64_c[c].is_mouse = false;
+                n64_settings *settings = n64_settings_get();
+                float x, y, range;
+                apply_deadzone(&x, &y, n64_x_axis[c] / 100.0f, n64_y_axis[c] / 100.0f, settings->deadzone[c] / 10.0f, 0.05f);
+                range = apply_sensitivity(settings->sensitivity[c], &x, &y);
+                if (settings->snap_axis[c])
+                    apply_snap(range, &x, &y);
+                apply_octa_correction(&x, &y);
+                n64_x_axis[c] = x * 100.0f;
+                n64_y_axis[c] = y * 100.0f;
+            }
 #if (MAX_MICE >= 1)
-        //Map usb mouse to n64 mouse
-        else if (mousecontroller[c] != NULL && mousecontroller[c]->available())
-        {
-            n64_c[c].is_mouse = true;
-            n64_x_axis[c] = mousecontroller[c]->getMouseX() * MOUSE_SENSITIVITY;
-            n64_y_axis[c] = -mousecontroller[c]->getMouseY() * MOUSE_SENSITIVITY;
-
-            usb_buttons[c] = mousecontroller[c]->getButtons();
-            
-            if (usb_buttons[c] & (1 << 0)) n64_buttons[c] |= N64_A;   //A
-            if (usb_buttons[c] & (1 << 1)) n64_buttons[c] |= N64_B;   //B
-            if (usb_buttons[c] & (1 << 2)) n64_buttons[c] |= N64_ST;  //ST
-            mousecontroller[c]->mouseDataClear();
-            debug_print_status("%04x\n", n64_buttons[c]);
-        }
-#endif
-
-        //Map usb controller to n64 controller
-        if (n64_c[c].is_mouse == false)
-        {
-            switch (gamecontroller[c]->joystickType())
+            else
             {
-            case JoystickController::XBOX360:
-            case JoystickController::XBOX360_WIRED:
-                //Digital usb_buttons
-                if (usb_buttons[c] & (1 << 0))  n64_buttons[c] |= N64_DU;  //DUP
-                if (usb_buttons[c] & (1 << 1))  n64_buttons[c] |= N64_DD;  //DDOWN
-                if (usb_buttons[c] & (1 << 2))  n64_buttons[c] |= N64_DL;  //DLEFT
-                if (usb_buttons[c] & (1 << 3))  n64_buttons[c] |= N64_DR;  //DRIGHT
-                if (usb_buttons[c] & (1 << 4))  n64_buttons[c] |= N64_ST;  //START
-                if (usb_buttons[c] & (1 << 5))  n64_buttons[c] |= 0;       //BACK
-                if (usb_buttons[c] & (1 << 6))  n64_buttons[c] |= 0;       //LS
-                if (usb_buttons[c] & (1 << 7))  n64_buttons[c] |= 0;       //RS
-                if (usb_buttons[c] & (1 << 8))  n64_buttons[c] |= N64_LB;  //LB
-                if (usb_buttons[c] & (1 << 9))  n64_buttons[c] |= N64_RB;  //RB
-                if (usb_buttons[c] & (1 << 10)) n64_buttons[c] |= 0;       //XBOX BUTTON
-                if (usb_buttons[c] & (1 << 11)) n64_buttons[c] |= 0;       //XBOX SYNC
-                if (usb_buttons[c] & (1 << 12)) n64_buttons[c] |= N64_A;   //A
-                if (usb_buttons[c] & (1 << 13)) n64_buttons[c] |= N64_B;   //B
-                if (usb_buttons[c] & (1 << 14)) n64_buttons[c] |= N64_B;   //X
-                if (usb_buttons[c] & (1 << 15)) n64_buttons[c] |= 0;       //Y
-                if (usb_buttons[c] & (1 << 7))  n64_buttons[c] |= N64_CU | //RS triggers
-                                                                N64_CD | //all C usb_buttons
-                                                                N64_CL |
-                                                                N64_CR;
-                //Analog stick (Normalise 0 to +/-100)
-                n64_x_axis[c] = axis[c][0] * 100 / 32768;
-                n64_y_axis[c] = axis[c][1] * 100 / 32768;
-
-                //Z button
-                if (axis[c][4] > 10) n64_buttons[c] |= N64_Z; //LT
-                if (axis[c][5] > 10) n64_buttons[c] |= N64_Z; //RT
-
-                //C usb_buttons
-                if (axis[c][2] > 16000)  n64_buttons[c] |= N64_CR;
-                if (axis[c][2] < -16000) n64_buttons[c] |= N64_CL;
-                if (axis[c][3] > 16000)  n64_buttons[c] |= N64_CU;
-                if (axis[c][3] < -16000) n64_buttons[c] |= N64_CD;
-
-                //Button to hold for 'combos'
-                n64_combo = (usb_buttons[c] & (1 << 5)); //back
-                break;
-            //TODO: OTHER USB CONTROLLERS
-            default:
-                break;
+                n64_c[c].is_mouse = true;
             }
-
-            /* Apply analog stick options */
-            n64_settings *settings = n64_settings_get();
-            float x, y, range;
-            apply_deadzone(&x, &y, n64_x_axis[c] / 100.0f, n64_y_axis[c] / 100.0f, settings->deadzone[c] / 10.0f, 0.05f);
-            range = apply_sensitivity(settings->sensitivity[c], &x, &y);
-            if (settings->snap_axis[c]) apply_snap(range, &x, &y);
-            apply_octa_correction(&x, &y);
-            n64_x_axis[c] = x * 100.0f;
-            n64_y_axis[c] = y * 100.0f;
+#endif
         }
 
         //Apply digital buttons and axis to n64 controller if combo button isnt pressed
@@ -323,9 +206,9 @@ void loop()
         if (n64_c[c].rpak != NULL)
         {
             if (n64_c[c].rpak->state == RUMBLE_START)
-                gamecontroller[c]->setRumble(0xFF, 0xFF, 20);
+                indev_apply_rumble(c, 0xFF);
             if (n64_c[c].rpak->state == RUMBLE_STOP)
-                gamecontroller[c]->setRumble(0x00, 0x00, 20);
+                indev_apply_rumble(c, 0x00);
             n64_c[c].rpak->state = RUMBLE_APPLIED;
         }
 
@@ -389,11 +272,11 @@ void loop()
                         uint8_t mbc = gb_cart->mbc;
                         uint8_t volatile_flag = 0;
                         //Only if the MBC has a battery, set the non volatile flag for the SRAM.
-                        if (mbc == ROM_RAM_BAT      || mbc == ROM_RAM_BAT  ||
-                            mbc == MBC1_RAM_BAT     || mbc == MBC2_BAT     ||
-                            mbc == MBC3_RAM_BAT     || mbc == MBC3_TIM_BAT ||
+                        if (mbc == ROM_RAM_BAT || mbc == ROM_RAM_BAT ||
+                            mbc == MBC1_RAM_BAT || mbc == MBC2_BAT ||
+                            mbc == MBC3_RAM_BAT || mbc == MBC3_TIM_BAT ||
                             mbc == MBC3_TIM_RAM_BAT || mbc == MBC4_RAM_BAT ||
-                            mbc == MBC5_RAM_BAT     || mbc == MBC5_RUM_RAM_BAT)
+                            mbc == MBC5_RAM_BAT || mbc == MBC5_RUM_RAM_BAT)
                         {
                             volatile_flag = 1;
                         }
@@ -484,35 +367,15 @@ void loop()
         //Update the virtual pak if required
         if (n64_c[c].mempack->virtual_update_req == 1)
         {
-            //Print the Connected USB devices to the virtual pak for info
             char msg[256];
-            const char *nc = "NOT CONNECTED";
-            snprintf(msg, sizeof(msg),
-            "1:0x%04x/0x%04x\n%.15s\n%.15s\n"
-            #if (MAX_CONTROLLERS >= 2)
-            "2:0x%04x/0x%04x\n%.15s\n%.15s\n"
-            #endif
-            #if (MAX_CONTROLLERS >= 3)
-            "3:0x%04x/0x%04x\n%.15s\n%.15s\n"
-            #endif
-            #if (MAX_CONTROLLERS >= 4)
-            "4:0x%04x/0x%04x\n%.15s\n%.15s\n"
-            #endif
-            ,joy1.idVendor(), joy1.idProduct(), (joy1.manufacturer() != NULL) ? (const char*)joy1.manufacturer() : nc,
-                                                (joy1.product()      != NULL) ? (const char*)joy1.product()      : " "
-            #if (MAX_CONTROLLERS >= 2)
-            ,joy2.idVendor(), joy2.idProduct(), (joy2.manufacturer() != NULL) ? (const char*)joy2.manufacturer() : nc,
-                                                (joy2.product()      != NULL) ? (const char*)joy2.product()      : " "
-            #endif
-            #if (MAX_CONTROLLERS >= 3)
-            ,joy3.idVendor(), joy3.idProduct(), (joy3.manufacturer() != NULL) ? (const char*)joy3.manufacturer() : nc,
-                                                (joy3.product()      != NULL) ? (const char*)joy3.product()      : " "
-            #endif
-            #if (MAX_CONTROLLERS >= 4)
-            ,joy4.idVendor(), joy4.idProduct(), (joy4.manufacturer() != NULL) ? (const char*)joy4.manufacturer() : nc,
-                                                (joy4.product()      != NULL) ? (const char*)joy4.product()      : " "
-            #endif
-            );
+            int offset = 0;
+            for (int i = 0; i < MAX_CONTROLLERS; i++)
+            {
+                offset += sprintf(msg + offset, "1:0x%04x/0x%04x\n%.15s\n%.15s\n", indev_get_id_vendor(i),
+                                  indev_get_id_product(i),
+                                  indev_get_manufacturer_string(i),
+                                  indev_get_product_string(i));
+            }
             n64_virtualpak_write_info_1(msg);
             n64_virtualpak_update(n64_c[c].mempack);
         }
@@ -549,7 +412,7 @@ void _putchar(char character)
 
 static void init_ring_buffer()
 {
-    memset(ring_buffer,0xFF,sizeof(ring_buffer));
+    memset(ring_buffer, 0xFF, sizeof(ring_buffer));
 }
 
 static void flush_ring_buffer()
@@ -564,7 +427,6 @@ static void flush_ring_buffer()
             ring_buffer_print_pos = 0;
     }
 }
-
 
 //This function allocates and manages SRAM for mempak and gameboy roms (tpak) for the system.
 //SRAM is malloced into slots. Each slot stores a pointer to the memory location, its size, and
@@ -598,14 +460,15 @@ static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
         if (sram[i].len == 0)
         {
             sram[i].data = (uint8_t *)malloc(alloc_len);
-            if (sram[i].data == NULL) break;
+            if (sram[i].data == NULL)
+                break;
             sram[i].len = alloc_len;
             strcpy(sram[i].name, name);
-            if(non_volatile)
+            if (non_volatile)
             {
                 n64hal_sram_restore_from_file((uint8_t *)sram[i].name,
-                                            sram[i].data,
-                                            sram[i].len);
+                                              sram[i].data,
+                                              sram[i].len);
                 sram[i].non_volatile = 1;
             }
             else
@@ -627,10 +490,10 @@ static void flush_sram()
     noInterrupts();
     for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
     {
-        if(sram[i].len == 0 || sram[i].data == NULL || sram[i].non_volatile == 0)
+        if (sram[i].len == 0 || sram[i].data == NULL || sram[i].non_volatile == 0)
             continue;
-        debug_print_status("Writing %s %u bytes\n", (uint8_t*)sram[i].name, sram[i].len);
-        n64hal_sram_backup_to_file((uint8_t*)sram[i].name, sram[i].data, sram[i].len);
+        debug_print_status("Writing %s %u bytes\n", (uint8_t *)sram[i].name, sram[i].len);
+        n64hal_sram_backup_to_file((uint8_t *)sram[i].name, sram[i].data, sram[i].len);
     }
     interrupts();
     flush_ring_buffer();

@@ -89,16 +89,15 @@ void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_
  *
  *   rxdata: Pointer to a destination data array.
  *   src: Pointer to the src data.
- *   address: The address offset from the src array origin
+ *   offset: The offset from the src array origin
  *   len: Length of data to read in bytes.
  */
-void n64hal_sram_read(uint8_t *rxdata, uint8_t *src, uint16_t address, uint16_t len)
+void n64hal_sram_read(uint8_t *rxdata, uint8_t *src, uint16_t offset, uint16_t len)
 {
     //FIXME, need to be able to use external flash somehow, maybe *rxdata should be a UID?
-    //address renamed to offset?
     if (src != NULL)
     {
-        memcpy(rxdata, src + address, len);
+        memcpy(rxdata, src + offset, len);
     }
 }
 
@@ -110,16 +109,15 @@ void n64hal_sram_read(uint8_t *rxdata, uint8_t *src, uint16_t address, uint16_t 
  *
  *   txdata: Pointer to a data array to write
  *   dest: Pointer to the destination data array.
- *   address: The address offset from the dest array origin
+ *   offset: The offset from the dest array origin
  *   len: Length of data to write in bytes.
  */
-void n64hal_sram_write(uint8_t *txdata, uint8_t *dest, uint16_t address, uint16_t len)
+void n64hal_sram_write(uint8_t *txdata, uint8_t *dest, uint16_t offset, uint16_t len)
 {
     //FIXME, need to be able to use external flash somehow, maybe *dest should be a UID?
-    //address renamed to offset?
     if (dest != NULL)
     {
-        memcpy(dest + address, txdata, len);
+        memcpy(dest + offset, txdata, len);
     }
 }
 
@@ -131,11 +129,11 @@ void n64hal_sram_write(uint8_t *txdata, uint8_t *dest, uint16_t address, uint16_
  *   Returns void
  *
  *   gb_cart: Pointer to the gb_cart object to read.
- *   address: The address offset of the gb rom. 0 being the start of the ROM.
+ *   offset: The offset of the gb rom. 0 being the start of the ROM.
  *   data: Pointer to the destination array.
  *   len: Length of data to read in bytes.
  */
-uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *data, uint32_t len)
+uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t offset, uint8_t *data, uint32_t len)
 {
     //Due to FATFS caching and overhead, pure f_open/f_seek/f_read calls were too slow for the n64 console.
     //Therefore, I use the FATFS system to open the file and create the cluster link map table for the file only once.
@@ -217,8 +215,8 @@ uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t address, uint8_t *dat
     }
 
     //For speed, skip the fatfs f_read/f_seek and read with the backend QSPI at the address
-    DWORD sector = clst2sect(&fs, clmt_clust(clmt[i], address));
-    qspi_read(sector * sector_size + (address % sector_size), len, data);
+    DWORD sector = clst2sect(&fs, clmt_clust(clmt[i], offset));
+    qspi_read(sector * sector_size + (offset % sector_size), len, data);
     return 1;
 }
 
