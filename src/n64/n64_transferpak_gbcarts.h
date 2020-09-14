@@ -111,7 +111,7 @@ typedef struct
     uint8_t access_state;        //Writing 0x01 to 0xB010 turns this on. Writing 0x00 to 0xB010 turns this off.
     uint8_t access_state_changed; //This is set if the access_state was just changed.
     uint8_t current_ram_bank;
-    uint8_t current_rom_bank;
+    uint16_t current_rom_bank;
     uint8_t current_mbc_bank; //Banks to access the overall MBC space. 0x0000 up to 0x7FFF.
     uint8_t ram_enabled;     //0x00 Disabled, 0x0A Enabled
     uint8_t banking_mode;    //0x00 ROM Banking Mode:

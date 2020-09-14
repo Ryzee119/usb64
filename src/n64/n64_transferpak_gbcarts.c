@@ -83,6 +83,127 @@ static uint32_t _gb_gb_get_rom_size(uint8_t sram_type, uint8_t mbc_type)
     return sram_len;
 }
 
+static uint8_t _gb_get_mbc_number(uint8_t mbc_type)
+{
+    switch (mbc_type)
+    {
+    case MBC1:
+    case MBC1_RAM:
+    case MBC1_RAM_BAT:
+        return 1;
+    case MBC2:
+    case MBC2_BAT:
+        return 2;
+    case MBC3:
+    case MBC3_RAM:
+    case MBC3_RAM_BAT:
+    case MBC3_TIM_BAT:
+    case MBC3_TIM_RAM_BAT:
+        return 3;
+    case MBC4:
+    case MBC4_RAM:
+    case MBC4_RAM_BAT:
+        return 4;
+    case MBC5:
+    case MBC5_RAM:
+    case MBC5_RAM_BAT:
+    case MBC5_RUM:
+    case MBC5_RUM_RAM:
+    case MBC5_RUM_RAM_BAT:
+        return 5;
+    default:
+        return 0;
+    }
+}
+
+static void gb_write_cart(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *inBuffer)
+{
+    gameboycart *cart = tpak->gbcart;
+    uint8_t mbc = _gb_get_mbc_number(cart->mbc);
+    uint16_t addr = mbc_address;
+    uint8_t val = inBuffer[0];
+    switch (addr >> 12)
+    {
+    case 0x0:
+    case 0x1:
+        if (mbc == 2 && addr & 0x10)
+            return;
+        else if (mbc > 0 && cart->ram)
+            tpak->ram_enabled = ((val & 0x0F) == 0x0A);
+        return;
+
+    case 0x2:
+        if (mbc == 5)
+        {
+            tpak->current_rom_bank = (tpak->current_rom_bank & 0x100) | val;
+            return;
+        }
+        /* Intentional fall through. */
+    case 0x3:
+        if (mbc == 1)
+        {
+            //selected_rom_bank = val & 0x7;
+            tpak->current_rom_bank = (val & 0x1F) | (tpak->current_rom_bank & 0x60);
+
+            if ((tpak->current_rom_bank & 0x1F) == 0x00)
+                tpak->current_rom_bank++;
+        }
+        else if (mbc == 2 && addr & 0x10)
+        {
+            tpak->current_rom_bank = val & 0x0F;
+
+            if (!tpak->current_rom_bank)
+                tpak->current_rom_bank++;
+        }
+        else if (mbc == 3)
+        {
+            tpak->current_rom_bank = val & 0x7F;
+
+            if (!tpak->current_rom_bank)
+                tpak->current_rom_bank++;
+        }
+        else if (mbc == 5)
+            tpak->current_rom_bank = (val & 0x01) << 8 | (tpak->current_rom_bank & 0xFF);
+
+        return;
+
+    case 0x4:
+    case 0x5:
+        if (mbc == 1)
+        {
+            tpak->current_ram_bank = (val & 3);
+            tpak->current_rom_bank = ((val & 3) << 5) | (tpak->current_rom_bank & 0x1F);
+        }
+        else if (mbc == 3)
+            tpak->current_ram_bank = val;
+        else if (mbc == 5)
+            tpak->current_ram_bank = (val & 0x0F);
+
+        return;
+
+    case 0x6:
+    case 0x7:
+        tpak->banking_mode = (val & 1);
+        return;
+
+    case 0xA:
+    case 0xB:
+        if (cart->ram && tpak->ram_enabled)
+        {
+            if (mbc == 3 && tpak->current_ram_bank >= 0x08)
+                //gb->cart_rtc[tpak->current_ram_bank - 0x08] = val;
+            else if (tpak->banking_modes)
+            {
+                gb->gb_cart_ram_write(gb,
+                                      addr - CART_RAM_ADDR + (tpak->current_ram_bank * CRAM_BANK_SIZE), val);
+            }
+            else if (gb->num_ram_banks)
+                gb->gb_cart_ram_write(gb, addr - CART_RAM_ADDR, val);
+        }
+
+        return;
+    }
+}
 
 static void gb_write_cart_rom_only(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *inBuffer)
 {
@@ -122,24 +243,11 @@ static void gb_read_cart_mbc2(uint16_t mbc_address, n64_transferpak *tpak, uint8
 static void gb_write_cart_mbc3(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *inBuffer)
 {
     gameboycart *cart = tpak->gbcart;
-    //0000-1FFF - Enable/Disable RAM access, also enabled RTC register access (MBC3)
-    //MBC1, MBC3 (Also enabled RTC register access), MBC5
-    //00h  Disable RAM (default)
-    //0Ah  Enable RAM
-
-    //MBC2
-    //The least significant bit of the upper address byte must be zero to enable/disable cart RAM.
-    //For example the following addresses can be used to enable/disable cart RAM: 0000-00FF, 0200-02FF, 0400-04FF, ..., 1E00-1EFF.
-    //The suggested address range to use for MBC2 ram enable/disable is 0000-00FF.
-    //Still:
-    //00h  Disable RAM (default) 
-    //0Ah  Enable RAM
-    //Probably dont need to do anything
     if (mbc_address >= 0x0000 && mbc_address <= 0x1FFF)
     {
         if ((inBuffer[31] & 0x0F) == 0x0A)
-        { 
-            tpak->ram_enabled = 1;
+        {
+            tpak->ram_enabled = (inBuffer[31] & 0x0F) == 0x0A;
         }
         else if ((inBuffer[31] & 0x0F) == 0x00)
         {
@@ -150,27 +258,23 @@ static void gb_write_cart_mbc3(uint16_t mbc_address, n64_transferpak *tpak, uint
             debug_print_error("ERROR: Unknown RAM enable command %02x\n", inBuffer[31]);
         }
     }
-    //2000-3FFF - Control ROM Bank Number
-    //MBC1  When 00h is written, the MBC translates that to bank 01h.
-    //Bank 20h, 40h, and 60h. Any attempt to address these ROM Banks will select Bank 21h, 41h, and 61h instead.
-    //lower 5 bits of bank numer is used only
-    //MBC2 2000-3FFF area will select an appropriate ROM bank at 4000-7FFF.. Doesnt mention anything about bank 0? Probably same as MBC1/3
-    
-    //MBC3 Same as MBC1, //lower 7 bits of bank number is used only
-    
-    //MBC5 2000-2FFF The lower 8 bits of the ROM bank number goes here. Writing 0 will indeed give bank 0 on MBC5
-    //     3000-3FFF The 9th bit of the ROM bank number goes here
     else if (mbc_address >= 0x2000 && mbc_address <= 0x3FFF)
     {
-        tpak->current_rom_bank = inBuffer[0] & 0x7F;
-        //A value of 00h, will actually select Bank 01h instead for MBC5
-        if (tpak->current_rom_bank == 0) //FIXME && if MBC == MBC3 || MBC1. MBC5 this is really bank 0
-            //FIXME IF MBC1 Bank 20h, 40h, and 60h. Any attempt to address these ROM Banks will select Bank 21h, 41h, and 61h instead.
-            //FIXME, for MBC5 this needs to be <=0x2FFF
+        if (_gb_get_mbc_number(cart->mbc) == 5 && mbc_address >= 0x3000)
+            tpak->current_rom_bank = (inBuffer[0] & 0x7F) << 8;
+        else
+            tpak->current_rom_bank = inBuffer[0] & 0x7F;
+
+        //A value of 00h, will actually select Bank 01h instead except for MBC5
+        if (tpak->current_rom_bank == 0 && _gb_get_mbc_number(cart->mbc) != 5)
         {
             tpak->current_rom_bank = 1;
         }
-        //FIXME if mbc_address >= 0x3000 && mbc_address <= 0x3FFF, 9th bit of ROM bank number here. rom_bank needs to be uint16_t
+        //0x20, 40, and 60 will select bank 21, 41 and 61
+        else if ((tpak->current_rom_bank == 0x20 || tpak->current_rom_bank == 0x40 || tpak->current_rom_bank == 0x60) && _gb_get_mbc_number(cart->mbc) == 1)
+        {
+            tpak->current_rom_bank++;
+        }
     }
     //4000-5FFF - Control RAM Bank Number - or - RTC Register Select
     else if (mbc_address >= 0x4000 && mbc_address <= 0x5FFF)
@@ -188,12 +292,12 @@ static void gb_write_cart_mbc3(uint16_t mbc_address, n64_transferpak *tpak, uint
             tpak->banking_mode = inBuffer[0];
         }
     }
-    //6000-7FFF - Latch Clock Data
+    //6000-7FFF - Latch Clock Data or ROM/RAM banking (MBC1)
     else if (mbc_address >= 0x6000 && mbc_address <= 0x7FFF)
     {
         if (inBuffer[0] == 0x01)
         {
-            //debug_print_n64("Latch RTC Registers\n"); 
+            //debug_print_n64("Latch RTC Registers\n");
         }
     }
     //0xA000-0xBFFF Cart RAM Write OR RTC Register Write
@@ -204,10 +308,18 @@ static void gb_write_cart_mbc3(uint16_t mbc_address, n64_transferpak *tpak, uint
         {
             switch (tpak->banking_mode)
             {
-            case 0x08: cart->rtc_second = inBuffer[0]; break;
-            case 0x09: cart->rtc_minute = inBuffer[0]; break;
-            case 0x0A: cart->rtc_hour = inBuffer[0];   break;
-            case 0x0B: cart->rtc_day = inBuffer[0];    break;
+            case 0x08:
+                cart->rtc_second = inBuffer[0];
+                break;
+            case 0x09:
+                cart->rtc_minute = inBuffer[0];
+                break;
+            case 0x0A:
+                cart->rtc_hour = inBuffer[0];
+                break;
+            case 0x0B:
+                cart->rtc_day = inBuffer[0];
+                break;
             case 0x0C:
                 cart->rtc_day &= 0x00FF;
                 cart->rtc_day |= ((uint16_t)inBuffer[0]) << 8;
@@ -233,7 +345,7 @@ static void gb_write_cart_mbc3(uint16_t mbc_address, n64_transferpak *tpak, uint
     else
     {
         debug_print_error("ERROR: Bad read at MBC address 0x%04x and ROMBank %u\n", mbc_address,
-                                                                         tpak->current_rom_bank);
+                          tpak->current_rom_bank);
     }
 }
 
@@ -299,7 +411,7 @@ static void gb_read_cart_mbc3(uint16_t mbc_address, n64_transferpak *tpak, uint8
     else
     {
         debug_print_error("ERROR: Bad read at MBC address 0x%04x and ROMBank %u\n", mbc_address,
-                                                                         tpak->current_rom_bank);
+                          tpak->current_rom_bank);
     }
 }
 /* END MBC3 */
@@ -432,19 +544,18 @@ void gb_init_cart(gameboycart *cart, uint8_t *gb_header, char *filename)
         cart->romsize = _gb_get_rom_size(gb_header[GB_ROMSIZE_OFFSET - 0x100]);
         cart->ramsize = _gb_gb_get_rom_size(gb_header[GB_RAMSIZE_OFFSET - 0x100], cart->mbc);
         memcpy(cart->filename, filename, sizeof(cart->filename));
-        #if (0)
+#if (0)
         debug_print_n64("GB Name: %.15s\r\n", cart->title);
         debug_print_n64("ROM Bytes: %lu\r\n", cart->romsize);
         debug_print_n64("SRAM Bytes: %lu\r\n", cart->ramsize);
         debug_print_n64("MBC Type: 0x%02x\r\n", cart->mbc);
-        #endif
+#endif
     }
     else
     {
         debug_print_n64("GB header not valid\r\n");
     }
 }
-
 
 //To do?
 //Kept my RE notes here for future ref
