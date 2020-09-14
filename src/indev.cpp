@@ -95,7 +95,7 @@ typedef struct
     int type;
 } indev;
 
-indev input_devices[MAX_CONTROLLERS];
+static indev input_devices[MAX_CONTROLLERS];
 
 static int _check_id(uint8_t id)
 {
@@ -142,9 +142,10 @@ void indev_update_input_devices()
                 if (gamecontroller[i] == input_devices[j].driver)
                 {
                     already_registered = true;
+                    break;
                 }
             }
-            //Its a new controller, find empty slot and register is now
+            //Its a new controller, find empty slot and register it now
             if (already_registered == false)
             {
                 for (int j = 0; j < MAX_CONTROLLERS; j++)
@@ -164,7 +165,7 @@ void indev_update_input_devices()
     //Find new mice
     for (int i = 0; i < MAX_MICE; i++)
     {
-        //Game c ontroller is connected
+        //Mouse is connected
         USBHIDInput *m = (USBHIDInput *)mousecontroller[i];
         if (*m == true)
         {
@@ -173,9 +174,12 @@ void indev_update_input_devices()
             for (int j = 0; j < MAX_CONTROLLERS; j++)
             {
                 if (mousecontroller[i] == input_devices[j].driver)
+                {
                     already_registered = true;
+                    break;
+                }
             }
-            //Its a new controller, find empty slot and register is now
+            //Its a new mouse, find empty slot and register it now
             if (already_registered == false)
             {
                 for (int j = 0; j < MAX_CONTROLLERS; j++)
@@ -197,11 +201,6 @@ void indev_update_input_devices()
 uint16_t indev_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis, uint32_t max_axis,
                                        uint16_t *n64_buttons, int8_t *n64_x_axis, int8_t *n64_y_axis, bool *combo_pressed)
 {
-    JoystickController *joy;
-#if (MAX_MICE >= 1)
-    MouseController *mouse;
-#endif
-
     uint32_t _buttons = 0;
     int32_t _axis[max_axis] = {0};
 
@@ -210,7 +209,7 @@ uint16_t indev_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
 
     if (indev_is_gamecontroller(id))
     {
-        joy = (JoystickController *)input_devices[id].driver;
+        JoystickController *joy = (JoystickController *)input_devices[id].driver;
         _buttons = joy->getButtons();
 
         for (uint8_t i = 0; i < max_axis; i++)
@@ -272,7 +271,7 @@ uint16_t indev_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
 #if (MAX_MICE >= 1)
     else if (indev_is_mouse(id))
     {
-        mouse = (MouseController *)input_devices[id].driver;
+        MouseController *mouse = (MouseController *)input_devices[id].driver;
         _buttons = mouse->getButtons();
 
         _axis[0] = mouse->getMouseX();
@@ -331,20 +330,20 @@ bool indev_is_connected(int id)
 {
     bool connected = false;
     if (_check_id(id) == 0)
-        return 0;
+        return false;
 
     if (indev_is_gamecontroller(id))
     {
         JoystickController *joy = (JoystickController *)input_devices[id].driver;
         if (*joy == true)
-            connected = 1;
+            connected = true;
     }
 
     else if (indev_is_mouse(id))
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         if (*mouse == true)
-            connected = 1;
+            connected = true;
     }
 
     return connected;
@@ -353,19 +352,19 @@ bool indev_is_connected(int id)
 bool indev_is_mouse(int id)
 {
     if (_check_id(id) == 0)
-        return 0;
+        return false;
     if (input_devices[id].type == MOUSE)
-        return 1;
-    return 0;
+        return true;
+    return false;
 }
 
 bool indev_is_gamecontroller(int id)
 {
     if (_check_id(id) == 0)
-        return 0;
+        return false;
     if (input_devices[id].type == GAMECONTROLLER)
-        return 1;
-    return 0;
+        return true;
+    return false;
 }
 
 uint16_t indev_get_id_product(int id)
@@ -408,8 +407,8 @@ uint16_t indev_get_id_vendor(int id)
 
 const char *indev_get_manufacturer_string(int id)
 {
-    static const char NC[] = "NOT CONNECTED";
-    if (_check_id(id) == 0 || indev_is_connected(id) == 0)
+    const char NC[] = "NOT CONNECTED";
+    if (_check_id(id) == 0 || indev_is_connected(id) == false)
         return NC;
 
     if (indev_is_gamecontroller(id))
