@@ -69,7 +69,7 @@ static uint8_t n64_get_crc(uint8_t *data)
 {
     //Generated from http://www.sunshine2k.de/coding/javascript/crc/crc_js.html
     //N64 CRC poly is x^7 + x^2 + x^0 (0x85), initial value = 0
-    uint8_t crctable[256] = {
+    static uint8_t crctable[256] = {
         0x00, 0x85, 0x8F, 0x0A, 0x9B, 0x1E, 0x14, 0x91, 0xB3, 0x36, 0x3C,
         0xB9, 0x28, 0xAD, 0xA7, 0x22, 0xE3, 0x66, 0x6C, 0xE9, 0x78, 0xFD,
         0xF7, 0x72, 0x50, 0xD5, 0xDF, 0x5A, 0xCB, 0x4E, 0x44, 0xC1, 0x43,
@@ -107,7 +107,7 @@ static uint8_t n64_get_crc(uint8_t *data)
 static uint8_t n64_compare_addr_crc(uint16_t encoded_add_console)
 {
     //See http://svn.navi.cx/misc/trunk/wasabi/devices/cube64/notes/addr_encoder.py
-    uint8_t crctable[11] = {
+    static uint8_t crctable[11] = {
         0x15, 0x1F, 0x0B, 0x16, 0x19, 0x07, 0x0E, 0x1C, 0x0D, 0x1A, 0x01};
     uint16_t encoded_add_cont = encoded_add_console & 0xFFE0;
     for (uint8_t i = 0; i < sizeof(crctable); i++)
@@ -170,8 +170,8 @@ static void inline n64_wait_micros(uint32_t micros){
 //This function is called in the falling edge of the n64 data bus.
 void n64_controller_hande_new_edge(n64_controller *cont)
 {
-    static uint16_t peri_address = 0;
-    static uint8_t peri_access = 0;
+    static uint16_t peri_address[MAX_CONTROLLERS] = {0};
+    static uint8_t peri_access[MAX_CONTROLLERS] = {0};
     static uint32_t bus_timer[MAX_CONTROLLERS] = {0};
 
     //Hardcoded controller responses for indentify requests
@@ -185,7 +185,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
         (300 * n64hal_hs_tick_get_speed() / 1000000))
     {
         n64_reset_stream(cont);
-        peri_access = 0;
+        peri_access[cont->id] = 0;
     }
     n64hal_hs_tick_reset();
     bus_timer[cont->id] = n64hal_hs_tick_get();
@@ -240,33 +240,33 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             break;
         case N64_PERI_READ:
         case N64_PERI_WRITE:
-            peri_access = 1;
+            peri_access[cont->id] = 1;
             break;
         default:
-            peri_access = 0;
+            peri_access[cont->id] = 0;
             n64_reset_stream(cont);
             break;
         }
     }
 
     //If we are accessing the peripheral bus, let's handle that
-    if (peri_access == 1)
+    if (peri_access[cont->id] == 1)
     {
         /*WRITE ACCESS*/
         //If there was a 'write' command to the peripheral bus, check if all 32 bytes of data have been received
         if (cont->data_buffer[N64_COMMAND_POS] == N64_PERI_WRITE && cont->current_byte == (N64_DATA_POS + 32))
         {
 
-            peri_address = (cont->data_buffer[N64_ADDRESS_MSB_POS] << 8 |
-                            cont->data_buffer[N64_ADDRESS_LSB_POS]);
+            peri_address[cont->id] = (cont->data_buffer[N64_ADDRESS_MSB_POS] << 8 |
+                                      cont->data_buffer[N64_ADDRESS_LSB_POS]);
 
-            if (!n64_compare_addr_crc(peri_address))
+            if (!n64_compare_addr_crc(peri_address[cont->id]))
             {
                 cont->crc_error = 1;
-                debug_print_error("ERROR: Address CRC Error %04x\r\n", peri_address);
+                debug_print_error("ERROR: Address CRC Error %04x\r\n", peri_address[cont->id]);
             }
 
-            peri_address &= 0xFFE0;
+            peri_address[cont->id] &= 0xFFE0;
             cont->data_buffer[N64_CRC_POS] = n64_get_crc(&cont->data_buffer[N64_DATA_POS]);
             //If no peripheral, the CRC is inverted
             if (cont->current_peripheral == PERI_NONE)
@@ -279,7 +279,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
 
             //Now handle the write command
             //If a rumble toggle address, set the rumble state.
-            if (peri_address == 0xC000 && cont->current_peripheral == PERI_RUMBLE)
+            if (peri_address[cont->id] == 0xC000 && cont->current_peripheral == PERI_RUMBLE)
             {
                 //Turn on rumble, N64 sends 32*0x01 bytes.
                 if (cont->data_buffer[N64_DATA_POS] == 0x01)
@@ -294,8 +294,8 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             }
 
             //Initialise or Reset Peripherals.
-            else if (peri_address >= 0x8000 &&
-                     peri_address <= 0x8FFF)
+            else if (peri_address[cont->id] >= 0x8000 &&
+                     peri_address[cont->id] <= 0x8FFF)
             {
                 if (cont->current_peripheral == PERI_TPAK)
                 {
@@ -326,8 +326,8 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             }
 
             //TPAK ONLY: Set the Gameboy cart's MBC Bank
-            else if (peri_address >= 0xA000 &&
-                     peri_address <= 0xAFFF &&
+            else if (peri_address[cont->id] >= 0xA000 &&
+                     peri_address[cont->id] <= 0xAFFF &&
                      cont->current_peripheral == PERI_TPAK)
             {
                 //0x00, 0x01, or 0x02 and switches over the MBC memory space.
@@ -335,8 +335,8 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             }
 
             //TPAK ONLY: Enable or disable the Gameboy Cart access state
-            else if (peri_address >= 0xB000 &&
-                     peri_address <= 0xBFFF &&
+            else if (peri_address[cont->id] >= 0xB000 &&
+                     peri_address[cont->id] <= 0xBFFF &&
                      cont->current_peripheral == PERI_TPAK)
             {
                 uint8_t newaccess_state = cont->data_buffer[N64_DATA_POS];
@@ -352,8 +352,8 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             }
 
             //TPAK ONLY: Access the Gameboy Cart
-            else if (peri_address >= 0xC000 &&
-                     peri_address <= 0xFFFF &&
+            else if (peri_address[cont->id] >= 0xC000 &&
+                     peri_address[cont->id] <= 0xFFFF &&
                      cont->current_peripheral == PERI_TPAK &&
                      cont->tpak->gbcart)
             {
@@ -361,16 +361,16 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             }
 
             //Do we have to write to the mempak?
-            if (peri_address <= 0x7FFF &&
+            if (peri_address[cont->id] <= 0x7FFF &&
                 cont->current_peripheral == PERI_MEMPAK && !cont->crc_error)
             {
                 cont->mempack->dirty = 1;
-                n64_mempack_write32(cont->mempack, peri_address, &cont->data_buffer[N64_DATA_POS]);
+                n64_mempack_write32(cont->mempack, peri_address[cont->id], &cont->data_buffer[N64_DATA_POS]);
             }
 
             //VIRTUAL MEMPAK NOTE TABLE HOOK
-            if (peri_address >= 0x300 &&
-                peri_address <  0x500 && 
+            if (peri_address[cont->id] >= 0x300 &&
+                peri_address[cont->id] <  0x500 && 
                 cont->current_peripheral == PERI_MEMPAK &&
                 cont->mempack->virtual_is_active)
             {
@@ -381,12 +381,12 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                  * and has 32bytes (0x20) per note.
                  * I use this as a hacky menu for the N64
                  */
-                uint8_t row = (peri_address - 0x300) / 0x20; //What row you have 'selected' 0-15
+                uint8_t row = (peri_address[cont->id] - 0x300) / 0x20; //What row you have 'selected' 0-15
                 cont->mempack->virtual_update_req = 1;
                 cont->mempack->virtual_selected_row = row;
             }
 
-            peri_access = 0;
+            peri_access[cont->id] = 0;
             n64_reset_stream(cont);
         }
 
@@ -406,38 +406,38 @@ void n64_controller_hande_new_edge(n64_controller *cont)
         )
         {
             memset(&cont->data_buffer[N64_DATA_POS], 0x00, 32); //N64 responds with 0x00s unless otherwise set
-            peri_address = (cont->data_buffer[N64_ADDRESS_MSB_POS] << 8 |
-                            cont->data_buffer[N64_ADDRESS_LSB_POS]);
+            peri_address[cont->id] = (cont->data_buffer[N64_ADDRESS_MSB_POS] << 8 |
+                                      cont->data_buffer[N64_ADDRESS_LSB_POS]);
 
 #ifdef USE_N64_ADDRESS_CRC
-            if (!n64_compare_addr_crc(peri_address))
+            if (!n64_compare_addr_crc(peri_address[cont->id]))
             {
                 cont->crc_error = 1;
-                debug_print_error("ERROR: Address CRC Error %04x\r\n", peri_address);
+                debug_print_error("ERROR: Address CRC Error %04x\r\n", peri_address[cont->id]);
             }
 #endif
 
             //Clear the address CRC bits
-            peri_address &= 0xFFE0;
+            peri_address[cont->id] &= 0xFFE0;
 
             //MEMPAK ADDRESS RANGE
-            if (peri_address >= 0x0000 &&
-                peri_address <= 0x7FFF)
+            if (peri_address[cont->id] >= 0x0000 &&
+                peri_address[cont->id] <= 0x7FFF)
             {
                 //Reads in a mempak address range with no mempak has some special cases
                 if (cont->current_peripheral == PERI_TPAK)
                 {
-                    if (peri_address <= 0x1FFF && cont->tpak->power_state == 1)
+                    if (peri_address[cont->id] <= 0x1FFF && cont->tpak->power_state == 1)
                     {
                         //TPAK return 0x84's if its been enabled previously.
                         memset(&cont->data_buffer[N64_DATA_POS], 0x84, 32);
                     }
-                    else if (peri_address >= 0x3000 && peri_address <= 0x3FFF && cont->tpak->access_state == 1)
+                    else if (peri_address[cont->id] >= 0x3000 && peri_address[cont->id] <= 0x3FFF && cont->tpak->access_state == 1)
                     {
                         //TPAK return 0x89's if the access state has been set
                         memset(&cont->data_buffer[N64_DATA_POS], 0x89, 32);
                     }
-                    else if (peri_address >= 0x3000 && peri_address <= 0x3FFF && cont->tpak->access_state == 0)
+                    else if (peri_address[cont->id] >= 0x3000 && peri_address[cont->id] <= 0x3FFF && cont->tpak->access_state == 0)
                     {
                         //TPAK return 0x80's if the access state has NOT been set
                         memset(&cont->data_buffer[N64_DATA_POS], 0x80, 32);
@@ -446,12 +446,12 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                 else if (cont->current_peripheral == PERI_MEMPAK)
                 {
                     //If we have a mempak install, lets just read the data
-                    n64_mempack_read32(cont->mempack, peri_address, &cont->data_buffer[N64_DATA_POS]);
+                    n64_mempack_read32(cont->mempack, peri_address[cont->id], &cont->data_buffer[N64_DATA_POS]);
                 }
             }
             //TPAK or RUMBLE INIT ADDRESS RANGES
-            else if (peri_address >= 0x8000 &&
-                     peri_address <= 0x9FFF)
+            else if (peri_address[cont->id] >= 0x8000 &&
+                     peri_address[cont->id] <= 0x9FFF)
             {
                 //If rumblepak is initialised, respond with 32bytes of 0x80.
                 if (cont->current_peripheral == PERI_RUMBLE && cont->rpak->initialised == 1)
@@ -465,8 +465,8 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                 }
             }
             //TPAK ONLY: CONTROL ADDRESS RANGES
-            else if (peri_address >= 0xB000 &&
-                     peri_address <= 0xBFFF)
+            else if (peri_address[cont->id] >= 0xB000 &&
+                     peri_address[cont->id] <= 0xBFFF)
             {
                 //TPAK: Check Gameboy Cart Access Mode. Only responds if power_state is set.
                 if (cont->current_peripheral == PERI_TPAK && cont->tpak->power_state == 1)
@@ -497,12 +497,12 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                 }
             }
             //TPAK ONLY: GAMEBOY MBC ACCESS
-            else if (peri_address >= 0xC000 &&
-                     peri_address <= 0xFFFF &&
+            else if (peri_address[cont->id] >= 0xC000 &&
+                     peri_address[cont->id] <= 0xFFFF &&
                      cont->current_peripheral == PERI_TPAK &&
                      cont->tpak->gbcart)
             {
-                tpak_read(cont->tpak, peri_address, &cont->data_buffer[N64_DATA_POS]);
+                tpak_read(cont->tpak, peri_address[cont->id], &cont->data_buffer[N64_DATA_POS]);
             }
 
             //Calculate the CRC of the data buffer and place it at the end of the packet.
@@ -519,7 +519,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
 #endif
             n64_send_stream(&cont->data_buffer[N64_DATA_POS], 33, cont);
 
-            peri_access = 0;
+            peri_access[cont->id] = 0;
             n64_reset_stream(cont);
         }
     }
