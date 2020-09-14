@@ -97,8 +97,9 @@ void setup()
     {
         debug_print_error("ERROR: Could not mount FATFS, probably not formatted correctly. Formatting flash...\n");
         MKFS_PARM defopt = {FM_FAT, 1, 0, 0, 4096};
-        BYTE work[256];
-        f_mkfs("", &defopt, work, sizeof(work));
+        BYTE *work = (BYTE *)malloc(4096);
+        f_mkfs("", &defopt, work, 4096);
+        free(work);
         f_mount(&fs, "", 1);
     }
 
