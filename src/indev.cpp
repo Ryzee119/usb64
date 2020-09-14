@@ -407,7 +407,7 @@ uint16_t indev_get_id_vendor(int id)
 
 const char *indev_get_manufacturer_string(int id)
 {
-    const char NC[] = "NOT CONNECTED";
+    static const char NC[] = "NOT CONNECTED";
     if (_check_id(id) == 0 || indev_is_connected(id) == false)
         return NC;
 

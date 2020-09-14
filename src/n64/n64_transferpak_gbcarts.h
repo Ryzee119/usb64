@@ -82,15 +82,30 @@ extern "C" {
 #define B_32768 0x03
 #define B_131072 0x04
 #define B_65536 0x05
+    
+//MBC
+#define ROM_BANK_SIZE  0x4000
+#define CRAM_BANK_SIZE 0x2000
+#define CART_RAM_ADDR  0xA000
 
 typedef struct
 {
-    uint8_t mbc;       //What mbc the cart uses, extracted from the ROM header
-    char title[15]; //The cart game title extracted from the ROM header
+    char title[16]; //The cart game title extracted from the ROM header
+    
+    //Data
     uint32_t romsize;  //The cart rom size extracted from the ROM header
     uint32_t ramsize;  //The cart ram size extracted from the ROM header
     uint8_t *ram;      //Pointer to RAM data (if used)
     uint8_t *rom;      //Pointer to rom data (if used)
+    
+    //MBC
+    uint8_t mbc;       //What mbc the cart uses, extracted from the ROM header
+    uint16_t selected_rom_bank;
+    uint8_t selected_ram_bank;
+    uint8_t enable_cart_ram;
+    uint8_t cart_mode_select;
+    uint8_t num_ram_banks;
+    uint16_t num_rom_banks;
 
     //RTC
     uint8_t rtc_second; //0-59 (0-3Bh)
@@ -107,23 +122,16 @@ typedef struct
 
 typedef struct
 {
-    uint8_t power_state;         //Writing 0x84 to 0x8001 turns this on. Writing 0xFE to 0x8001 turns this off
-    uint8_t access_state;        //Writing 0x01 to 0xB010 turns this on. Writing 0x00 to 0xB010 turns this off.
+    uint8_t power_state;          //Writing 0x84 to 0x8001 turns this on. Writing 0xFE to 0x8001 turns this off
+    uint8_t access_state;         //Writing 0x01 to 0xB010 turns this on. Writing 0x00 to 0xB010 turns this off.
     uint8_t access_state_changed; //This is set if the access_state was just changed.
-    uint8_t current_ram_bank;
-    uint8_t current_rom_bank;
-    uint8_t current_mbc_bank; //Banks to access the overall MBC space. 0x0000 up to 0x7FFF.
-    uint8_t ram_enabled;     //0x00 Disabled, 0x0A Enabled
-    uint8_t banking_mode;    //0x00 ROM Banking Mode:
-                            //When 0x00, 0x4000 is the RAM Bank Number from 00 to 03),
-                            //When 0x01 RAM Banking Mode (The RAM Bank is used as the two upper bits of the ROM Bank)
+    uint8_t current_mbc_bank;     //Banks to access the overall MBC space. 0x0000 up to 0x7FFF.
     gameboycart *gbcart;
-    uint8_t activeRomID;
 } n64_transferpak;
 
 //Prototypes
-void tpak_write(n64_transferpak *tp, uint16_t raw_peri_address, uint8_t *data);
-void tpak_read(n64_transferpak *tp, uint16_t raw_peri_address, uint8_t *data);
+void tpak_write(n64_transferpak *tp, uint16_t raw_address, uint8_t *data);
+void tpak_read(n64_transferpak *tp, uint16_t raw_address, uint8_t *data);
 void tpak_reset(n64_transferpak *tpak);
 
 void gb_init_cart(gameboycart *cart, uint8_t *gb_header, char *filename);

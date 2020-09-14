@@ -339,16 +339,8 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                      peri_address[cont->id] <= 0xBFFF &&
                      cont->current_peripheral == PERI_TPAK)
             {
-                uint8_t newaccess_state = cont->data_buffer[N64_DATA_POS];
-                if ((newaccess_state == 1 || newaccess_state == 0) && cont->tpak->access_state != newaccess_state)
-                {
-                    cont->tpak->access_state_changed = 1;
-                    cont->tpak->access_state = newaccess_state;
-                }
-                else
-                {
-                    debug_print_error("ERROR: Unknown access command 0x%02x\n", cont->data_buffer[N64_DATA_POS]);
-                }
+                cont->tpak->access_state_changed = cont->tpak->access_state != cont->data_buffer[N64_DATA_POS];
+                cont->tpak->access_state = cont->data_buffer[N64_DATA_POS];
             }
 
             //TPAK ONLY: Access the Gameboy Cart
@@ -357,7 +349,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                      cont->current_peripheral == PERI_TPAK &&
                      cont->tpak->gbcart)
             {
-                tpak_write(cont->tpak, peri_address, &cont->data_buffer[N64_DATA_POS]);
+                tpak_write(cont->tpak, peri_address[cont->id], &cont->data_buffer[N64_DATA_POS]);
             }
 
             //Do we have to write to the mempak?

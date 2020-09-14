@@ -6,11 +6,11 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 
 - [x] N64 controller emulation.
 - [x] Rumblepak emulation.
-- [x] Mempak emulation or 4 selectable banks
+- [x] Mempak emulation with 4 selectable banks. Technically unlimited.
 - [x] Transferpak emulation with 16MB internal storage for Gameboy ROMs.
 - [x] N64 mouse emulation (Use a USB Mouse!).
 - [x] Configurable deadzones and sensitivity from the N64 Console.
-- [x] USB mass storage driver to backup mempaks and gameboy ROMs over USB.
+- [x] USB mass storage driver to backup mempaks and gameboy saves over USB.
 - [x] Raspberry Pi interface or equivalent for all other USB controllers.
 - [x] Hardwired controller interface.
 
@@ -25,6 +25,7 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - Xbox one Wired (Genuine Only)
 - Xbox 360 Wired
 - Xbox 360 Wireless (Via PC USB Receiver)
+- Raspberry Pi interface or equivalent for all other USB controllers.
 
 ## Controls
 - Back + D-Pad = Insert Mempak banks 1 to 4
@@ -60,3 +61,4 @@ usb64 is shared under the [MIT license](https://github.com/Ryzee119/usb64/blob/d
 * [QSPI](src/teensy41/qspi) is from [teensy41_extram](https://github.com/PaulStoffregen/teensy41_extram) shared under an '[MIT or MIT-like license](https://forum.pjrc.com/threads/29382-open-source-license-issues-when-using-teensy-products?p=79667&viewfull=1#post79667)'.
 * [USBHost_t36 fork](https://github.com/Ryzee119/USBHost_t36) shared under an '[MIT or MIT-like license](https://forum.pjrc.com/threads/29382-open-source-license-issues-when-using-teensy-products?p=79667&viewfull=1#post79667)'.
 * [Teensy cores](https://github.com/PaulStoffregen/cores) shared under an '[MIT or MIT-like license](https://forum.pjrc.com/threads/29382-open-source-license-issues-when-using-teensy-products?p=79667&viewfull=1#post79667)'.
+* [MBC emulation code](src/n64/n64_transferpak_gbcarts.c) is adapted from [Peanut-GB](https://github.com/deltabeard/Peanut-GB) shared under an MIT License.
