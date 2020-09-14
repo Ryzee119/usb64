@@ -191,327 +191,88 @@ static void gb_write_cart(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *
         if (cart->ram && tpak->ram_enabled)
         {
             if (mbc == 3 && tpak->current_ram_bank >= 0x08)
-                //gb->cart_rtc[tpak->current_ram_bank - 0x08] = val;
-            else if (tpak->banking_modes)
             {
-                gb->gb_cart_ram_write(gb,
-                                      addr - CART_RAM_ADDR + (tpak->current_ram_bank * CRAM_BANK_SIZE), val);
+                //gb->cart_rtc[tpak->current_ram_bank - 0x08] = val;
+                debug_print_n64("RTC controler write\n");
             }
-            else if (gb->num_ram_banks)
-                gb->gb_cart_ram_write(gb, addr - CART_RAM_ADDR, val);
+            else if (tpak->banking_mode)
+            {
+                uint16_t add = mbc_address - 0xA000 + (tpak->current_ram_bank * 0x2000);
+                n64hal_sram_write(inBuffer, cart->ram, add, 32);
+                cart->dirty = 1;
+            }
+            else if (cart->ramsize > 0)
+            {
+                n64hal_sram_write(inBuffer, cart->ram, mbc_address - 0xA000, 32);
+            }
         }
 
         return;
     }
 }
 
-static void gb_write_cart_rom_only(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *inBuffer)
-{
-    //Not expecting to actually write anything here.
-}
-
-static void gb_read_cart_rom_only(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *outBuffer)
-{
-    n64hal_rom_fastread(tpak->gbcart, mbc_address, outBuffer, 32);
-}
-
-/* MBC1 */
-static void gb_write_cart_mbc1(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *inBuffer)
-{
-    debug_print_n64("gb_write_cart_mbc1 not implemented\n");
-}
-
-static void gb_read_cart_mbc1(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *outBuffer)
-{
-    debug_print_n64("gb_read_cart_mbc1 not implemented\n");
-}
-/* END MBC1 */
-
-/* MBC2 */
-static void gb_write_cart_mbc2(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *inBuffer)
-{
-    debug_print_n64("gb_write_cart_mbc2 not implemented\n");
-}
-
-static void gb_read_cart_mbc2(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *outBuffer)
-{
-    debug_print_n64("gb_read_cart_mbc2 not implemented\n");
-}
-/* END MBC2 */
-
-/* MBC3 */
-static void gb_write_cart_mbc3(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *inBuffer)
+static void gb_read_cart(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *outBuffer)
 {
     gameboycart *cart = tpak->gbcart;
-    if (mbc_address >= 0x0000 && mbc_address <= 0x1FFF)
+    uint8_t mbc = _gb_get_mbc_number(cart->mbc);
+    uint16_t addr = mbc_address;
+    switch (addr >> 12)
     {
-        if ((inBuffer[31] & 0x0F) == 0x0A)
-        {
-            tpak->ram_enabled = (inBuffer[31] & 0x0F) == 0x0A;
-        }
-        else if ((inBuffer[31] & 0x0F) == 0x00)
-        {
-            tpak->ram_enabled = 0;
-        }
-        else
-        {
-            debug_print_error("ERROR: Unknown RAM enable command %02x\n", inBuffer[31]);
-        }
-    }
-    else if (mbc_address >= 0x2000 && mbc_address <= 0x3FFF)
-    {
-        if (_gb_get_mbc_number(cart->mbc) == 5 && mbc_address >= 0x3000)
-            tpak->current_rom_bank = (inBuffer[0] & 0x7F) << 8;
-        else
-            tpak->current_rom_bank = inBuffer[0] & 0x7F;
+    case 0x0:
+    case 0x1:
+    case 0x2:
+    case 0x3:
+        n64hal_rom_fastread(cart, addr, outBuffer, 32);
+        return;
 
-        //A value of 00h, will actually select Bank 01h instead except for MBC5
-        if (tpak->current_rom_bank == 0 && _gb_get_mbc_number(cart->mbc) != 5)
+    case 0x4:
+    case 0x5:
+    case 0x6:
+    case 0x7:
+        if (mbc == 1 && tpak->banking_mode)
         {
-            tpak->current_rom_bank = 1;
+            addr = (mbc_address - 0x4000) + (tpak->current_rom_bank * 0x4000);
+            n64hal_rom_fastread(cart, addr, outBuffer, 32);
+            return;
         }
-        //0x20, 40, and 60 will select bank 21, 41 and 61
-        else if ((tpak->current_rom_bank == 0x20 || tpak->current_rom_bank == 0x40 || tpak->current_rom_bank == 0x60) && _gb_get_mbc_number(cart->mbc) == 1)
-        {
-            tpak->current_rom_bank++;
-        }
-    }
-    //4000-5FFF - Control RAM Bank Number - or - RTC Register Select
-    else if (mbc_address >= 0x4000 && mbc_address <= 0x5FFF)
-    {
-        tpak->current_ram_bank = inBuffer[0];
-        //Writing a value in range for 00h-07h maps the corresponding external RAM Bank (if any) into memory at A000-BFFF
-        if (inBuffer[0] < 0x08)
-        {
-            tpak->banking_mode = 0;
-        }
-        //RTC Banking - When writing a value of 08h-0Ch, this will map the corresponding RTC register into memory at A000-BFFF
-        //0x08 to 0x0C for seconds, minutes, hours, day lower 8-bits, day upper (bit 0 = MSB of day counter)
         else
         {
-            tpak->banking_mode = inBuffer[0];
+            addr = (mbc_address - 0x4000) + ((tpak->current_rom_bank - 1) * 0x4000);
+            n64hal_rom_fastread(cart, addr, outBuffer, 32);
+            return;
         }
-    }
-    //6000-7FFF - Latch Clock Data or ROM/RAM banking (MBC1)
-    else if (mbc_address >= 0x6000 && mbc_address <= 0x7FFF)
-    {
-        if (inBuffer[0] == 0x01)
+
+    case 0xA:
+    case 0xB:
+        if (cart->ramsize > 0 && tpak->ram_enabled)
         {
-            //debug_print_n64("Latch RTC Registers\n");
-        }
-    }
-    //0xA000-0xBFFF Cart RAM Write OR RTC Register Write
-    else if (mbc_address >= 0xA000 && mbc_address <= 0xBFFF)
-    {
-        //If RAM Bank is 0x08-0x0C, write to RTC registers.
-        if (tpak->current_ram_bank >= 0x08 && tpak->current_ram_bank <= 0x0c)
-        {
-            switch (tpak->banking_mode)
+            if (mbc == 3 && tpak->current_ram_bank >= 0x08)
             {
-            case 0x08:
-                cart->rtc_second = inBuffer[0];
-                break;
-            case 0x09:
-                cart->rtc_minute = inBuffer[0];
-                break;
-            case 0x0A:
-                cart->rtc_hour = inBuffer[0];
-                break;
-            case 0x0B:
-                cart->rtc_day = inBuffer[0];
-                break;
-            case 0x0C:
-                cart->rtc_day &= 0x00FF;
-                cart->rtc_day |= ((uint16_t)inBuffer[0]) << 8;
-                break;
-            default:
-                debug_print_n64("Invalid write RTC banking_mode\n");
-                break;
+                //return gb->cart_rtc[tpak->current_ram_bank - 0x08];
+                return;
             }
-            cart->rtc_update = 1;
+            else if (tpak->banking_mode || mbc != 1)
+            {
+                addr = mbc_address - 0xA000 + (tpak->current_ram_bank * 0x2000);
+                return n64hal_sram_read(outBuffer, cart->ram, addr, 32);
+            }
+            else
+                addr = mbc_address - 0xA000;
+                return n64hal_sram_read(outBuffer, cart->ram, addr, 32);
         }
-        //If cart has RAM has ram write data packet to it
-        else if (tpak->ram_enabled == 1)
-        {
-            uint16_t add = mbc_address - 0xA000 + (tpak->current_ram_bank * 0x2000);
-            n64hal_sram_write(inBuffer, cart->ram, add, 32);
-            cart->dirty = 1;
-        }
-        else
-        {
-            debug_print_error("ERROR: Could not write RAM. %u\n", tpak->ram_enabled);
-        }
-    }
-    else
-    {
-        debug_print_error("ERROR: Bad read at MBC address 0x%04x and ROMBank %u\n", mbc_address,
-                          tpak->current_rom_bank);
-    }
-}
-
-static void gb_read_cart_mbc3(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *outBuffer)
-{
-    gameboycart *cart = tpak->gbcart;
-    uint32_t cartAddress = mbc_address;
-    uint16_t readAddress;
-
-    //0000-3FFF - Cart Flash Access Non Banked Section, Direct access.
-    if (mbc_address >= 0x0000 && mbc_address <= 0x3FFF)
-    {
-        cartAddress = mbc_address;
-        n64hal_rom_fastread(cart, cartAddress, outBuffer, 32);
-    }
-    //4000-7FFF - Cart Flash Access Banked Section.
-    else if (mbc_address >= 0x4000 && mbc_address <= 0x7FFF)
-    {
-        cartAddress = (mbc_address - 0x4000) + (tpak->current_rom_bank * 0x4000);
-        n64hal_rom_fastread(cart, cartAddress, outBuffer, 32);
-    }
-    //A000 to BFFF - Cart RAM or RTC Register Access
-    else if (mbc_address >= 0xA000 && mbc_address <= 0xBFFF)
-    {
-        //RTC Register or external RAM Bank
-        /*
-            00h  RAM Access
-            08h  RTC S  Seconds   0-59 (0-3Bh)
-            09h  RTC M  Minutes   0-59 (0-3Bh)
-            0Ah  RTC H  Hours     0-23 (0-17h)
-            0Bh  RTC DL Lower 8 bits of Day Counter (0-FFh)
-            0Ch  RTC DH Upper 1 bit of Day Counter, Carry Bit, Halt Flag
-                        Bit 0  Most significant bit of Day Counter (Bit 8)
-                        Bit 6  Halt (0=Active, 1=Stop Timer)
-                        Bit 7  Day Counter Carry Bit (1=Counter Overflow)
-        */
-        switch (tpak->banking_mode)
-        {
-        case 0x00:
-            readAddress = mbc_address - 0xA000 + (tpak->current_ram_bank * 0x2000);
-            n64hal_sram_read(outBuffer, cart->ram, readAddress, 32);
-            break;
-        case 0x08:
-            memset(outBuffer, cart->rtc_second, 32);
-            break;
-        case 0x09:
-            memset(outBuffer, cart->rtc_minute, 32);
-            break;
-        case 0x0A:
-            memset(outBuffer, cart->rtc_hour, 32);
-            break;
-        case 0x0B:
-            memset(outBuffer, (uint8_t)(cart->rtc_day), 32);
-            break;
-        case 0x0C:
-            memset(outBuffer, (uint8_t)(cart->rtc_day >> 8), 32);
-            break;
-        default:
-            debug_print_error("ERROR: Invalid Read banking_mode ");
-            break;
-        }
-    }
-    else
-    {
-        debug_print_error("ERROR: Bad read at MBC address 0x%04x and ROMBank %u\n", mbc_address,
-                          tpak->current_rom_bank);
-    }
-}
-/* END MBC3 */
-
-/* MBC4 */
-static void gb_write_cart_mbc4(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *inBuffer)
-{
-    debug_print_n64("gb_write_cart_mbc4 not implemented\n");
-}
-
-static void gb_read_cart_mbc4(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *outBuffer)
-{
-    debug_print_n64("gb_read_cart_mbc4 not implemented\n");
-}
-/* END MBC4 */
-
-/* MBC5 */
-static void gb_write_cart_mbc5(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *inBuffer)
-{
-    debug_print_n64("gb_write_cart_mbc5 not implemented\n");
-}
-
-static void gb_read_cart_mbc5(uint16_t mbc_address, n64_transferpak *tpak, uint8_t *outBuffer)
-{
-    debug_print_n64("gb_read_cart_mbc5 not implemented\n");
-}
-/* END MBC5 */
-
-static void _tpak_access(n64_transferpak *tp, uint16_t mbc_address, uint8_t *data, uint8_t write)
-{
-    switch (tp->gbcart->mbc)
-    {
-    case ROM_ONLY:
-    case ROM_RAM:
-    case ROM_RAM_BAT:
-        if (write)
-            gb_write_cart_rom_only(mbc_address, tp, data);
-        else
-            gb_read_cart_rom_only(mbc_address, tp, data);
-        break;
-    case MBC1:
-    case MBC1_RAM:
-    case MBC1_RAM_BAT:
-        if (write)
-            gb_write_cart_mbc1(mbc_address, tp, data);
-        else
-            gb_read_cart_mbc1(mbc_address, tp, data);
-        break;
-    case MBC2:
-    case MBC2_BAT:
-        if (write)
-            gb_write_cart_mbc2(mbc_address, tp, data);
-        else
-            gb_read_cart_mbc2(mbc_address, tp, data);
-        break;
-    case MBC3:
-    case MBC3_RAM:
-    case MBC3_RAM_BAT:
-    case MBC3_TIM_BAT:
-    case MBC3_TIM_RAM_BAT:
-        if (write)
-            gb_write_cart_mbc3(mbc_address, tp, data);
-        else
-            gb_read_cart_mbc3(mbc_address, tp, data);
-        break;
-    case MBC4:
-    case MBC4_RAM:
-    case MBC4_RAM_BAT:
-        if (write)
-            gb_write_cart_mbc4(mbc_address, tp, data);
-        else
-            gb_read_cart_mbc4(mbc_address, tp, data);
-        break;
-    case MBC5:
-    case MBC5_RAM:
-    case MBC5_RAM_BAT:
-    case MBC5_RUM:
-    case MBC5_RUM_RAM:
-    case MBC5_RUM_RAM_BAT:
-        if (write)
-            gb_write_cart_mbc5(mbc_address, tp, data);
-        else
-            gb_read_cart_mbc5(mbc_address, tp, data);
-        break;
-    default:
-        debug_print_n64("WARNING: Unsupported MBC %u\n", tp->gbcart->mbc);
-        break;
     }
 }
 
 void tpak_write(n64_transferpak *tp, uint16_t raw_peri_address, uint8_t *data)
 {
     uint16_t mbc_address = _tpak_get_mbc_address(raw_peri_address, tp->current_mbc_bank);
-    _tpak_access(tp, mbc_address, data, 1);
+    gb_write_cart(mbc_address, tp, data);
 }
 
 void tpak_read(n64_transferpak *tp, uint16_t raw_peri_address, uint8_t *data)
 {
     uint16_t mbc_address = _tpak_get_mbc_address(raw_peri_address, tp->current_mbc_bank);
-    _tpak_access(tp, mbc_address, data, 0);
+    gb_read_cart(mbc_address, tp, data);
 }
 
 void tpak_reset(n64_transferpak *tpak)
