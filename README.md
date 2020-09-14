@@ -11,17 +11,14 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - [x] N64 mouse emulation (Use a USB Mouse!).
 - [x] Configurable deadzones and sensitivity from the N64 Console.
 - [x] USB mass storage driver to backup mempaks and gameboy ROMs over USB.
+- [x] Raspberry Pi interface or equivalent for all other USB controllers.
+- [x] Hardwired controller interface.
 
 ## Todo
-- [ ] Raspberry Pi interface or similar for all other USB controllers.
-- [ ] Hardwired controller interface.
-- [ ] More inbuilt USB controller drivers.
 - [ ] True dual analog sticks with GoldenEye and Perfect Dark.
-- [ ] Additional Gameboy MBCs. (Only MBC3 supported at the moment)
+- [ ] More inbuilt USB controller drivers.
 - [ ] Gameboy Camera Support.
 - [ ] Touch LCD Support.
-- [ ] Teensy 4.1 is overkill. Port to other/cheaper platforms?
-- [ ] Remove USBHOST_t36 dependency. (TinyUSB is more portable).
 
 ## Supported USB Controllers
 - Bluetooth 8bitdo/compatible controllers via the [8BitDo Wireless USB Adapter](https://www.8bitdo.com/wireless-usb-adapter/)
