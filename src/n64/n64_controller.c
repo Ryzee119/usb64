@@ -170,42 +170,45 @@ static void inline n64_wait_micros(uint32_t micros){
 //This function is called in the falling edge of the n64 data bus.
 void n64_controller_hande_new_edge(n64_controller *cont)
 {
+    uint32_t start_clock = n64hal_hs_tick_get();
+
     static uint16_t peri_address[MAX_CONTROLLERS] = {0};
     static uint8_t peri_access[MAX_CONTROLLERS] = {0};
     static uint32_t bus_timer[MAX_CONTROLLERS] = {0};
 
     //Hardcoded controller responses for indentify requests
     static uint8_t n64_mouse[]          = {0x02, 0x00, 0x00};
-    static uint8_t n64_cont_no_peri[]   = {0x05, 0x00, 0x02};
     static uint8_t n64_cont_with_peri[] = {0x05, 0x00, 0x01};
+    static uint8_t n64_cont_no_peri[]   = {0x05, 0x00, 0x02};
     static uint8_t n64_cont_crc_error[] = {0x05, 0x00, 0x04};
 
     //If bus has been idle for 300us, start of a new stream.
-    if ((n64hal_hs_tick_get() - bus_timer[cont->id]) >
-        (300 * n64hal_hs_tick_get_speed() / 1000000))
+    if ((n64hal_hs_tick_get() - bus_timer[cont->id]) > (300 * n64hal_hs_tick_get_speed() / 1000000))
     {
         n64_reset_stream(cont);
         peri_access[cont->id] = 0;
     }
-    n64hal_hs_tick_reset();
-    bus_timer[cont->id] = n64hal_hs_tick_get();
 
     //If byte has completed, increment buffer for next byte and reset bit counter.
     if (cont->current_bit == -1)
     {
         cont->current_bit = 7;
         cont->current_byte++;
-        if (cont->current_byte > N64_MAX_POS)
-        {
-            cont->current_byte = 0;
-        }
+        (cont->current_byte > N64_MAX_POS) ? cont->current_byte = 0 : (0);
         cont->data_buffer[cont->current_byte] = 0x00;
     }
 
-    //Wait for 1us to pass since falling edge before reading bit
-    n64_wait_micros(1);
+    //Wait for ~1.05us to pass since falling edge before reading bit
+    uint32_t end_clock = start_clock + (n64hal_hs_tick_get_speed() / 950000);
+    while (n64hal_hs_tick_get() < end_clock);
+
+    //Read bit
     cont->data_buffer[cont->current_byte] |= n64hal_input_read(cont) << cont->current_bit;
     cont->current_bit -= 1;
+
+    //Reset idle timer
+    n64hal_hs_tick_reset();
+    bus_timer[cont->id] = n64hal_hs_tick_get();
 
     //If byte 0 has been completed, we need to identify what the command is
     if (cont->current_byte == 1)
