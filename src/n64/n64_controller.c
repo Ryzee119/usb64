@@ -263,7 +263,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             if (!n64_compare_addr_crc(peri_address[cont->id]))
             {
                 cont->crc_error = 1;
-                debug_print_error("ERROR: Address CRC Error %04x\r\n", peri_address[cont->id]);
+                debug_print_error("ERROR: Address CRC Error %04x\n", peri_address[cont->id]);
             }
 
             peri_address[cont->id] &= 0xFFE0;
@@ -303,11 +303,13 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                     if (cont->data_buffer[N64_DATA_POS] == 0x84)
                     {
                         cont->tpak->power_state = 1;
+                        debug_print_tpak("TPAK: Powerstate set to %u\n", cont->tpak->power_state);
                     }
                     //N64 writes 32 bytes of 0xFE to reset the TPAK
                     else if (cont->data_buffer[N64_DATA_POS] == 0xFE)
                     {
                         tpak_reset(cont->tpak);
+                        debug_print_tpak("TPAK: Reset\n");
                     }
                 }
                 else if (cont->current_peripheral == PERI_RUMBLE)
@@ -316,11 +318,13 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                     if (cont->data_buffer[N64_DATA_POS] == 0x80)
                     {
                         cont->rpak->initialised = 1;
+                        debug_print_n64("N64: Rumblepak Initialised\n");
                     }
                     //N64 writes 32 bytes of 0xFE to reset the rumblepak
                     else if (cont->data_buffer[N64_DATA_POS] == 0xFE)
                     {
                         cont->rpak->initialised = 0;
+                        debug_print_n64("N64: Rumblepak Reset\n");
                     }
                 }
             }
@@ -331,7 +335,8 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                      cont->current_peripheral == PERI_TPAK)
             {
                 //0x00, 0x01, or 0x02 and switches over the MBC memory space.
-                cont->tpak->current_mbc_bank = cont->data_buffer[N64_DATA_POS];
+                cont->tpak->selected_mbc_bank = cont->data_buffer[N64_DATA_POS];
+                debug_print_tpak("TPAK: MBC bank changed to %u\n",  cont->tpak->selected_mbc_bank);
             }
 
             //TPAK ONLY: Enable or disable the Gameboy Cart access state
@@ -341,6 +346,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             {
                 cont->tpak->access_state_changed = cont->tpak->access_state != cont->data_buffer[N64_DATA_POS];
                 cont->tpak->access_state = cont->data_buffer[N64_DATA_POS];
+                debug_print_tpak("TPAK: Access state set to %u\n",  cont->tpak->access_state);
             }
 
             //TPAK ONLY: Access the Gameboy Cart
@@ -376,6 +382,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                 uint8_t row = (peri_address[cont->id] - 0x300) / 0x20; //What row you have 'selected' 0-15
                 cont->mempack->virtual_update_req = 1;
                 cont->mempack->virtual_selected_row = row;
+                debug_print_n64("N64: Virtualpak write at row %u\n", row);
             }
 
             peri_access[cont->id] = 0;
@@ -405,96 +412,78 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             if (!n64_compare_addr_crc(peri_address[cont->id]))
             {
                 cont->crc_error = 1;
-                debug_print_error("ERROR: Address CRC Error %04x\r\n", peri_address[cont->id]);
+                debug_print_error("ERROR: Address CRC Error %04x\n", peri_address[cont->id]);
             }
 #endif
 
             //Clear the address CRC bits
             peri_address[cont->id] &= 0xFFE0;
-
-            //MEMPAK ADDRESS RANGE
-            if (peri_address[cont->id] >= 0x0000 &&
-                peri_address[cont->id] <= 0x7FFF)
+            switch(peri_address[cont->id] >> 12)
             {
-                //Reads in a mempak address range with no mempak has some special cases
-                if (cont->current_peripheral == PERI_TPAK)
-                {
-                    if (peri_address[cont->id] <= 0x1FFF && cont->tpak->power_state == 1)
+                case 0x0: //0x0000 - 0x0FFFF
+                case 0x1: //0x1000 = 0x1FFFF
+                    if (cont->current_peripheral == PERI_TPAK && cont->tpak->power_state == 1)
                     {
-                        //TPAK return 0x84's if its been enabled previously.
                         memset(&cont->data_buffer[N64_DATA_POS], 0x84, 32);
+                        debug_print_tpak("TPAK: Request powerstate. Sending 0x84s (its enabled)\n");
+                        break;
                     }
-                    else if (peri_address[cont->id] >= 0x3000 && peri_address[cont->id] <= 0x3FFF && cont->tpak->access_state == 1)
+                    //Fall through intentional
+                case 0x3: //0x3000 - 0x3FFF
+                case 0xB: //0xB000 - 0xBFFF
+                    if (cont->current_peripheral == PERI_TPAK)
                     {
-                        //TPAK return 0x89's if the access state has been set
-                        memset(&cont->data_buffer[N64_DATA_POS], 0x89, 32);
-                    }
-                    else if (peri_address[cont->id] >= 0x3000 && peri_address[cont->id] <= 0x3FFF && cont->tpak->access_state == 0)
-                    {
-                        //TPAK return 0x80's if the access state has NOT been set
-                        memset(&cont->data_buffer[N64_DATA_POS], 0x80, 32);
-                    }
-                }
-                else if (cont->current_peripheral == PERI_MEMPAK)
-                {
-                    //If we have a mempak install, lets just read the data
-                    n64_mempack_read32(cont->mempack, peri_address[cont->id], &cont->data_buffer[N64_DATA_POS]);
-                }
-            }
-            //TPAK or RUMBLE INIT ADDRESS RANGES
-            else if (peri_address[cont->id] >= 0x8000 &&
-                     peri_address[cont->id] <= 0x9FFF)
-            {
-                //If rumblepak is initialised, respond with 32bytes of 0x80.
-                if (cont->current_peripheral == PERI_RUMBLE && cont->rpak->initialised == 1)
-                {
-                    memset(&cont->data_buffer[N64_DATA_POS], 0x80, 32);
-                    //If tpak is powered up, respond with 32bytes of 0x84.
-                }
-                else if (cont->current_peripheral == PERI_TPAK && cont->tpak->power_state == 1)
-                {
-                    memset(&cont->data_buffer[N64_DATA_POS], 0x84, 32);
-                }
-            }
-            //TPAK ONLY: CONTROL ADDRESS RANGES
-            else if (peri_address[cont->id] >= 0xB000 &&
-                     peri_address[cont->id] <= 0xBFFF)
-            {
-                //TPAK: Check Gameboy Cart Access Mode. Only responds if power_state is set.
-                if (cont->current_peripheral == PERI_TPAK && cont->tpak->power_state == 1)
-                {
-                    if (cont->tpak->gbcart != NULL)
-                    {
-                        if (cont->tpak->access_state == 1)
+                        if (cont->tpak->power_state != 1)
                         {
-                            //Return 0x89's if the access state is enabled.
-                            memset(&cont->data_buffer[N64_DATA_POS], 0x89, 32);
+                            break;
                         }
-                        else
+                        if (cont->tpak->gbcart == NULL)
                         {
-                            //Return 0x80's if the access state is disabled.
-                            memset(&cont->data_buffer[N64_DATA_POS], 0x80, 32);
+                            memset(&cont->data_buffer[N64_DATA_POS], 0x44, 32); //Return 0x44's if no cart is installed.
+                            break;
                         }
+
+                        memset(&cont->data_buffer[N64_DATA_POS], (cont->tpak->access_state) ? 0x89 : 0x80, 32);
+                        debug_print_tpak("TPAK: Request powerstate. Sending 0x%02x\n", (cont->tpak->access_state) ? 0x89 : 0x80);
                         //Set bit 2 of the first return value if the access mode was changed since last check.
-                        if (cont->tpak->access_state_changed == 1)
-                        {
-                            cont->data_buffer[N64_DATA_POS] |= (1 << 2);
-                            cont->tpak->access_state_changed = 0;
-                        }
+                        cont->data_buffer[N64_DATA_POS] |= (cont->tpak->access_state_changed << 2);
+                        cont->tpak->access_state_changed = 0;
+                        break;
                     }
-                    else
+                    //Fall through intentional
+                case 0x4:
+                case 0x5:
+                case 0x6:
+                case 0x7:
+                    if (cont->current_peripheral == PERI_MEMPAK)
                     {
-                        memset(&cont->data_buffer[N64_DATA_POS], 0x44, 32); //Return 0x44's if no cart is installed.
+                        n64_mempack_read32(cont->mempack, peri_address[cont->id], &cont->data_buffer[N64_DATA_POS]);
                     }
-                }
-            }
-            //TPAK ONLY: GAMEBOY MBC ACCESS
-            else if (peri_address[cont->id] >= 0xC000 &&
-                     peri_address[cont->id] <= 0xFFFF &&
-                     cont->current_peripheral == PERI_TPAK &&
-                     cont->tpak->gbcart)
-            {
-                tpak_read(cont->tpak, peri_address[cont->id], &cont->data_buffer[N64_DATA_POS]);
+                    break;
+                case 0x8:
+                case 0x9:
+                    //If rumblepak is initialised, respond with 32bytes of 0x80.
+                    if (cont->current_peripheral == PERI_RUMBLE && cont->rpak->initialised == 1)
+                    {
+                        memset(&cont->data_buffer[N64_DATA_POS], 0x80, 32);
+                        debug_print_n64("N64: Request rumblepak state. Sending 0x80s (its initialised)\n");
+                    }
+                    //If tpak is powered up, respond with 32bytes of 0x84.
+                    else if (cont->current_peripheral == PERI_TPAK && cont->tpak->power_state == 1)
+                    {
+                        memset(&cont->data_buffer[N64_DATA_POS], 0x84, 32);
+                        debug_print_tpak("TPAK: Request tpak power state. Sending 0x84s (its powered up)\n");
+                    }
+                    break;
+                case 0xC:
+                case 0xD:
+                case 0xE:
+                case 0xF:
+                    if(cont->current_peripheral == PERI_TPAK && cont->tpak->gbcart)
+                    {
+                        tpak_read(cont->tpak, peri_address[cont->id], &cont->data_buffer[N64_DATA_POS]);
+                    }
+                    break;
             }
 
             //Calculate the CRC of the data buffer and place it at the end of the packet.

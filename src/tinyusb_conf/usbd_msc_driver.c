@@ -37,9 +37,6 @@ enum
     DISK_BLOCK_SIZE = 4096
 };
 
-static int cached_block = -1;
-static uint8_t block_cache[DISK_BLOCK_SIZE];
-
 // Invoked when received SCSI_CMD_INQUIRY
 // Application fill vendor id, product id and revision with string up to 8, 16, 4 characters respectively
 void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16], uint8_t product_rev[4])
@@ -90,12 +87,6 @@ bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, boo
         else
         {
             debug_print_tinyusb("TUSB: Unload MSC disk storage\n");
-            if (cached_block != -1)
-            {
-                qspi_erase(cached_block * DISK_BLOCK_SIZE, DISK_BLOCK_SIZE);
-                qspi_write(cached_block * DISK_BLOCK_SIZE, DISK_BLOCK_SIZE, block_cache);
-            }
-            cached_block = -1;
         }
     }
 
@@ -109,10 +100,7 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buff
     (void)lun;
     debug_print_tinyusb("TUSB: Read from sector %i with offset %i bytes for %i bytes\n", lba, offset, bufsize);
     //If lba is the cached block, read from the cache instead of flash.
-    if (lba == cached_block)
-        memcpy(buffer, block_cache + offset, bufsize);
-    else
-        qspi_read(lba * DISK_BLOCK_SIZE + offset, bufsize, buffer);
+    qspi_read(lba * DISK_BLOCK_SIZE, bufsize, buffer);
 
     return bufsize;
 }
@@ -124,18 +112,8 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *
     (void)lun;
     debug_print_tinyusb("TUSB: Wrote to sector %i with offset %i bytes for %i bytes\n", lba, offset, bufsize);
     //Addressing a new block, we need to flush the old block to flash.
-    if (lba != cached_block)
-    {
-        if (cached_block != -1)
-        {
-            qspi_erase(cached_block * DISK_BLOCK_SIZE, DISK_BLOCK_SIZE);
-            qspi_write(cached_block * DISK_BLOCK_SIZE, DISK_BLOCK_SIZE, block_cache);
-        }
-        //Read new sector into cache
-        qspi_read(lba * DISK_BLOCK_SIZE, DISK_BLOCK_SIZE, block_cache);
-        cached_block = lba;
-    }
-    memcpy(block_cache + offset, buffer, bufsize);
+    qspi_erase(lba * DISK_BLOCK_SIZE, bufsize);
+    qspi_write(lba * DISK_BLOCK_SIZE, bufsize, buffer);
     return bufsize;
 }
 

@@ -36,6 +36,7 @@
 #include "tusb.h"
 #include "analog_stick.h"
 
+
 typedef struct
 {
     char name[MAX_FILENAME_LEN];
@@ -108,6 +109,8 @@ void setup()
     delay(N64_CONSOLE_SENSE_DELAY);
     if (digitalRead(N64_CONSOLE_SENSE) == 1)
     {
+        qspi_init(NULL, NULL);
+        NVIC_SET_PRIORITY(IRQ_USB1, 1);
         attachInterruptVector(IRQ_USB1, &tusbd_interrupt);
         tusb_init();
         while (1)

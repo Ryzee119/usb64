@@ -28,6 +28,13 @@
 extern "C" {
 #endif
 
+//TPAK
+#define TPAK_STATUS_READY 0x01
+#define TPAK_STATUS_WAS_RESET 0x04
+#define TPAK_STATUS_IS_RESETTING 0x08
+#define TPAK_STATUS_REMOVED 0x40
+#define TPAK_STATUS_POWERED 0x80
+
 //GAMEBOY
 //Header offsets - ref https://web.archive.org/web/20141105020940/http://problemkaputt.de/pandocs.htm
 #define GB_LOGO_OFFSET 0x0104    //48 bytes
@@ -125,7 +132,7 @@ typedef struct
     uint8_t power_state;          //Writing 0x84 to 0x8001 turns this on. Writing 0xFE to 0x8001 turns this off
     uint8_t access_state;         //Writing 0x01 to 0xB010 turns this on. Writing 0x00 to 0xB010 turns this off.
     uint8_t access_state_changed; //This is set if the access_state was just changed.
-    uint8_t current_mbc_bank;     //Banks to access the overall MBC space. 0x0000 up to 0x7FFF.
+    uint8_t selected_mbc_bank;     //Banks to access the overall MBC space. 0x0000 up to 0x7FFF.
     gameboycart *gbcart;
 } n64_transferpak;
 

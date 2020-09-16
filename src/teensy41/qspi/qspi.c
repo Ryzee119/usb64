@@ -289,7 +289,7 @@ static void flexspi_ip_read(uint32_t index, uint32_t addr, void *data, uint32_t 
     }
     if (n & FLEXSPI_INTR_IPCMDERR)
     {
-        debug_print_error("ERROR: FLEXSPI2_IPRXFSTS=%08lX\r\n", FLEXSPI2_IPRXFSTS);
+        debug_print_error("ERROR: FLEXSPI2_IPRXFSTS=%08lX\n", FLEXSPI2_IPRXFSTS);
     }
     FLEXSPI2_INTR = FLEXSPI_INTR_IPCMDDONE;
     src = (const uint8_t *)&FLEXSPI2_RFDR0;
@@ -336,7 +336,7 @@ static void flexspi_ip_write(uint32_t index, uint32_t addr, const void *data, ui
 
     if (n & FLEXSPI_INTR_IPCMDERR)
     {
-        debug_print_error("Error: FLEXSPI2_IPRXFSTS=%08lX\r\n", FLEXSPI2_IPRXFSTS);
+        debug_print_error("Error: FLEXSPI2_IPRXFSTS=%08lX\n", FLEXSPI2_IPRXFSTS);
     }
 
     FLEXSPI2_INTR = FLEXSPI_INTR_IPCMDDONE;
@@ -425,7 +425,7 @@ void qspi_erase_chip()
     waitFlash(0);
     flexspi_ip_command(11, flashBaseAddr);
 
-    debug_print_status("Erasing... (may take some time)\r\n");
+    debug_print_status("Erasing... (may take some time)\n");
     uint32_t t = millis();
     FLEXSPI2_LUT60 = LUT0(CMD_SDR, PINS4, 0x60); //Chip erase
     flexspi_ip_command(15, flashBaseAddr);
