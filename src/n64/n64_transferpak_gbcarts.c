@@ -217,7 +217,7 @@ static void gb_write_cart(uint16_t addr, gameboycart *gb, uint8_t *inBuffer)
         {
             if (mbc == 3 && gb->selected_ram_bank >= 0x08)
             {
-                //gb->cart_rtc[gb->selected_ram_bank - 0x08] = val;
+                gb->rtc[gb->selected_ram_bank - 0x08] = val;
                 debug_print_tpak("TPAK: MBC%u - RTC Write Reg %02x, Val: %u\n", mbc, gb->selected_ram_bank, val);
             }
             else if (gb->cart_mode_select && gb->selected_ram_bank < gb->num_ram_banks)
@@ -266,7 +266,7 @@ static void gb_read_cart(uint16_t addr, gameboycart *gb, uint8_t *outBuffer)
         {
             if (mbc == 3 && gb->selected_ram_bank >= 0x08)
             {
-                //gb->cart_rtc[gb->selected_ram_bank - 0x08];
+                memset(outBuffer, gb->rtc[gb->selected_ram_bank - 0x08], 32);
                 debug_print_tpak("TPAK: MBC%u - RTC Read Reg %02x\n", mbc, gb->selected_ram_bank);
             }
             else if ((gb->cart_mode_select || mbc != 1) && gb->selected_ram_bank < gb->num_ram_banks)
