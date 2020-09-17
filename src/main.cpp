@@ -273,8 +273,8 @@ void loop()
                         strcpy(save_filename, file_name);
                         strcpy(strrchr(save_filename, '.'), ".sav");
 
-                        uint8_t mbc = gb_cart->mbc;
-                        uint8_t volatile_flag = 0;
+                        uint32_t mbc = gb_cart->mbc;
+                        uint32_t volatile_flag = 0;
                         //Only if the MBC has a battery, set the non volatile flag for the SRAM.
                         if (mbc == ROM_RAM_BAT || mbc == ROM_RAM_BAT ||
                             mbc == MBC1_RAM_BAT || mbc == MBC2_BAT ||
@@ -313,7 +313,7 @@ void loop()
                 n64_c[c].next_peripheral = PERI_MEMPAK;
 
                 //Allocate mempack based on combo if available
-                int8_t mempak_bank = 0;
+                uint32_t mempak_bank = 0;
                 uint16_t b = n64_buttons[c];
                 (b & N64_DU) ? mempak_bank = 0 : (0);
                 (b & N64_DR) ? mempak_bank = 1 : (0);
@@ -385,7 +385,7 @@ void loop()
         }
 
         //If you pressed the combo to flush sram to flash, handle it here
-        static uint8_t flushing[MAX_CONTROLLERS] = {0};
+        static uint32_t flushing[MAX_CONTROLLERS] = {0};
         if (n64_combo && (n64_buttons[c] & (N64_A | N64_B)))
         {
             if (!flushing[c])
