@@ -20,18 +20,8 @@ jobs:
     steps:
     - name: Checkout repo
       uses: actions/checkout@v1
-
-    - name: Checkout submodules
-      run: |
-        # Instead of recursively cloning the repo, I manually checkout each submodule as required
-        # TinyUSB is a huge repo otherwise.
-        git submodule init src/teensy41/USBHost_t36
-        git submodule init src/printf
-        git submodule init src/tinyusb
-        git submodule update
-        cd src/tinyusb
-        git submodule init hw/mcu/nxp
-        git submodule update
+      with:
+        submodules: recursive
 
     - name: Set up Python
       uses: actions/setup-python@v1
@@ -43,7 +33,7 @@ jobs:
         export BUILD_TAG=build-$(date -u +'%Y%m%d%H%M')
         echo "::set-env name=BUILD_TAG::$BUILD_TAG"
 
-    - name: Run PlatformIO
+    - name: Compile code
       run: platformio run -e teensy41
 
     - if: github.event_name == 'push' 
