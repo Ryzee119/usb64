@@ -35,14 +35,16 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - Back + A = Backup SRAM to Flash **(DO THIS BEFORE POWER OFF!)**
 
 ## Needed Parts
-| Part Description | Link |
-|--|--|
-| Teensy 4.1 | https://www.pjrc.com/store/teensy41.html |
-| USB Host Cable | https://www.pjrc.com/store/cable_usb_host_t36.html |
-| 3 x Pin Header | https://www.pjrc.com/store/header_24x1.html |
-| 128Mbit SPI Flash W25Q128 SOIC-8| https://www.digikey.com.au/short/zb3v27 |
-| N64 Controller Extensions | [AliExpress](https://www.aliexpress.com/wholesale?catId=0&SearchText=n64%20controller%20extension) |
-| Case | To do |
+| Qty | Part Description | Link |
+|--|--|--|
+| 1 | Teensy 4.1 | https://www.pjrc.com/store/teensy41.html |
+| 1 | USB Host Cable | https://www.pjrc.com/store/cable_usb_host_t36.html |
+| 3 | 0.1" Pin Header | https://www.pjrc.com/store/header_24x1.html |
+| 2 | 64Mbit PSRAM  SOIC-8 | https://www.pjrc.com/store/psram.html |
+| 4 | N64 Controller Extensions | [AliExpress](https://www.aliexpress.com/wholesale?catId=0&SearchText=n64%20controller%20extension) |
+| 1 | Case | To do |
+
+Note: PSRAM model numbers are IPS6404L-SQ-SPN or ESP-PSRAM64H.
 
 ## Compile and Program
 See [COMPILE.md](./COMPILE.md).
