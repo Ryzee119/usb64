@@ -41,21 +41,21 @@ typedef struct
 
 typedef struct
 {
-    int id;                     //Controller ID
-    int8_t current_bit;         //The current bit to being received in
-    int8_t current_byte;        //The current byte being received in
+    uint32_t id;                //Controller ID
+    int32_t current_bit;        //The current bit to being received in
+    uint32_t current_byte;      //The current byte being received in
     uint8_t data_buffer[50];    //Controller main tx and rx buffer
-    int8_t current_peripheral;  //Peripheral flag, PERI_NONE, PERI_RUMBLE, PERI_MEMPAK, PERI_TPAK
-    int8_t next_peripheral;     //What Peripheral to change to next after timer
-    n64_buttonmap b_state;       //N64 controller button and analog stick map
-    uint8_t crc_error;          //Set if the 2 byte address has a CRC error.
+    uint32_t current_peripheral;//Peripheral flag, PERI_NONE, PERI_RUMBLE, PERI_MEMPAK, PERI_TPAK
+    uint32_t next_peripheral;   //What Peripheral to change to next after timer
+    n64_buttonmap b_state;      //N64 controller button and analog stick map
+    uint32_t crc_error;         //Set if the 2 byte address has a CRC error.
     n64_transferpak *tpak;      //Pointer to installed transferpak
     n64_rumblepak *rpak;        //Pointer to installed rumblepak
     n64_mempack *mempack;       //Pointer to installed mempack
-    uint8_t is_mouse;           //Set to emulate a n64 mouse
+    uint32_t is_mouse;           //Set to emulate a n64 mouse
 
     uint32_t bus_idle_timer_us; //Timer counter for bus idle timing
-    uint16_t gpio_pin;          //What pin is this controller connected to
+    uint32_t gpio_pin;          //What pin is this controller connected to
 } n64_controller;
 
 //N64 RELATED
