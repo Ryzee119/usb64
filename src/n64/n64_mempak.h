@@ -32,13 +32,12 @@ extern "C" {
 
 typedef struct
 {
-    uint8_t dirty;
-    uint8_t id;
+    uint32_t id;
     uint8_t *data;
     //Only if a 'virtual mempak'
-    int8_t virtual_is_active;
-    int8_t virtual_update_req;
-    int8_t virtual_selected_row;
+    uint32_t virtual_is_active;
+    uint32_t virtual_update_req;
+    uint32_t virtual_selected_row;
 } n64_mempack;
 
 void n64_mempack_read32(n64_mempack *mempack, uint16_t address, uint8_t *rx_buff);
