@@ -25,7 +25,6 @@
 #include <string.h>
 #include "indev.h"
 #include "ff.h"
-#include "qspi.h"
 #include "printf.h"
 #include "n64_wrapper.h"
 #include "usb64_conf.h"
@@ -33,7 +32,6 @@
 #include "n64_transferpak_gbcarts.h"
 #include "n64_virtualpak.h"
 #include "n64_settings.h"
-#include "tusb.h"
 #include "analog_stick.h"
 
 
@@ -52,12 +50,6 @@ static void flush_ring_buffer();
 
 n64_controller n64_c[MAX_CONTROLLERS];
 n64_settings *settings;
-
-//TinyUSB interrupt handler (Used for CDC and MSC)
-static void tusbd_interrupt(void)
-{
-    tud_int_handler(0);
-}
 
 #if (MAX_CONTROLLERS >= 1)
 void n64_controller1_clock_edge()
@@ -93,7 +85,6 @@ void setup()
     //Check that the flash chip is formatted for FAT access
     //If it's not, format it! Should only happen once
     extern FATFS fs;
-    qspi_init(NULL, NULL);
     if (f_mount(&fs, "", 1) != FR_OK)
     {
         debug_print_error("ERROR: Could not mount FATFS, probably not formatted correctly. Formatting flash...\n");
@@ -102,22 +93,6 @@ void setup()
         f_mkfs("", &defopt, work, 4096);
         free(work);
         f_mount(&fs, "", 1);
-    }
-
-    //If a n64 console isn't detected, start the USB Device MSC driver
-    pinMode(N64_CONSOLE_SENSE, INPUT_PULLDOWN);
-    delay(N64_CONSOLE_SENSE_DELAY);
-    if (digitalRead(N64_CONSOLE_SENSE) == 1)
-    {
-        qspi_init(NULL, NULL);
-        NVIC_SET_PRIORITY(IRQ_USB1, 1);
-        attachInterruptVector(IRQ_USB1, &tusbd_interrupt);
-        tusb_init();
-        while (1)
-        {
-            tud_task();
-            flush_ring_buffer();
-        }
     }
 
     indev_init(); //USB Host controller input devices

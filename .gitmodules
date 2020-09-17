@@ -2,10 +2,14 @@
 	path = src/printf
 	url = https://github.com/mpaland/printf
 
-[submodule "src/tinyusb"]
-	path = src/tinyusb
-	url = https://github.com/hathach/tinyusb
-
 [submodule "src/teensy41/USBHost_t36"]
 	path = src/teensy41/USBHost_t36
 	url = https://github.com/Ryzee119/USBHost_t36.git
+
+[submodule "src/tinyalloc"]
+	path = src/tinyalloc
+	url = https://github.com/thi-ng/tinyalloc.git
+
+[submodule "src/sd-spi-communications-library"]
+	path = src/sd-spi-communications-library
+	url = https://github.com/wpenson/sd-spi-communications-library.git
