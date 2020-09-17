@@ -30,6 +30,7 @@ SdVolume volume;
 
 void _disk_init(void)
 {
+    SD.begin(BUILTIN_SDCARD);
     card.init(SPI_HALF_SPEED, BUILTIN_SDCARD);
     volume.init(card);
 }
