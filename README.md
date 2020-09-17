@@ -7,12 +7,12 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - [x] N64 controller emulation.
 - [x] Rumblepak emulation.
 - [x] Mempak emulation with 4 selectable banks. Technically unlimited.
-- [x] Transferpak emulation with 16MB internal storage for Gameboy ROMs.
+- [x] Transferpak emulation.
 - [x] N64 mouse emulation (Use a USB Mouse!).
 - [x] Configurable deadzones and sensitivity from the N64 Console.
-- [x] USB mass storage driver to backup mempaks and gameboy saves over USB.
+- [x] SD card driver with FATFS support for storage of Gameboy ROMS, mempaks etc.
 - [x] Raspberry Pi interface or equivalent for all other USB controllers.
-- [x] Hardwired controller interface.
+- [x] A hardwired controller interface.
 
 ## Todo
 - [ ] True dual analog sticks with GoldenEye and Perfect Dark.
@@ -20,19 +20,20 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - [ ] Gameboy Camera Support.
 - [ ] Touch LCD Support.
 
-## Supported USB Controllers
+## Supported Controllers
 - Bluetooth 8bitdo/compatible controllers via the [8BitDo Wireless USB Adapter](https://www.8bitdo.com/wireless-usb-adapter/)
 - Xbox one Wired (Genuine Only)
 - Xbox 360 Wired
 - Xbox 360 Wireless (Via PC USB Receiver)
 - Raspberry Pi interface or equivalent for all other USB controllers.
+- Hardwired interface for upto one controller.
 
 ## Controls
 - Back + D-Pad = Insert Mempak banks 1 to 4
 - Back + LB = Insert Rumblepak
 - Back + RB = Insert Transferpak
 - Back + Start = Select *virtual pak* (Use in-game mempak managers to configure the device)
-- Back + A = Backup SRAM to Flash **(DO THIS BEFORE POWER OFF!)**
+- Back + A = Backup buffered memory to SD Card **(DO THIS BEFORE POWER OFF!)**
 
 ## Needed Parts
 | Qty | Part Description | Link |
