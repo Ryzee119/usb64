@@ -46,7 +46,7 @@ gameboycart gb_cart[MAX_CONTROLLERS];
 void n64_init_subsystem(n64_controller *controllers)
 {
     // INITIALISE THE N64 STRUCTS //
-    for (uint8_t i = 0; i < MAX_CONTROLLERS; i++)
+    for (uint32_t i = 0; i < MAX_CONTROLLERS; i++)
     {
         controllers[i].id = i;
         controllers[i].current_bit = 7;
@@ -95,7 +95,7 @@ static uint8_t n64_get_crc(uint8_t *data)
         0x20, 0xA5, 0x34, 0xB1, 0xBB, 0x3E, 0x1C, 0x99, 0x93, 0x16, 0x87,
         0x02, 0x08, 0x8D};
     uint8_t crc = 0;
-    for (uint8_t byte = 0; byte < 32; byte++)
+    for (uint32_t byte = 0; byte < 32; byte++)
     {
         crc = (uint8_t)(crctable[(uint8_t)(data[byte] ^ crc)]);
     }
@@ -110,7 +110,7 @@ static uint8_t n64_compare_addr_crc(uint16_t encoded_add_console)
     static uint8_t crctable[11] = {
         0x15, 0x1F, 0x0B, 0x16, 0x19, 0x07, 0x0E, 0x1C, 0x0D, 0x1A, 0x01};
     uint16_t encoded_add_cont = encoded_add_console & 0xFFE0;
-    for (uint8_t i = 0; i < sizeof(crctable); i++)
+    for (uint32_t i = 0; i < sizeof(crctable); i++)
     {
         if (encoded_add_cont & (1 << (i + 5)))
             encoded_add_cont ^= crctable[i];
@@ -118,7 +118,7 @@ static uint8_t n64_compare_addr_crc(uint16_t encoded_add_console)
     return encoded_add_cont == encoded_add_console;
 }
 
-static void n64_send_stream(uint8_t *txbuff, uint8_t len, n64_controller *c)
+static void n64_send_stream(uint8_t *txbuff, uint32_t len, n64_controller *c)
 {
     uint32_t cycle_cnt = 0;
     uint32_t current_byte = 0;
@@ -173,7 +173,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
     uint32_t start_clock = n64hal_hs_tick_get();
 
     static uint16_t peri_address[MAX_CONTROLLERS] = {0};
-    static uint8_t peri_access[MAX_CONTROLLERS] = {0};
+    static uint32_t peri_access[MAX_CONTROLLERS] = {0};
     static uint32_t bus_timer[MAX_CONTROLLERS] = {0};
 
     //Hardcoded controller responses for indentify requests
@@ -294,7 +294,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                          * and has 32bytes (0x20) per note.
                          * I use this as a hacky menu for the N64
                          */
-                        uint8_t row = (peri_address[cont->id] - 0x300) / 0x20; //What row you have 'selected' 0-15
+                        uint32_t row = (peri_address[cont->id] - 0x300) / 0x20; //What row you have 'selected' 0-15
                         cont->mempack->virtual_update_req = 1;
                         cont->mempack->virtual_selected_row = row;
                         debug_print_n64("N64: Virtualpak write at row %u\n", row);
