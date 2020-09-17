@@ -106,33 +106,31 @@ typedef struct
     uint8_t *rom;      //Pointer to rom data (if used)
     
     //MBC
-    uint8_t mbc;       //What mbc the cart uses, extracted from the ROM header
-    uint16_t selected_rom_bank;
-    uint8_t selected_ram_bank;
-    uint8_t enable_cart_ram;
-    uint8_t cart_mode_select;
-    uint8_t num_ram_banks;
-    uint16_t num_rom_banks;
+    uint32_t mbc;       //What mbc the cart uses, extracted from the ROM header
+    uint32_t selected_rom_bank;
+    uint32_t selected_ram_bank;
+    uint32_t enable_cart_ram;
+    uint32_t cart_mode_select;
+    uint32_t num_ram_banks;
+    uint32_t num_rom_banks;
 
     //RTC
-    uint8_t rtc_second; //0-59 (0-3Bh)
-    uint8_t rtc_minute; //0-59 (0-3Bh)
-    uint8_t rtc_hour;   //0-23 (0-17h)
-    uint16_t rtc_day;   //0-365. 9 bit register.
-    uint8_t rtc_update; //Flag is set when the STM RTC should be updated due to a request from the GB game.
+    uint32_t rtc_second; //0-59 (0-3Bh)
+    uint32_t rtc_minute; //0-59 (0-3Bh)
+    uint32_t rtc_hour;   //0-23 (0-17h)
+    uint32_t rtc_day;   //0-365. 9 bit register.
+    uint32_t rtc_update; //Flag is set when the STM RTC should be updated due to a request from the GB game.
 
     //FATFS
     char filename[256]; //Filename of ROM in FATFS flash
-    uint8_t dirty;         //If RAM data has changed. So we know if we need to backup to Flash
-
 } gameboycart;
 
 typedef struct
 {
-    uint8_t power_state;          //Writing 0x84 to 0x8001 turns this on. Writing 0xFE to 0x8001 turns this off
-    uint8_t access_state;         //Writing 0x01 to 0xB010 turns this on. Writing 0x00 to 0xB010 turns this off.
-    uint8_t access_state_changed; //This is set if the access_state was just changed.
-    uint8_t selected_mbc_bank;     //Banks to access the overall MBC space. 0x0000 up to 0x7FFF.
+    uint32_t power_state;           //Writing 0x84 to 0x8001 turns this on. Writing 0xFE to 0x8001 turns this off
+    uint32_t access_state;          //Writing 0x01 to 0xB010 turns this on. Writing 0x00 to 0xB010 turns this off.
+    uint32_t access_state_changed;  //This is set if the access_state was just changed.
+    uint32_t selected_mbc_bank;     //Banks to access the overall MBC space. 0x0000 up to 0x7FFF.
     gameboycart *gbcart;
 } n64_transferpak;
 
