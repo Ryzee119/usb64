@@ -48,6 +48,7 @@ typedef struct
 
 static uint8_t *alloc_memory(const char *name, uint32_t alloc_len, uint32_t non_volatile, uint32_t read_only);
 static void flush_memory(void);
+void free_memory(const char *name);
 static void init_ring_buffer(void);
 static void flush_ring_buffer();
 
@@ -303,7 +304,7 @@ void loop()
                     if (gb_cart->rom == NULL || gb_cart->ram == NULL)
                     {
                         n64_c[c].next_peripheral = PERI_RUMBLE; //Error, just set to rumblepak
-                        debug_print_error("ERROR: Could not allocate rom or ram buffer for %s\n", rom_filename);
+                        debug_print_error("ERROR: Could not allocate rom or ram buffer for %s\n", n64_c[c].tpak->gbcart->filename);
                         n64_c[c].tpak->gbcart->romsize = 0;
                         n64_c[c].tpak->gbcart->ramsize = 0;
                         n64_c[c].tpak->gbcart->ram = NULL;
