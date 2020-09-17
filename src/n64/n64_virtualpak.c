@@ -45,10 +45,10 @@
 #define MENU_MAIN MENU_LINE16
 #define RETURN MENU_MAIN
 
-static uint8_t controller_page = 0;
-static uint8_t current_menu = MENU_MAIN;
+static uint32_t controller_page = 0;
+static uint32_t current_menu = MENU_MAIN;
 static char buff[64];
-static uint8_t num_roms = 0;
+static uint32_t num_roms = 0;
 static char *gbrom_filenames[MAX_GBROMS] = {NULL};  //Gameboy ROM file name list
 static char *gbrom_titlenames[MAX_GBROMS] = {NULL}; //Gameboy ROM cart title list
 
@@ -181,12 +181,12 @@ static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
             '!', '"', '#', '\'', '*', '+', ',', '-', '.', '/', ':', '=', '?', '@'
         };
 
-    uint8_t max_len;
-    uint8_t len = 255;
+    uint32_t max_len;
+    uint32_t len = 255;
 
     (ext == 1) ? (max_len = 4) : (max_len = 16);
 
-    for (uint8_t i = 0; i < max_len; i++)
+    for (uint32_t i = 0; i < max_len; i++)
     {
         uint8_t n64char = 0;
 
@@ -203,7 +203,7 @@ static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
             msg[i] = '-'; //replace _ with -
 
         //Find a match in the CHARMAP
-        for (uint8_t j = 0; j < sizeof(MEMPACK_CHARMAP); j++)
+        for (uint32_t j = 0; j < sizeof(MEMPACK_CHARMAP); j++)
         {
             if (msg[i] == MEMPACK_CHARMAP[j])
                 n64char = j;
@@ -293,7 +293,7 @@ void n64_virtualpak_update(n64_mempack *vpak)
     }
     //Clear the screen;
     char alpha[2] = {'A', '\0'};
-    for (uint8_t i = 0; i < 15; i++)
+    for (uint32_t i = 0; i < 15; i++)
     {
         n64_virtualpak_write_string("-", i, MENU_NAME_FIELD);
         n64_virtualpak_write_string(alpha, i, MENU_EXT_FIELD);
@@ -354,11 +354,11 @@ void n64_virtualpak_update(n64_mempack *vpak)
     {
         n64_virtualpak_write_string("TPAK SETTINGS", SUBHEADING + 2, MENU_NAME_FIELD);
         //A row has been selected
-        uint8_t selected_row = vpak->virtual_selected_row;
+        uint32_t selected_row = vpak->virtual_selected_row;
         if (selected_row != -1)
         {
             //...which happens to be a ROM so change the default ROM
-            uint8_t selected_rom = selected_row - (SUBHEADING + 2);
+            uint32_t selected_rom = selected_row - (SUBHEADING + 2);
             if (selected_rom < num_roms)
             {
                 strcpy(settings->default_tpak_rom[controller_page],
@@ -368,7 +368,7 @@ void n64_virtualpak_update(n64_mempack *vpak)
         }
 
         //Print a * next to the selected ROM. //FIXME. I think this will cause a bug with two roms with the same title
-        for (int i = 0; i < num_roms; i++)
+        for (uint32_t i = 0; i < num_roms; i++)
         {
             n64_virtualpak_write_string(gbrom_titlenames[i], SUBHEADING + 2 + i, MENU_NAME_FIELD);
             //This ROM matches default!
@@ -396,7 +396,7 @@ void n64_virtualpak_update(n64_mempack *vpak)
         n64_virtualpak_write_string("RESTORE DEFAULT",  SUBHEADING + 12, MENU_NAME_FIELD);
 
         //A row has been selected, adjust settings accordingly
-        uint8_t selected_row = vpak->virtual_selected_row;
+        uint32_t selected_row = vpak->virtual_selected_row;
         if (selected_row != -1)
         {
             if(selected_row == SUBHEADING + 4 && settings->sensitivity[controller_page] < 4)
@@ -436,8 +436,8 @@ void n64_virtualpak_update(n64_mempack *vpak)
         n64_virtualpak_write_string("INFO PAGE", SUBHEADING + 2, MENU_NAME_FIELD);
         char *msg = NULL;
         char line_text[17] = {0};
-        uint8_t pos = 0;
-        uint8_t line = SUBHEADING + 3;
+        uint32_t pos = 0;
+        uint32_t line = SUBHEADING + 3;
 
         if(current_menu == MENU_INFO0)
             msg = info_text_0;
