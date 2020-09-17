@@ -115,11 +115,18 @@ typedef struct
     uint32_t num_rom_banks;
 
     //RTC
-    uint32_t rtc_second; //0-59 (0-3Bh)
-    uint32_t rtc_minute; //0-59 (0-3Bh)
-    uint32_t rtc_hour;   //0-23 (0-17h)
-    uint32_t rtc_day;   //0-365. 9 bit register.
-    uint32_t rtc_update; //Flag is set when the STM RTC should be updated due to a request from the GB game.
+    union
+    {
+        struct
+        {
+            uint8_t sec;  //sec  0-59 (0-3Bh)
+            uint8_t min;  //min  0-59 (0-3Bh)
+            uint8_t hour; //hour 0-23 (0-17h)
+            uint8_t yday; //high | yday 0-365. 9 bit register.
+            uint8_t high;
+        } rtc_bits;
+        uint8_t rtc[5];
+    };
 
     //FATFS
     char filename[256]; //Filename of ROM in FATFS flash
