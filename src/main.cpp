@@ -35,6 +35,7 @@
 #include "analog_stick.h"
 
 #include <SD.h>
+#include "tinyalloc.h"
 
 typedef struct
 {
@@ -85,10 +86,19 @@ void setup()
     init_ring_buffer();
 
     //Init Ext RAM
-    extern uint8_t external_psram_size;
+    extern uint8_t external_psram_size; //in MB
+    uint32_t psram_bytes = 1024 * 1024 * external_psram_size;
     printf("Ext ram detected %u\n", external_psram_size);
-    memset(bigBugger, 0xAA, sizeof(bigBugger));
-    printf("%02x%02x%02x\n", bigBugger[0], bigBugger[1], bigBugger[2]);
+    ta_init((const void*)(0x70000000),               //base of heap
+            (const void*)(0x70000000 + psram_bytes), //end of heap
+            psram_bytes / 32768,                     //Number of memory chunks (32k)
+            16,                                      //Smaller chunks than this won't split
+            32);                                     //32 word size alignment
+
+    void* test = ta_alloc(1000);
+    printf("test ptr = %08x\n", test);
+    if (ta_check())
+        printf("Structural validation ok!\n");
 
     //Init SD card
     SD.begin(BUILTIN_SDCARD);
