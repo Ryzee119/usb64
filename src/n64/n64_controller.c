@@ -346,8 +346,8 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                 case 0xC:
                      if (cont->current_peripheral == PERI_RUMBLE)
                      {
-                         (cont->data_buffer[N64_DATA_POS] == 0x01) ? cont->rpak->state = RUMBLE_START :
-                                                                     cont->rpak->state = RUMBLE_STOP;
+                         (cont->data_buffer[N64_DATA_POS] == 0x01) ? (cont->rpak->state = RUMBLE_START) :
+                                                                     (cont->rpak->state = RUMBLE_STOP);
                          break;
                      }
                      //Intentional fallthrough
