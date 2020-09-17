@@ -41,12 +41,13 @@ typedef struct
 {
     char name[MAX_FILENAME_LEN];
     uint8_t *data;
-    int len;
-    int non_volatile;
+    uint32_t len;
+    uint32_t non_volatile;
+    uint32_t read_only; //If read only, it will never write back to storage
 } sram_storage;
 
-static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile);
-static void flush_sram(void);
+static uint8_t *alloc_memory(const char *name, uint32_t alloc_len, uint32_t non_volatile, uint32_t read_only);
+static void flush_memory(void);
 static void init_ring_buffer(void);
 static void flush_ring_buffer();
 
@@ -85,25 +86,15 @@ void setup()
     serial_port.begin(115200);
     init_ring_buffer();
 
-    //Init Ext RAM
+    //Init external RAM and memory heap
     extern uint8_t external_psram_size; //in MB
     uint32_t psram_bytes = 1024 * 1024 * external_psram_size;
     printf("Ext ram detected %u\n", external_psram_size);
-    ta_init((const void*)(0x70000000),               //base of heap
-            (const void*)(0x70000000 + psram_bytes), //end of heap
-            psram_bytes / 32768,                     //Number of memory chunks (32k)
+    ta_init((const void*)(0x70000000),               //Base of heap
+            (const void*)(0x70000000 + psram_bytes), //End of heap
+            psram_bytes / 32768,                     //Number of memory chunks (32k/per chunk)
             16,                                      //Smaller chunks than this won't split
             32);                                     //32 word size alignment
-
-    void* test = ta_alloc(1000);
-    printf("test ptr = %08x\n", test);
-    if (ta_check())
-        printf("Structural validation ok!\n");
-
-    //Init SD card
-    SD.begin(BUILTIN_SDCARD);
-
-    flush_ring_buffer();
 
     //Check that the flash chip is formatted for FAT access
     //If it's not, format it! Should only happen once
@@ -123,7 +114,7 @@ void setup()
     n64_init_subsystem(n64_c);
 
     //Read in settings from flash
-    settings = (n64_settings *)alloc_sram(SETTINGS_FILENAME, sizeof(n64_settings), 1);
+    settings = (n64_settings *)alloc_memory(SETTINGS_FILENAME, sizeof(n64_settings), 1, 0);
     n64_settings_init(settings);
 
 #if (MAX_CONTROLLERS >= 1)
@@ -229,13 +220,32 @@ void loop()
                 break;
 
             /* CLEAR CURRENT PERIPHERALS */
-            n64_c[c].mempack->data = NULL;
-            n64_c[c].mempack->id = VIRTUAL_PAK;
-            if (n64_c[c].tpak->gbcart != NULL)
+            if (n64_c[c].mempack != NULL)
             {
-                n64_c[c].tpak->gbcart->romsize = 0;
-                n64_c[c].tpak->gbcart->ramsize = 0;
-                n64_c[c].tpak->gbcart->ram = NULL;
+                n64_c[c].mempack->data = NULL;
+                n64_c[c].mempack->id = VIRTUAL_PAK;
+            }
+            if (n64_c[c].tpak != NULL)
+            {
+                tpak_reset(n64_c[c].tpak);
+                if (n64_c[c].tpak->gbcart != NULL)
+                {
+                    free_memory(n64_c[c].tpak->gbcart->filename);
+                    n64_c[c].tpak->gbcart->filename[0] = '\0';
+                    n64_c[c].tpak->gbcart->romsize = 0;
+                    n64_c[c].tpak->gbcart->ramsize = 0;
+                    n64_c[c].tpak->gbcart->ram = NULL;
+                    n64_c[c].tpak->gbcart->rom = NULL;
+                }
+                
+            }
+            if (n64_c[c].rpak != NULL)
+            {
+                if (n64_c[c].rpak->state != RUMBLE_APPLIED)
+                {
+                    n64_c[c].rpak->state = RUMBLE_APPLIED;
+                    indev_apply_rumble(c, 0x00);
+                }
             }
 
             /* HANDLE NEXT PERIPHERAL */
@@ -263,13 +273,17 @@ void loop()
                 {
                     //Init the gb_cart struct using header info
                     gb_init_cart(gb_cart, gb_header, settings->default_tpak_rom[c]);
+                    
+                    if (gb_cart->romsize > 0)
+                    {
+                        gb_cart->rom = alloc_memory(n64_c[c].tpak->gbcart->filename, gb_cart->romsize, 1, 1);
+                    }
 
-                    char save_filename[MAX_FILENAME_LEN];
                     if (gb_cart->ramsize > 0)
                     {
                         //Readback savefile from Flash, replace .gb or .gbc with .sav
-                        char *file_name = n64_c[c].tpak->gbcart->filename;
-                        strcpy(save_filename, file_name);
+                        char save_filename[MAX_FILENAME_LEN];
+                        strcpy(save_filename, n64_c[c].tpak->gbcart->filename);
                         strcpy(strrchr(save_filename, '.'), ".sav");
 
                         uint32_t mbc = gb_cart->mbc;
@@ -283,14 +297,18 @@ void loop()
                         {
                             volatile_flag = 1;
                         }
-
-                        gb_cart->ram = alloc_sram(save_filename, gb_cart->ramsize, volatile_flag);
-                        if (gb_cart->ram == NULL)
-                        {
-                            n64_c[c].next_peripheral = PERI_RUMBLE; //Error, just set to rumblepak
-                            debug_print_error("ERROR: Could not allocate sram for %s\n", save_filename);
-                        }
+                        gb_cart->ram = alloc_memory(save_filename, gb_cart->ramsize, volatile_flag, 0); 
                     }
+                    
+                    if (gb_cart->rom == NULL || gb_cart->ram == NULL)
+                    {
+                        n64_c[c].next_peripheral = PERI_RUMBLE; //Error, just set to rumblepak
+                        debug_print_error("ERROR: Could not allocate rom or ram buffer for %s\n", rom_filename);
+                        n64_c[c].tpak->gbcart->romsize = 0;
+                        n64_c[c].tpak->gbcart->ramsize = 0;
+                        n64_c[c].tpak->gbcart->ram = NULL;
+                    }
+                    
                     tpak_reset(n64_c[c].tpak);
                 }
                 else
@@ -337,7 +355,7 @@ void loop()
                 //Mempack wasn't in use, so allocate it in ram
                 if (n64_c[c].next_peripheral != PERI_RUMBLE && mempak_bank != VIRTUAL_PAK)
                 {
-                    n64_c[c].mempack->data = alloc_sram(filename, MEMPAK_SIZE, 1);
+                    n64_c[c].mempack->data = alloc_memory(filename, MEMPAK_SIZE, 1, 0);
                 }
 
                 if (n64_c[c].mempack->data != NULL)
@@ -361,8 +379,7 @@ void loop()
 
         //Simulate a peripheral change time. The peripheral goes to NONE
         //for a short period. Some games need this.
-        if (n64_c[c].current_peripheral == PERI_NONE &&
-            (millis() - timer_peri_change[c]) > 750)
+        if (n64_c[c].current_peripheral == PERI_NONE && (millis() - timer_peri_change[c]) > 750)
         {
             n64_c[c].current_peripheral = n64_c[c].next_peripheral;
         }
@@ -374,10 +391,11 @@ void loop()
             int offset = 0;
             for (int i = 0; i < MAX_CONTROLLERS; i++)
             {
-                offset += sprintf(msg + offset, "1:0x%04x/0x%04x\n%.15s\n%.15s\n", indev_get_id_vendor(i),
-                                  indev_get_id_product(i),
-                                  indev_get_manufacturer_string(i),
-                                  indev_get_product_string(i));
+                offset += sprintf(msg + offset, "1:0x%04x/0x%04x\n%.15s\n%.15s\n",
+                                                indev_get_id_vendor(i),
+                                                indev_get_id_product(i),
+                                                indev_get_manufacturer_string(i),
+                                                indev_get_product_string(i));
             }
             n64_virtualpak_write_info_1(msg);
             n64_virtualpak_update(n64_c[c].mempack);
@@ -390,7 +408,7 @@ void loop()
             if (!flushing[c])
             {
                 debug_print_status("Flushing SRAM to Flash!\n");
-                flush_sram();
+                flush_memory();
                 flushing[c] = 1;
             }
         }
@@ -435,8 +453,8 @@ static void flush_ring_buffer()
 //SRAM is malloced into slots. Each slot stores a pointer to the memory location, its size, and
 //a string name to identify what that slot is used for.
 //A flag is set to determine wether that memory is non volatile and should be backed up/restored from flash.
-sram_storage sram[10] = {0};
-static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
+sram_storage sram[32] = {0};
+static uint8_t *alloc_memory(const char *name, uint32_t alloc_len, uint32_t non_volatile, uint32_t read_only)
 {
     if (alloc_len == 0)
         return NULL;
@@ -452,7 +470,7 @@ static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
 
             debug_print_error("ERROR: SRAM malloced memory isnt right, resetting memory\n");
             //Allocated length isnt long enough. Reset it to be memory safe
-            free(sram[i].data);
+            ta_free(sram[i].data);
             sram[i].data = NULL;
             sram[i].len = 0;
         }
@@ -462,7 +480,7 @@ static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
     {
         if (sram[i].len == 0)
         {
-            sram[i].data = (uint8_t *)malloc(alloc_len);
+            sram[i].data = (uint8_t *)ta_alloc(alloc_len);
             if (sram[i].data == NULL)
                 break;
             sram[i].len = alloc_len;
@@ -479,6 +497,8 @@ static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
                 sram[i].non_volatile = 0;
                 memset(sram[i].data, 0x00, sram[i].len);
             }
+            
+            sram[i].read_only = read_only;
 
             return sram[i].data;
         }
@@ -487,13 +507,31 @@ static uint8_t *alloc_sram(const char *name, int alloc_len, int non_volatile)
     return NULL;
 }
 
+void free_memory(const char *name)
+{
+    if (name == NULL)
+        return; //Already free'd 
+
+    //Loop through to see if alloced memory already exists
+    for (uint32_t i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
+    {
+        if (strcmp(sram[i].name, name) == 0)
+        {
+            ta_free(sram[i].data);
+            sram[i].data = NULL;
+            sram[i].len = 0;
+            return;
+        }
+    }
+}
+
 //Flush SRAM to flash memory if the non volatile flag is set
-static void flush_sram()
+static void flush_memory()
 {
     noInterrupts();
     for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
     {
-        if (sram[i].len == 0 || sram[i].data == NULL || sram[i].non_volatile == 0)
+        if (sram[i].len == 0 || sram[i].data == NULL || sram[i].non_volatile == 0 || sram[i].read_only == 0)
             continue;
         debug_print_status("Writing %s %u bytes\n", (uint8_t *)sram[i].name, sram[i].len);
         n64hal_sram_backup_to_file((uint8_t *)sram[i].name, sram[i].data, sram[i].len);
