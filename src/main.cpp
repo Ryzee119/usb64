@@ -35,7 +35,9 @@
 #include "analog_stick.h"
 
 #include <SD.h>
+extern "C" {
 #include "tinyalloc.h"
+}
 
 typedef struct
 {
