@@ -273,119 +273,92 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             cont->data_buffer[N64_CRC_POS] = n64_get_crc(&cont->data_buffer[N64_DATA_POS]);
             //If no peripheral, the CRC is inverted
             if (cont->current_peripheral == PERI_NONE)
-            {
                 cont->data_buffer[N64_CRC_POS] = ~cont->data_buffer[N64_CRC_POS];
-            }
+
 
             //Send the data CRC out straight away. N64 expects this very quickly
             n64_send_stream(&cont->data_buffer[N64_CRC_POS], 1, cont);
 
             //Now handle the write command
-            //If a rumble toggle address, set the rumble state.
-            if (peri_address[cont->id] == 0xC000 && cont->current_peripheral == PERI_RUMBLE)
+            switch (peri_address[cont->id] >> 12)
             {
-                //Turn on rumble, N64 sends 32*0x01 bytes.
-                if (cont->data_buffer[N64_DATA_POS] == 0x01)
-                {
-                    cont->rpak->state = RUMBLE_START;
-                }
-                //Turn off rumble, N64 sends  32*0x00 bytes.
-                else
-                {
-                    cont->rpak->state = RUMBLE_STOP;
-                }
-            }
-
-            //Initialise or Reset Peripherals.
-            else if (peri_address[cont->id] >= 0x8000 &&
-                     peri_address[cont->id] <= 0x8FFF)
-            {
-                if (cont->current_peripheral == PERI_TPAK)
-                {
-                    //N64 writes 32 bytes of 0x84 to turn on the TPAK
-                    if (cont->data_buffer[N64_DATA_POS] == 0x84)
+                case 0x0:
+                    //VIRTUAL MEMPAK NOTE TABLE HOOK
+                    if (cont->mempack->virtual_is_active && cont->current_peripheral == PERI_MEMPAK &&
+                        peri_address[cont->id] >= 0x300 && peri_address[cont->id] < 0x500)
                     {
-                        cont->tpak->power_state = 1;
+                        /*
+                         * When you 'delete' a note from the mempak manager, I can hook the
+                         * address being deleted and determine what row you selected.
+                         * The note table is located between 0x300 and 0x500 in the mempak
+                         * and has 32bytes (0x20) per note.
+                         * I use this as a hacky menu for the N64
+                         */
+                        uint8_t row = (peri_address[cont->id] - 0x300) / 0x20; //What row you have 'selected' 0-15
+                        cont->mempack->virtual_update_req = 1;
+                        cont->mempack->virtual_selected_row = row;
+                        debug_print_n64("N64: Virtualpak write at row %u\n", row);
+                        break;
+                    }
+                    //Intentional fallthrough
+                case 0x1:
+                case 0x2:
+                case 0x3:
+                case 0x4:
+                case 0x5:
+                case 0x6:
+                case 0x7:
+                    if (cont->current_peripheral == PERI_MEMPAK && !cont->crc_error)
+                        n64_mempack_write32(cont->mempack, peri_address[cont->id], &cont->data_buffer[N64_DATA_POS]);
+                    break;
+                case 0x8:
+                    if (cont->current_peripheral == PERI_TPAK)
+                    {
+                        //N64 writes 32 bytes of 0x84 to turn on the TPAK
+                        (cont->data_buffer[N64_DATA_POS] == 0x84) ? cont->tpak->power_state = 1 : (0);
+                        (cont->data_buffer[N64_DATA_POS] == 0xFE) ? tpak_reset(cont->tpak)      : (0);
                         debug_print_tpak("TPAK: Powerstate set to %u\n", cont->tpak->power_state);
                     }
-                    //N64 writes 32 bytes of 0xFE to reset the TPAK
-                    else if (cont->data_buffer[N64_DATA_POS] == 0xFE)
+                    else if (cont->current_peripheral == PERI_RUMBLE)
                     {
-                        tpak_reset(cont->tpak);
-                        debug_print_tpak("TPAK: Reset\n");
+                        //N64 writes 32 bytes of 0x80 to initialise the rumblepak, 0xFE to reset it
+                        (cont->data_buffer[N64_DATA_POS] == 0x80) ? cont->rpak->initialised = 1 : (0);
+                        (cont->data_buffer[N64_DATA_POS] == 0xFE) ? cont->rpak->initialised = 0 : (0);
+                        debug_print_n64("N64: Rumblepak Status %u\n", cont->rpak->initialised);
                     }
-                }
-                else if (cont->current_peripheral == PERI_RUMBLE)
-                {
-                    //N64 writes 32 bytes of 0x80 to initialise the rumblepak
-                    if (cont->data_buffer[N64_DATA_POS] == 0x80)
+                    break;
+                case 0xA:
+                    if (cont->current_peripheral == PERI_TPAK)
                     {
-                        cont->rpak->initialised = 1;
-                        debug_print_n64("N64: Rumblepak Initialised\n");
+                        //0x00, 0x01, or 0x02 and switches over the MBC memory space.
+                        cont->tpak->selected_mbc_bank = cont->data_buffer[N64_DATA_POS];
+                        debug_print_tpak("TPAK: MBC bank changed to %u\n",  cont->tpak->selected_mbc_bank);
                     }
-                    //N64 writes 32 bytes of 0xFE to reset the rumblepak
-                    else if (cont->data_buffer[N64_DATA_POS] == 0xFE)
+                    break;
+                case 0xB:
+                    if (cont->current_peripheral == PERI_TPAK)
                     {
-                        cont->rpak->initialised = 0;
-                        debug_print_n64("N64: Rumblepak Reset\n");
+                        cont->tpak->access_state_changed = cont->tpak->access_state != cont->data_buffer[N64_DATA_POS];
+                        cont->tpak->access_state = cont->data_buffer[N64_DATA_POS];
+                        debug_print_tpak("TPAK: Access state set to %u\n",  cont->tpak->access_state);
                     }
-                }
-            }
-
-            //TPAK ONLY: Set the Gameboy cart's MBC Bank
-            else if (peri_address[cont->id] >= 0xA000 &&
-                     peri_address[cont->id] <= 0xAFFF &&
-                     cont->current_peripheral == PERI_TPAK)
-            {
-                //0x00, 0x01, or 0x02 and switches over the MBC memory space.
-                cont->tpak->selected_mbc_bank = cont->data_buffer[N64_DATA_POS];
-                debug_print_tpak("TPAK: MBC bank changed to %u\n",  cont->tpak->selected_mbc_bank);
-            }
-
-            //TPAK ONLY: Enable or disable the Gameboy Cart access state
-            else if (peri_address[cont->id] >= 0xB000 &&
-                     peri_address[cont->id] <= 0xBFFF &&
-                     cont->current_peripheral == PERI_TPAK)
-            {
-                cont->tpak->access_state_changed = cont->tpak->access_state != cont->data_buffer[N64_DATA_POS];
-                cont->tpak->access_state = cont->data_buffer[N64_DATA_POS];
-                debug_print_tpak("TPAK: Access state set to %u\n",  cont->tpak->access_state);
-            }
-
-            //TPAK ONLY: Access the Gameboy Cart
-            else if (peri_address[cont->id] >= 0xC000 &&
-                     peri_address[cont->id] <= 0xFFFF &&
-                     cont->current_peripheral == PERI_TPAK &&
-                     cont->tpak->gbcart)
-            {
-                tpak_write(cont->tpak, peri_address[cont->id], &cont->data_buffer[N64_DATA_POS]);
-            }
-
-            //Do we have to write to the mempak?
-            if (peri_address[cont->id] <= 0x7FFF &&
-                cont->current_peripheral == PERI_MEMPAK && !cont->crc_error)
-            {
-                cont->mempack->dirty = 1;
-                n64_mempack_write32(cont->mempack, peri_address[cont->id], &cont->data_buffer[N64_DATA_POS]);
-            }
-
-            //VIRTUAL MEMPAK NOTE TABLE HOOK
-            if (peri_address[cont->id] >= 0x300 &&
-                peri_address[cont->id] <  0x500 && 
-                cont->current_peripheral == PERI_MEMPAK &&
-                cont->mempack->virtual_is_active)
-            {
-                /*
-                 * When you 'delete' a note from the mempak manager, I can hook the
-                 * address being deleted and determine what row you selected.
-                 * The note table is located between 0x300 and 0x500 in the mempak
-                 * and has 32bytes (0x20) per note.
-                 * I use this as a hacky menu for the N64
-                 */
-                uint8_t row = (peri_address[cont->id] - 0x300) / 0x20; //What row you have 'selected' 0-15
-                cont->mempack->virtual_update_req = 1;
-                cont->mempack->virtual_selected_row = row;
-                debug_print_n64("N64: Virtualpak write at row %u\n", row);
+                    break;
+                case 0xC:
+                     if (cont->current_peripheral == PERI_RUMBLE)
+                     {
+                         (cont->data_buffer[N64_DATA_POS] == 0x01) ? cont->rpak->state = RUMBLE_START :
+                                                                     cont->rpak->state = RUMBLE_STOP;
+                         break;
+                     }
+                     //Intentional fallthrough
+                case 0xD:
+                case 0xE:
+                case 0xF:
+                    if (cont->current_peripheral == PERI_TPAK)
+                    {
+                        tpak_write(cont->tpak, peri_address[cont->id], &cont->data_buffer[N64_DATA_POS]);
+                    }
+                    break;
             }
 
             peri_access[cont->id] = 0;
@@ -436,10 +409,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                 case 0xB: //0xB000 - 0xBFFF
                     if (cont->current_peripheral == PERI_TPAK)
                     {
-                        if (cont->tpak->power_state != 1)
-                        {
-                            break;
-                        }
+                        if (cont->tpak->power_state != 1) break;
                         if (cont->tpak->gbcart == NULL)
                         {
                             memset(&cont->data_buffer[N64_DATA_POS], 0x44, 32); //Return 0x44's if no cart is installed.
@@ -484,6 +454,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                 case 0xF:
                     if(cont->current_peripheral == PERI_TPAK && cont->tpak->gbcart)
                     {
+                        if (cont->tpak->power_state != 1) break;
                         tpak_read(cont->tpak, peri_address[cont->id], &cont->data_buffer[N64_DATA_POS]);
                     }
                     break;
