@@ -34,6 +34,7 @@
 #include "n64_settings.h"
 #include "analog_stick.h"
 
+#include <SD.h>
 
 typedef struct
 {
@@ -75,12 +76,24 @@ void n64_controller4_clock_edge()
     n64_controller_hande_new_edge(&n64_c[3]);
 }
 #endif
+EXTMEM char bigBugger[1000000];
 
 void setup()
 {
     //Init the serial port and ring buffer
     serial_port.begin(115200);
     init_ring_buffer();
+
+    //Init Ext RAM
+    extern uint8_t external_psram_size;
+    printf("Ext ram detected %u\n", external_psram_size);
+    memset(bigBugger, 0xAA, sizeof(bigBugger));
+    printf("%02x%02x%02x\n", bigBugger[0], bigBugger[1], bigBugger[2]);
+
+    //Init SD card
+    SD.begin(BUILTIN_SDCARD);
+
+    flush_ring_buffer();
 
     //Check that the flash chip is formatted for FAT access
     //If it's not, format it! Should only happen once
@@ -94,6 +107,7 @@ void setup()
         free(work);
         f_mount(&fs, "", 1);
     }
+    flush_ring_buffer();
 
     indev_init(); //USB Host controller input devices
     n64_init_subsystem(n64_c);

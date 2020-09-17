@@ -31,7 +31,7 @@
 #define DEBUG_TPAK 1    //For debugging N64 TPAK low level info. It's complex to has its own flag
 #define DEBUG_USBHOST 0 //For debugging the USB Host Stack
 #define DEBUG_TINYUSB 0 //For debugging the USB Device Stack (MSC and CDC) Set to 2 for even more info
-#define DEBUG_FATFS 0   //For debugging the FATFS io
+#define DEBUG_FATFS 1   //For debugging the FATFS io
 #define DEBUG_ERROR 1   //For showing critical errors
 
 /* USB HOST STACK */

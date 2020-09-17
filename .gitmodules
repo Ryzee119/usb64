@@ -9,7 +9,3 @@
 [submodule "src/tinyalloc"]
 	path = src/tinyalloc
 	url = https://github.com/thi-ng/tinyalloc.git
-
-[submodule "src/sd-spi-communications-library"]
-	path = src/sd-spi-communications-library
-	url = https://github.com/wpenson/sd-spi-communications-library.git

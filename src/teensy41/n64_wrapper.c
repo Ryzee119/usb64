@@ -38,7 +38,6 @@
 #include <stdio.h>
 #include <Arduino.h>
 #include "ff.h"
-#include "qspi.h"
 #include "n64_mempak.h"
 #include "n64_virtualpak.h"
 #include "n64_settings.h"
@@ -48,8 +47,6 @@
 #include "usb64_conf.h"
 
 FATFS fs;
-static DWORD clmt_clust(DWORD *clmt, FSIZE_t ofs);
-static LBA_t clst2sect(FATFS *fs, DWORD clst);
 
 /*
  * Function: Reads a hardware realtime clock and populates day,h,m,s
@@ -135,88 +132,11 @@ void n64hal_sram_write(uint8_t *txdata, uint8_t *dest, uint16_t offset, uint16_t
  */
 uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t offset, uint8_t *data, uint32_t len)
 {
-    //Due to FATFS caching and overhead, pure f_open/f_seek/f_read calls were too slow for the n64 console.
-    //Therefore, I use the FATFS system to open the file and create the cluster link map table for the file only once.
-    //Then from that point on I use that table to perform raw flash reads at the correct flash sectors to get the data.
-    //Arrays are used to manage multiple tpaks simulatenously (multiple roms being accessed).
-
-    //Store a list of open filenames
-    static char open_files[MAX_GBROMS][MAX_FILENAME_LEN];
-
-    //Store an array of the cluster link map table for each file.
-    //FIXME, is 32 ok or should I dynamically alloc the correct length?
-    static DWORD clmt[MAX_GBROMS][32];
-
-    FRESULT res;
-    FIL fil;
-    uint32_t sector_size;
-    qspi_get_flash_properties(&sector_size, NULL);
-
-    //If FATFS isn't mounted, mount it now
-    if (fs.fs_type == 0)
-    {
-        debug_print_status("Mounting fs\n");
-        f_mount(&fs, "", 1);
-    }
-
     //Sanity check the inputs
     if (gb_cart == NULL || gb_cart->filename[0] == '\0' || data == NULL)
     {
         return 0;
     }
-
-    //Find if the file is already open
-    int i = 0;
-    for (i = 0; i < MAX_GBROMS; i++)
-    {
-        if (strcmp(open_files[i], gb_cart->filename) == 0)
-        {
-            //debug_print_status("Found %s at slot %u\n", gb_cart->filename, i);
-            break;
-        }
-    }
-
-    //File not already open, open it and allocate it to a free spot
-    if (i == MAX_GBROMS)
-    {
-        for (i = 0; i < MAX_GBROMS; i++)
-        {
-            const char *filename = gb_cart->filename;
-            if (open_files[i][0] == '\0')
-            {
-                debug_print_status("%s allocated at slot %u\n", filename, i);
-                strcpy(open_files[i], filename);
-                break;
-            }
-        }
-        if (i == MAX_GBROMS)
-        {
-            debug_print_error("ERROR: File not opened. Too many files already open\n");
-            return 0;
-        }
-    }
-
-    //If the file is newly opened, build cluster link map table for fast seek
-    if (clmt[i][0] == 0)
-    {
-        const char *filename = gb_cart->filename;
-        debug_print_status("Building CLMT for %s\n", filename);
-        res = f_open(&fil, filename, FA_READ);
-        if (res != FR_OK)
-        {
-            debug_print_error("ERROR: Could not open %s for READ\n", filename);
-            open_files[i][0] = '\0';
-            return 0;
-        }
-        fil.cltbl = clmt[i];
-        clmt[i][0] = sizeof(clmt);
-        res = f_lseek(&fil, CREATE_LINKMAP);
-        f_close(&fil);
-    }
-
-    //For speed, skip the fatfs f_read/f_seek and read with the backend QSPI at the address
-    DWORD sector = clst2sect(&fs, clmt_clust(clmt[i], offset));
-    qspi_read(sector * sector_size + (offset % sector_size), len, data);
     return 1;
 }
 
@@ -432,31 +352,4 @@ void n64hal_input_swap(n64_controller *controller, uint8_t val)
 uint8_t n64hal_input_read(n64_controller *controller)
 {
     return digitalRead(controller->gpio_pin);
-}
-
-/* Helper Fuctions */
-
-/* Function: Take a raw address and return the cluster in flash memory it is located in */
-static DWORD clmt_clust(DWORD *clmt, FSIZE_t ofs)
-{
-    DWORD cl, ncl, *tbl;
-    tbl = clmt + 1;
-    cl = (DWORD)(ofs / FF_MAX_SS / 1);
-    for (;;)
-    {
-        ncl = *tbl++;
-        if (ncl == 0) return 0;
-        if (cl < ncl) break;
-        cl -= ncl;
-        tbl++;
-    }
-    return cl + *tbl;
-}
-
-/* Function: Take a cluster and return the sector in flash memory it is located in */
-static LBA_t clst2sect(FATFS *fs, DWORD clst)
-{
-    clst -= 2;
-    if (clst >= fs->n_fatent - 2) return 0;
-    return fs->database + (LBA_t)fs->csize * clst;
 }
