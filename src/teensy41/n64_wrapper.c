@@ -79,26 +79,6 @@ void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_
 }
 
 /*
- * Function: Writes a packet of data from txdata to dest of length len.
- * Speed critical!
- * ----------------------------
- *   Returns void
- *
- *   txdata: Pointer to a data array to write
- *   dest: Pointer to the destination data array.
- *   offset: The offset from the dest array origin
- *   len: Length of data to write in bytes.
- */
-void n64hal_sram_write(uint8_t *txdata, uint8_t *dest, uint16_t offset, uint16_t len)
-{
-    //FIXME, need to be able to use external flash somehow, maybe *dest should be a UID?
-    if (dest != NULL)
-    {
-        memcpy(dest + offset, txdata, len);
-    }
-}
-
-/*
  * Function: Reads a packet of data from a gameboy cart ROM indicated by gb_cart.
  * Speed critical!
  *
