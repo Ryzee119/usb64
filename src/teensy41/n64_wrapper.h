@@ -37,7 +37,6 @@ extern "C" {
 uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t offset, uint8_t *data, uint32_t len);
 void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len);
 void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t len);
-void n64hal_sram_read(uint8_t *rxdata, uint8_t *src, uint16_t offset, uint16_t len);
 void n64hal_sram_write(uint8_t *txdata, uint8_t *dest, uint16_t offset, uint16_t len);
 void n64hal_rtc_read(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
 void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
