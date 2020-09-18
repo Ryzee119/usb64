@@ -344,7 +344,7 @@ void gb_init_cart(gameboycart *cart, uint8_t *gb_header, char *filename)
     debug_print_tpak("gb_init_cart: MBC Type: 0x%02x\n", cart->mbc);
 }
 
-uint8t _gb_has_battery(uint8_t mbc_type)
+uint8t gb_has_battery(uint8_t mbc_type)
 {
     switch (mbc_type)
     {
