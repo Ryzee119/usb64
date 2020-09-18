@@ -222,11 +222,11 @@ static void gb_write_cart(uint16_t addr, gameboycart *gb, uint8_t *inBuffer)
             }
             else if (gb->cart_mode_select && gb->selected_ram_bank < gb->num_ram_banks)
             {
-                n64hal_sram_write(inBuffer, gb->ram, addr - CART_RAM_ADDR + (gb->selected_ram_bank * CRAM_BANK_SIZE), 32);
+                memcpy(gb->ram + addr - CART_RAM_ADDR + (gb->selected_ram_bank * CRAM_BANK_SIZE), inBuffer, 32);
             }
             else if (gb->num_ram_banks)
             {
-                n64hal_sram_write(inBuffer, gb->ram, addr - CART_RAM_ADDR, 32);
+                memcpy(gb->ram + addr - CART_RAM_ADDR, inBuffer, 32);
             }
         }
         return;
