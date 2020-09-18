@@ -79,26 +79,6 @@ void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_
 }
 
 /*
- * Function: Reads a packet of data from src and places it in rxdata of length len.
- * Speed critical!
- * ----------------------------
- *   Returns void
- *
- *   rxdata: Pointer to a destination data array.
- *   src: Pointer to the src data.
- *   offset: The offset from the src array origin
- *   len: Length of data to read in bytes.
- */
-void n64hal_sram_read(uint8_t *rxdata, uint8_t *src, uint16_t offset, uint16_t len)
-{
-    //FIXME, need to be able to use external flash somehow, maybe *rxdata should be a UID?
-    if (src != NULL)
-    {
-        memcpy(rxdata, src + offset, len);
-    }
-}
-
-/*
  * Function: Writes a packet of data from txdata to dest of length len.
  * Speed critical!
  * ----------------------------
