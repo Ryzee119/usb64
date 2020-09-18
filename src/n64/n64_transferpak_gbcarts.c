@@ -271,11 +271,11 @@ static void gb_read_cart(uint16_t addr, gameboycart *gb, uint8_t *outBuffer)
             }
             else if ((gb->cart_mode_select || mbc != 1) && gb->selected_ram_bank < gb->num_ram_banks)
             {
-                n64hal_sram_read(outBuffer, gb->ram, addr - CART_RAM_ADDR + (gb->selected_ram_bank * CRAM_BANK_SIZE), 32);
+                memcpy(outBuffer, gb->ram + addr - CART_RAM_ADDR + (gb->selected_ram_bank * CRAM_BANK_SIZE), 32);
             }
             else
             {
-                n64hal_sram_read(outBuffer, gb->ram, addr - CART_RAM_ADDR, 32);
+                memcpy(outBuffer, gb->ram + addr - CART_RAM_ADDR, 32);
             }
         }
         return;
@@ -397,10 +397,10 @@ void gb_set_pokemon_time(gameboycart *cart)
      */
     /*
     uint8_t baseDay, baseHour, baseMin, baseSec;
-    n64hal_sram_read(&baseDay,  cart->ram, 0x2044, 1);
-    n64hal_sram_read(&baseHour, cart->ram, 0x2045, 1);
-    n64hal_sram_read(&baseMin,  cart->ram, 0x2046, 1);
-    n64hal_sram_read(&baseSec,  cart->ram, 0x2047, 1);
+    memcpy(&baseDay,  cart->ram + 0x2044, 1);
+    memcpy(&baseHour, cart->ram + 0x2045, 1);
+    memcpy(&baseMin,  cart->ram + 0x2046, 1);
+    memcpy(&baseSec,  cart->ram + 0x2047, 1);
 
     debug_print_tpak("Base d:%u h:%u m:%u s:%u\n",baseDay,baseHour,baseMin,baseSec);
 
