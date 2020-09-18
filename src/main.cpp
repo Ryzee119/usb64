@@ -286,7 +286,7 @@ void loop()
                         char save_filename[MAX_FILENAME_LEN];
                         strcpy(save_filename, n64_c[c].tpak->gbcart->filename);
                         strcpy(strrchr(save_filename, '.'), ".sav");
-                        gb_cart->ram = alloc_memory(save_filename, gb_cart->ramsize, 1); 
+                        gb_cart->ram = alloc_memory(save_filename, gb_cart->ramsize, gb_has_battery(gb_cart->mbc) == 0); 
                     }
                     
                     if (gb_cart->rom == NULL || gb_cart->ram == NULL)
