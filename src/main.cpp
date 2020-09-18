@@ -44,11 +44,10 @@ typedef struct
     char name[MAX_FILENAME_LEN];
     uint8_t *data;
     uint32_t len;
-    uint32_t non_volatile;
     uint32_t read_only; //If read only, it will never write back to storage
 } sram_storage;
 
-static uint8_t *alloc_memory(const char *name, uint32_t alloc_len, uint32_t non_volatile, uint32_t read_only);
+static uint8_t *alloc_memory(const char *name, uint32_t alloc_len, uint32_t read_only);
 static void flush_memory(void);
 void free_memory(const char *name);
 static void init_ring_buffer(void);
@@ -81,7 +80,6 @@ void n64_controller4_clock_edge()
     n64_controller_hande_new_edge(&n64_c[3]);
 }
 #endif
-EXTMEM char bigBugger[1000000];
 
 void setup()
 {
@@ -117,7 +115,7 @@ void setup()
     n64_init_subsystem(n64_c);
 
     //Read in settings from flash
-    settings = (n64_settings *)alloc_memory(SETTINGS_FILENAME, sizeof(n64_settings), 1, 0);
+    settings = (n64_settings *)alloc_memory(SETTINGS_FILENAME, sizeof(n64_settings), 0);
     n64_settings_init(settings);
 
 #if (MAX_CONTROLLERS >= 1)
@@ -270,7 +268,7 @@ void loop()
                 gameboycart *gb_cart = n64_c[c].tpak->gbcart;
                 uint8_t gb_header[0x100];
                 gb_cart->ram = NULL;
-                //Read the ROM header
+
                 strcpy(gb_cart->filename, settings->default_tpak_rom[c]);
                 if (gb_cart->filename[0] != '\0' && n64hal_rom_fastread(gb_cart, 0x100, gb_header, sizeof(gb_header)))
                 {
@@ -279,7 +277,7 @@ void loop()
                     
                     if (gb_cart->romsize > 0)
                     {
-                        gb_cart->rom = alloc_memory(n64_c[c].tpak->gbcart->filename, gb_cart->romsize, 1, 1);
+                        gb_cart->rom = alloc_memory(n64_c[c].tpak->gbcart->filename, gb_cart->romsize, 1);
                     }
 
                     if (gb_cart->ramsize > 0)
@@ -288,19 +286,7 @@ void loop()
                         char save_filename[MAX_FILENAME_LEN];
                         strcpy(save_filename, n64_c[c].tpak->gbcart->filename);
                         strcpy(strrchr(save_filename, '.'), ".sav");
-
-                        uint32_t mbc = gb_cart->mbc;
-                        uint32_t volatile_flag = 0;
-                        //Only if the MBC has a battery, set the non volatile flag for the SRAM.
-                        if (mbc == ROM_RAM_BAT || mbc == ROM_RAM_BAT ||
-                            mbc == MBC1_RAM_BAT || mbc == MBC2_BAT ||
-                            mbc == MBC3_RAM_BAT || mbc == MBC3_TIM_BAT ||
-                            mbc == MBC3_TIM_RAM_BAT || mbc == MBC4_RAM_BAT ||
-                            mbc == MBC5_RAM_BAT || mbc == MBC5_RUM_RAM_BAT)
-                        {
-                            volatile_flag = 1;
-                        }
-                        gb_cart->ram = alloc_memory(save_filename, gb_cart->ramsize, volatile_flag, 0); 
+                        gb_cart->ram = alloc_memory(save_filename, gb_cart->ramsize, 1); 
                     }
                     
                     if (gb_cart->rom == NULL || gb_cart->ram == NULL)
@@ -358,7 +344,7 @@ void loop()
                 //Mempack wasn't in use, so allocate it in ram
                 if (n64_c[c].next_peripheral != PERI_RUMBLE && mempak_bank != VIRTUAL_PAK)
                 {
-                    n64_c[c].mempack->data = alloc_memory(filename, MEMPAK_SIZE, 1, 0);
+                    n64_c[c].mempack->data = alloc_memory(filename, MEMPAK_SIZE, 0);
                 }
 
                 if (n64_c[c].mempack->data != NULL)
@@ -455,9 +441,8 @@ static void flush_ring_buffer()
 //This function allocates and manages SRAM for mempak and gameboy roms (tpak) for the system.
 //SRAM is malloced into slots. Each slot stores a pointer to the memory location, its size, and
 //a string name to identify what that slot is used for.
-//A flag is set to determine wether that memory is non volatile and should be backed up/restored from flash.
 sram_storage sram[32] = {0};
-static uint8_t *alloc_memory(const char *name, uint32_t alloc_len, uint32_t non_volatile, uint32_t read_only)
+static uint8_t *alloc_memory(const char *name, uint32_t alloc_len, uint32_t read_only)
 {
     if (alloc_len == 0)
         return NULL;
@@ -488,19 +473,11 @@ static uint8_t *alloc_memory(const char *name, uint32_t alloc_len, uint32_t non_
                 break;
             sram[i].len = alloc_len;
             strcpy(sram[i].name, name);
-            if (non_volatile)
-            {
-                n64hal_sram_restore_from_file((uint8_t *)sram[i].name,
-                                              sram[i].data,
-                                              sram[i].len);
-                sram[i].non_volatile = 1;
-            }
-            else
-            {
-                sram[i].non_volatile = 0;
-                memset(sram[i].data, 0x00, sram[i].len);
-            }
-            
+
+            n64hal_sram_restore_from_file((uint8_t *)sram[i].name,
+                                          sram[i].data,
+                                          sram[i].len);
+
             sram[i].read_only = read_only;
 
             return sram[i].data;
@@ -528,13 +505,13 @@ void free_memory(const char *name)
     }
 }
 
-//Flush SRAM to flash memory if the non volatile flag is set
+//Flush SRAM to flash memory if required
 static void flush_memory()
 {
     noInterrupts();
     for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
     {
-        if (sram[i].len == 0 || sram[i].data == NULL || sram[i].non_volatile == 0 || sram[i].read_only == 0)
+        if (sram[i].len == 0 || sram[i].data == NULL || sram[i].read_only == 0)
             continue;
         debug_print_status("Writing %s %u bytes\n", (uint8_t *)sram[i].name, sram[i].len);
         n64hal_sram_backup_to_file((uint8_t *)sram[i].name, sram[i].data, sram[i].len);
