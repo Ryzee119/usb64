@@ -344,6 +344,23 @@ void gb_init_cart(gameboycart *cart, uint8_t *gb_header, char *filename)
     debug_print_tpak("gb_init_cart: MBC Type: 0x%02x\n", cart->mbc);
 }
 
+uint8t _gb_has_battery(uint8_t mbc_type)
+{
+    switch (mbc_type)
+    {
+    case MBC1_RAM_BAT:
+    case MBC2_BAT:
+    case MBC3_RAM_BAT:
+    case MBC3_TIM_BAT:
+    case MBC3_TIM_RAM_BAT:
+    case MBC4_RAM_BAT:
+    case MBC5_RAM_BAT:
+    case MBC5_RUM_RAM_BAT:
+        return 1;
+    }
+    return 0;
+}
+
 //TODO:?
 //Kept my RE notes here for future ref
 void gb_set_pokemon_time(gameboycart *cart)
