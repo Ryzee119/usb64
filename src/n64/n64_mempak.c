@@ -50,6 +50,6 @@ void n64_mempack_write32(n64_mempack *mempack, uint16_t address, uint8_t *tx_buf
     }
     else
     {
-        n64hal_sram_write(tx_buff, mempack->data, address, 32);
+        memcpy(mempack->data + address, tx_buff, 32);
     }
 }
