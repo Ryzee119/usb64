@@ -35,9 +35,7 @@
 #include "analog_stick.h"
 
 #include <SD.h>
-extern "C" {
 #include "tinyalloc.h"
-}
 
 typedef struct
 {
@@ -81,6 +79,9 @@ void n64_controller4_clock_edge()
 }
 #endif
 
+extern uint8_t external_psram_size; //in MB
+EXTMEM uint8_t ext_ram[1024 * 1024 * 16];
+
 void setup()
 {
     //Init the serial port and ring buffer
@@ -88,14 +89,20 @@ void setup()
     init_ring_buffer();
 
     //Init external RAM and memory heap
-    extern uint8_t external_psram_size; //in MB
     uint32_t psram_bytes = 1024 * 1024 * external_psram_size;
+    memset(ext_ram, 0x00, psram_bytes);
     printf("Ext ram detected %u\n", external_psram_size);
-    ta_init((const void*)(0x70000000),               //Base of heap
-            (const void*)(0x70000000 + psram_bytes), //End of heap
-            psram_bytes / 32768,                     //Number of memory chunks (32k/per chunk)
-            16,                                      //Smaller chunks than this won't split
-            32);                                     //32 word size alignment
+    ta_init((void*)(ext_ram),               //Base of heap
+            (void*)(ext_ram + psram_bytes), //End of heap
+            psram_bytes / 32768,            //Number of memory chunks (32k/per chunk)
+            16,                             //Smaller chunks than this won't split
+            1);                             //32 word size alignment
+    uint8_t *test = ta_alloc(10);
+    uint8_t *test1 = ta_alloc(10);
+    test[0]=0xAB; test[1]=0xCC;
+    printf("test: %08x\n", test);
+    printf("%02x %02x\n", test[0], test[1]);
+    printf("test1: %08x\n", test1);
 
     //Check that the flash chip is formatted for FAT access
     //If it's not, format it! Should only happen once
@@ -270,9 +277,9 @@ void loop()
                 gb_cart->ram = NULL;
 
                 strcpy(gb_cart->filename, settings->default_tpak_rom[c]);
-                if (gb_cart->filename[0] != '\0' && n64hal_rom_fastread(gb_cart, 0x100, gb_header, sizeof(gb_header)))
+                if (gb_cart->filename[0] != '\0')
                 {
-                    //Init the gb_cart struct using header info
+                    fileio_read_from_file(gb_cart->filename, 0x100, gb_header, sizeof(gb_header));
                     gb_init_cart(gb_cart, gb_header, settings->default_tpak_rom[c]);
                     
                     if (gb_cart->romsize > 0)
@@ -286,7 +293,7 @@ void loop()
                         char save_filename[MAX_FILENAME_LEN];
                         strcpy(save_filename, n64_c[c].tpak->gbcart->filename);
                         strcpy(strrchr(save_filename, '.'), ".sav");
-                        gb_cart->ram = alloc_memory(save_filename, gb_cart->ramsize, gb_has_battery(gb_cart->mbc) == 0); 
+                        gb_cart->ram = alloc_memory(save_filename, gb_cart->ramsize, gb_has_battery(gb_cart->mbc) == 0);
                     }
                     
                     if (gb_cart->rom == NULL || gb_cart->ram == NULL)
@@ -474,12 +481,11 @@ static uint8_t *alloc_memory(const char *name, uint32_t alloc_len, uint32_t read
             sram[i].len = alloc_len;
             strcpy(sram[i].name, name);
 
-            n64hal_sram_restore_from_file((uint8_t *)sram[i].name,
+            fileio_read_from_file(sram[i].name, 0,
                                           sram[i].data,
                                           sram[i].len);
 
             sram[i].read_only = read_only;
-
             return sram[i].data;
         }
     }
@@ -497,7 +503,9 @@ void free_memory(const char *name)
     {
         if (strcmp(sram[i].name, name) == 0)
         {
+            printf("Freeing %s\n", sram[i].name);
             ta_free(sram[i].data);
+            sram[i].name[0] = '\0';
             sram[i].data = NULL;
             sram[i].len = 0;
             return;
@@ -511,10 +519,10 @@ static void flush_memory()
     noInterrupts();
     for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
     {
-        if (sram[i].len == 0 || sram[i].data == NULL || sram[i].read_only == 0)
+        if (sram[i].len == 0 || sram[i].data == NULL || sram[i].read_only != 0)
             continue;
         debug_print_status("Writing %s %u bytes\n", (uint8_t *)sram[i].name, sram[i].len);
-        n64hal_sram_backup_to_file((uint8_t *)sram[i].name, sram[i].data, sram[i].len);
+        fileio_write_to_file(sram[i].name, sram[i].data, sram[i].len);
     }
     interrupts();
     flush_ring_buffer();

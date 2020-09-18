@@ -79,28 +79,6 @@ void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_
 }
 
 /*
- * Function: Reads a packet of data from a gameboy cart ROM indicated by gb_cart.
- * Speed critical!
- *
- * ----------------------------
- *   Returns void
- *
- *   gb_cart: Pointer to the gb_cart object to read.
- *   offset: The offset of the gb rom. 0 being the start of the ROM.
- *   data: Pointer to the destination array.
- *   len: Length of data to read in bytes.
- */
-uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t offset, uint8_t *data, uint32_t len)
-{
-    //Sanity check the inputs
-    if (gb_cart == NULL || gb_cart->filename[0] == '\0' || data == NULL)
-    {
-        return 0;
-    }
-    return 1;
-}
-
-/*
  * Function: Returns are array of strings for each gameboy rom available to the system up to max.
  * Not speed critical
  * ----------------------------
@@ -109,7 +87,7 @@ uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t offset, uint8_t *data
  *   array: array of char pointers of length greater than max.
  *   max: Max number of gb roms to find. Function exits with max is reached.
  */
-uint8_t n64hal_scan_for_gbroms(char **array, int max)
+uint8_t fileio_scan_for_gbroms(char **array, int max)
 {
     FRESULT res;
     DIR dir;
@@ -146,7 +124,7 @@ uint8_t n64hal_scan_for_gbroms(char **array, int max)
  *   data: Pointer to the array of data to be saved
  *   len: Number of bytes to save.
  */
-void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len)
+void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
 {
     //This function will overwrite the file if it already exists.
 
@@ -166,9 +144,19 @@ void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len)
         return;
     }
     //Cool, try write to the file
-    res = f_write(&fil, data, len, &br);
+    uint8_t buffer[512];
+    while (len > 0)
+    {
+        uint32_t b = (len > sizeof(buffer)) ? (512) : len;
+        memcpy(buffer, data, b);
+        res = f_write(&fil, buffer, b, &br);
+        data += b;
+        len -= b;
+    }
+
+    
     f_close(&fil);
-    if (res != FR_OK || br != len)
+    if (res != FR_OK)
     {
         debug_print_error("ERROR: Could not write %s\n", filename);
     }
@@ -188,7 +176,7 @@ void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len)
  *   data: Pointer to the array of data to be restored to
  *   len: Number of bytes to restore.
  */
-void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t len)
+void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, uint32_t len)
 {
     if (fs.fs_type == 0)
     {
@@ -206,8 +194,20 @@ void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t le
         memset(data, 0x00, len);
         return;
     }
+    if (file_offset > 0)
+        f_lseek(&fil, file_offset);
+
     //Cool, try read the file
-    res = f_read(&fil, data, len, &br);
+    uint8_t buffer[512];
+    while (len > 0)
+    {
+        uint32_t b = (len > sizeof(buffer)) ? (512) : len;
+        res = f_read(&fil, buffer, b, &br);
+        memcpy(data, buffer, b);
+        data += b;
+        len -= b;
+    }
+
     if (res != FR_OK)
     {
         debug_print_error("ERROR: Could not read %s with error %i\n", filename, res);

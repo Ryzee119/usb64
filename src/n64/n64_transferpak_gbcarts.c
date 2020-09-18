@@ -243,7 +243,7 @@ static void gb_read_cart(uint16_t addr, gameboycart *gb, uint8_t *outBuffer)
     case 0x1:
     case 0x2:
     case 0x3:
-        n64hal_rom_fastread(gb, addr, outBuffer, 32);
+        memcpy(outBuffer, gb->rom + addr, 32);
         return;
 
     case 0x4:
@@ -252,11 +252,11 @@ static void gb_read_cart(uint16_t addr, gameboycart *gb, uint8_t *outBuffer)
     case 0x7:
         if (mbc == 1 && gb->cart_mode_select)
         {
-            n64hal_rom_fastread(gb, addr + (uint32_t)((gb->selected_rom_bank & 0x1F) - 1) * ROM_BANK_SIZE, outBuffer, 32);
+            memcpy(outBuffer, gb->rom + addr + ((gb->selected_rom_bank & 0x1F) - 1) * ROM_BANK_SIZE, 32);
         }
         else
         {
-            n64hal_rom_fastread(gb, addr + (uint32_t)(gb->selected_rom_bank - 1) * ROM_BANK_SIZE, outBuffer, 32);
+            memcpy(outBuffer, gb->rom + addr + (gb->selected_rom_bank - 1) * ROM_BANK_SIZE, 32);
         }
         return;
 

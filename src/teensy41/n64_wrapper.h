@@ -34,12 +34,11 @@ extern "C" {
 #define N64_OUTPUT 1
 #define N64_INPUT 2
 
-uint8_t n64hal_rom_fastread(gameboycart *gb_cart, uint32_t offset, uint8_t *data, uint32_t len);
-void n64hal_sram_backup_to_file(uint8_t *filename, uint8_t *data, uint32_t len);
-void n64hal_sram_restore_from_file(uint8_t *filename, uint8_t *data, uint32_t len);
+void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len);
+void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, uint32_t len);
 void n64hal_rtc_read(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
 void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
-uint8_t n64hal_scan_for_gbroms(char** array, int max);
+uint8_t fileio_scan_for_gbroms(char** array, int max);
 
 uint32_t n64hal_hs_tick_get_speed();
 void n64hal_hs_tick_init();

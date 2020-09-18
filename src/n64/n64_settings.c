@@ -45,6 +45,7 @@ void n64_settings_init(n64_settings *settings)
         debug_print_error("ERROR: %s not found or invalid, setting to default\n", SETTINGS_FILENAME);
         for (int i = 0; i < MAX_CONTROLLERS; i++)
         {
+            memset(settings, 0x00, sizeof(n64_settings));
             settings->start = 0x64; //N64 :)
             strcpy(settings->default_tpak_rom[i], "");
             settings->deadzone[i]    = DEFAULT_DEADZONE;
