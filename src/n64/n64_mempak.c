@@ -38,7 +38,7 @@ void n64_mempack_read32(n64_mempack *mempack, uint16_t address, uint8_t *rx_buff
     }
     else
     {
-        n64hal_sram_read(rx_buff, mempack->data, address, 32);
+        memcpy(rx_buff, mempack->data + address, 32);
     }
 }
 
