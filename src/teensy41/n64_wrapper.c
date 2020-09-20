@@ -21,21 +21,10 @@
  * SOFTWARE.
  */
 
-/*
- * N64 library wrapper function. The n64 library is intended to be as portable as possible within reason.
- * The hardware layer functions in this file are provided here to hopefully make it easier to port to other microcontrollers
- * This file is provided for a Teensy4.1 using Teensyduino, an external Flash chip (access via FATFS file system) and
- * using the Teensy's generous internal RAM
- * 
- * Supported microcontrollers need >256kb RAM recommended, >256kb internal flash and >100Mhz clock speed or so
- * with high speed external flash (>4Mb)
- * 
- * TODO: Option to disable mempack/tpak features to remove the requirement for external flash or lots of ram
- */
-
 #include <Arduino.h>
 #include "n64_controller.h"
 #include "n64_wrapper.h"
+#include "memory.h"
 #include "usb64_conf.h"
 
 /*
@@ -150,4 +139,36 @@ void n64hal_input_swap(n64_controller *controller, uint8_t val)
 uint8_t n64hal_input_read(n64_controller *controller)
 {
     return digitalRead(controller->gpio_pin);
+}
+
+
+/*
+ * Function: Returns an array of data read from external ram.
+ * ----------------------------
+ *   Returns: void
+ *
+ *   rx_buff: The buffer the returned data will be stored
+ *   src: Pointer to the base address of the source data.
+ *   offset: Bytes from the base address the actual data is we need.
+ *   len: How many bytes to read.
+ */
+void n64hal_ram_read(void *rx_buff, void *src, uint32_t offset, uint32_t len)
+{
+    memcpy(rx_buff + offset, src, len);
+}
+
+/*
+ * Function: Writes an array of data read to external ram.
+ * ----------------------------
+ *   Returns: void
+ *
+ *   tx_buff: The buffer of data to write
+ *   src: Pointer to the base address of the destination data.
+ *   offset: Bytes from the base address where we need to write.
+ *   len: How many bytes to write.
+ */
+void n64hal_ram_write(void *tx_buff, void *dst, uint32_t offset, uint32_t len)
+{
+    memcpy(dst + offset, tx_buff, len);
+    memory_mark_dirty(dst);
 }
