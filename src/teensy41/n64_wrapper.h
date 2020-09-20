@@ -40,6 +40,8 @@ uint32_t n64hal_hs_tick_get_speed();
 void n64hal_hs_tick_init();
 void n64hal_hs_tick_reset();
 uint32_t n64hal_hs_tick_get();
+void n64hal_ram_read(void *rx_buff, void *src, uint32_t len);
+void n64hal_ram_write(void *tx_buff, void *dst, uint32_t len);
 
 void n64hal_input_swap(n64_controller *controller, uint8_t val);
 uint8_t n64hal_input_read(n64_controller *controller);
