@@ -21,30 +21,22 @@
  * SOFTWARE.
  */
 
-#ifndef N64_N64_WRAPPER_H_
-#define N64_N64_WRAPPER_H_
+#ifndef _FILEIO_H
+#define _FILEIO_H
+
+#include <Arduino.h>
+#include "usb64_conf.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <Arduino.h>
-#include "n64_controller.h"
-
-#define N64_OUTPUT 1
-#define N64_INPUT 2
-
-void n64hal_rtc_read(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
-void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
-uint32_t n64hal_hs_tick_get_speed();
-void n64hal_hs_tick_init();
-void n64hal_hs_tick_reset();
-uint32_t n64hal_hs_tick_get();
-
-void n64hal_input_swap(n64_controller *controller, uint8_t val);
-uint8_t n64hal_input_read(n64_controller *controller);
+void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len);
+void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, uint32_t len);
+uint8_t fileio_scan_for_gbroms(char** array, int max);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* N64_N64_WRAPPER_H_ */
+
+#endif

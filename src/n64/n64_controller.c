@@ -43,7 +43,7 @@ n64_mempack n64_mpack[MAX_CONTROLLERS];
 n64_transferpak n64_tpak[MAX_CONTROLLERS];
 gameboycart gb_cart[MAX_CONTROLLERS];
 
-void n64_init_subsystem(n64_controller *controllers)
+void n64_subsystem_init(n64_controller *controllers)
 {
     // INITIALISE THE N64 STRUCTS //
     for (uint32_t i = 0; i < MAX_CONTROLLERS; i++)

@@ -33,20 +33,10 @@
  * TODO: Option to disable mempack/tpak features to remove the requirement for external flash or lots of ram
  */
 
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
 #include <Arduino.h>
-#include "ff.h"
-#include "n64_mempak.h"
-#include "n64_virtualpak.h"
-#include "n64_settings.h"
-#include "n64_transferpak_gbcarts.h"
 #include "n64_controller.h"
 #include "n64_wrapper.h"
 #include "usb64_conf.h"
-
-FATFS fs;
 
 /*
  * Function: Reads a hardware realtime clock and populates day,h,m,s
@@ -76,158 +66,6 @@ void n64hal_rtc_read(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t
  */
 void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst)
 {
-}
-
-/*
- * Function: Returns are array of strings for each gameboy rom available to the system up to max.
- * Not speed critical
- * ----------------------------
- *   Returns: Number of gb roms available.
- *
- *   array: array of char pointers of length greater than max.
- *   max: Max number of gb roms to find. Function exits with max is reached.
- */
-uint8_t fileio_scan_for_gbroms(char **array, int max)
-{
-    FRESULT res;
-    DIR dir;
-    UINT file_count = 0;
-    static FILINFO fno;
-    res = f_opendir(&dir, "");
-    if (res == FR_OK)
-    {
-        for (;;)
-        {
-            res = f_readdir(&dir, &fno);
-            if (res != FR_OK || fno.fname[0] == 0 || file_count >= max)
-                break;
-
-            if (strstr(fno.fname, ".GB\0") != NULL || strstr(fno.fname, ".GBC\0") != NULL ||
-                strstr(fno.fname, ".gb\0") != NULL || strstr(fno.fname, ".gbc\0") != NULL)
-            {
-                array[file_count] = (char *)malloc(strlen(fno.fname) + 1);
-                strcpy(array[file_count], fno.fname);
-                file_count++;
-            }
-        }
-        f_closedir(&dir);
-    }
-    return file_count;
-}
-
-/*
- * Function: Backup a SRAM file to non-volatile storage.
- * ----------------------------
- *   Returns: Void
- *
- *   filename: The filename of the saved file
- *   data: Pointer to the array of data to be saved
- *   len: Number of bytes to save.
- */
-void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
-{
-    //This function will overwrite the file if it already exists.
-
-    if (fs.fs_type == 0)
-    {
-        debug_print_status("Mounting fs\n");
-        f_mount(&fs, "", 1);
-    }
-    //Trying open the file
-    FRESULT res;
-    UINT br;
-    FIL fil;
-    res = f_open(&fil, (const TCHAR *)filename, FA_WRITE | FA_CREATE_ALWAYS);
-    if (res != FR_OK)
-    {
-        debug_print_error("ERROR: Could not open %s for WRITE\n", filename);
-        return;
-    }
-    //Cool, try write to the file
-    uint8_t buffer[512];
-    while (len > 0)
-    {
-        uint32_t b = (len > sizeof(buffer)) ? (512) : len;
-        memcpy(buffer, data, b);
-        res = f_write(&fil, buffer, b, &br);
-        data += b;
-        len -= b;
-    }
-
-    
-    f_close(&fil);
-    if (res != FR_OK)
-    {
-        debug_print_error("ERROR: Could not write %s\n", filename);
-    }
-    else
-    {
-        debug_print_status("Writing %s ok!\n", filename);
-    }
-}
-
-/*
- * Function: Restore a SRAM file from non-volatile storage. This will return 0x00's if the file does not exist.
- * Not speed critical
- * ----------------------------
- *   Returns: Void
- *
- *   filename: The filename of the saved file
- *   data: Pointer to the array of data to be restored to
- *   len: Number of bytes to restore.
- */
-void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, uint32_t len)
-{
-    if (fs.fs_type == 0)
-    {
-        debug_print_status("Mounting fs\n");
-        f_mount(&fs, "", 1);
-    }
-    //Trying open the file
-    FRESULT res;
-    UINT br;
-    FIL fil;
-    res = f_open(&fil, (const TCHAR *)filename, FA_READ);
-    if (res != FR_OK)
-    {
-        debug_print_status("WARNING: Could not open %s for READ\n", filename);
-        memset(data, 0x00, len);
-        return;
-    }
-    if (file_offset > 0)
-        f_lseek(&fil, file_offset);
-
-    //Cool, try read the file
-    uint8_t buffer[512];
-    while (len > 0)
-    {
-        uint32_t b = (len > sizeof(buffer)) ? (512) : len;
-        res = f_read(&fil, buffer, b, &br);
-        memcpy(data, buffer, b);
-        data += b;
-        len -= b;
-    }
-
-    if (res != FR_OK)
-    {
-        debug_print_error("ERROR: Could not read %s with error %i\n", filename, res);
-        int attempts = 3;
-        while (res != FR_OK && attempts-- > 0)
-        {
-            f_lseek(&fil, 0);
-            res = f_read(&fil, data, len, &br);
-        }
-        f_close(&fil);
-        if(res != FR_OK)
-        {
-            debug_print_error("ERROR: Could not read %s with 3 attempts\n", filename);
-            memset(data, 0x00, len);
-        }
-    }
-    else
-    {
-        debug_print_status("Reading %s ok!\n", filename);
-    }
 }
 
 /*

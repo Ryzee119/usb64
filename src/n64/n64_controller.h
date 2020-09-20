@@ -100,7 +100,7 @@ typedef struct
 #define MAX_MEMPAKS MAX_CONTROLLERS
 #define VIRTUAL_PAK MAX_MEMPAKS
 
-void n64_init_subsystem(n64_controller *controllers);
+void n64_subsystem_init(n64_controller *controllers);
 void n64_controller_hande_new_edge(n64_controller *cont);
 
 #ifdef __cplusplus

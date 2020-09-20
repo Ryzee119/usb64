@@ -21,30 +21,33 @@
  * SOFTWARE.
  */
 
-#ifndef N64_N64_WRAPPER_H_
-#define N64_N64_WRAPPER_H_
+#ifndef _MEMORY_H
+#define _MEMORY_H
+
+#include <Arduino.h>
+#include "usb64_conf.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <Arduino.h>
-#include "n64_controller.h"
+typedef struct
+{
+    char name[MAX_FILENAME_LEN];
+    uint8_t *data;
+    uint32_t len;
+    uint32_t read_only; //If read only, it will never write back to storage
+    uint32_t dirty;
+} sram_storage;
 
-#define N64_OUTPUT 1
-#define N64_INPUT 2
-
-void n64hal_rtc_read(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
-void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
-uint32_t n64hal_hs_tick_get_speed();
-void n64hal_hs_tick_init();
-void n64hal_hs_tick_reset();
-uint32_t n64hal_hs_tick_get();
-
-void n64hal_input_swap(n64_controller *controller, uint8_t val);
-uint8_t n64hal_input_read(n64_controller *controller);
+void memory_init();
+uint8_t *memory_alloc_ram(const char *name, uint32_t alloc_len, uint32_t read_only);
+void memory_flush_all(void);
+void memory_free_item(void *ptr);
+void memory_mark_dirty(void *ptr);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* N64_N64_WRAPPER_H_ */
+
+#endif

@@ -21,9 +21,7 @@
  * SOFTWARE.
  */
 
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
+#include <Arduino.h>
 #include "printf.h"
 #include "usb64_conf.h"
 #include "n64_mempak.h"
@@ -32,6 +30,7 @@
 #include "n64_transferpak_gbcarts.h"
 #include "n64_controller.h"
 #include "n64_wrapper.h"
+#include "fileio.h"
 
 #define HEADING MENU_LINE1
 #define SUBHEADING MENU_LINE2
