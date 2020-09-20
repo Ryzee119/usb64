@@ -51,6 +51,9 @@ void n64hal_ram_write(void *tx_buff, void *dst, uint32_t offset, uint32_t len);
 //GPIO wrappers
 void n64hal_input_swap(n64_controller *controller, uint8_t val);
 uint8_t n64hal_input_read(n64_controller *controller);
+  
+//FileIO wrappers
+uint32_t n64hal_list_gb_roms(char **list, uint32_t max);
 
 #ifdef __cplusplus
 }
