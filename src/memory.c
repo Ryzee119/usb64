@@ -84,7 +84,7 @@ uint8_t *memory_alloc_ram(const char *name, uint32_t alloc_len, uint32_t read_on
                                   sram[i].len);
 
             sram[i].read_only = read_only;
-            sram[i].dirty = 1;
+            sram[i].dirty = 0;
             return sram[i].data;
         }
     }
@@ -119,10 +119,11 @@ void memory_flush_all()
     noInterrupts();
     for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
     {
-        if (sram[i].len == 0 || sram[i].data == NULL || sram[i].read_only != 0)
+        if (sram[i].len == 0 || sram[i].data == NULL || sram[i].read_only != 0 || sram[i].dirty == 0)
             continue;
+
         debug_print_status("Writing %s %u bytes\n", (uint8_t *)sram[i].name, sram[i].len);
-        fileio_write_to_file(sram[i].name, sram[i].data, sram[i].len);
+        fileio_write_to_file(sram[i].name, sram[i].data, sram[i].len);  
         sram[i].dirty = 0;
     }
     interrupts();
