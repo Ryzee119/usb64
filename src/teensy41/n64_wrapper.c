@@ -172,3 +172,16 @@ void n64hal_ram_write(void *tx_buff, void *dst, uint32_t offset, uint32_t len)
     memcpy(dst + offset, tx_buff, len);
     memory_mark_dirty(dst);
 }
+
+/*
+ * Function: Returns a list of gameboy roms located on nonvolatile storage
+ * ----------------------------
+ *   Returns: Number of roms found
+ *
+ *   list: A list of strings to populate
+ *   max: Max number of roms to return
+ */
+uint32_t n64hal_list_gb_roms(char **list, uint32_t max)
+{
+    
+}
