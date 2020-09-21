@@ -222,11 +222,11 @@ static void gb_write_cart(uint16_t addr, gameboycart *gb, uint8_t *inBuffer)
             }
             else if (gb->cart_mode_select && gb->selected_ram_bank < gb->num_ram_banks)
             {
-                memcpy(gb->ram + addr - CART_RAM_ADDR + (gb->selected_ram_bank * CRAM_BANK_SIZE), inBuffer, 32);
+                n64hal_ram_write(inBuffer, gb->ram, addr - CART_RAM_ADDR + (gb->selected_ram_bank * CRAM_BANK_SIZE), 32);
             }
             else if (gb->num_ram_banks)
             {
-                memcpy(gb->ram + addr - CART_RAM_ADDR, inBuffer, 32);
+                n64hal_ram_write(inBuffer, gb->ram, addr - CART_RAM_ADDR, 32);
             }
         }
         return;
@@ -243,7 +243,7 @@ static void gb_read_cart(uint16_t addr, gameboycart *gb, uint8_t *outBuffer)
     case 0x1:
     case 0x2:
     case 0x3:
-        memcpy(outBuffer, gb->rom + addr, 32);
+        n64hal_ram_read(outBuffer, gb->rom, addr, 32);
         return;
 
     case 0x4:
@@ -252,11 +252,11 @@ static void gb_read_cart(uint16_t addr, gameboycart *gb, uint8_t *outBuffer)
     case 0x7:
         if (mbc == 1 && gb->cart_mode_select)
         {
-            memcpy(outBuffer, gb->rom + addr + ((gb->selected_rom_bank & 0x1F) - 1) * ROM_BANK_SIZE, 32);
+            n64hal_ram_read(outBuffer, gb->rom, addr + ((gb->selected_rom_bank & 0x1F) - 1) * ROM_BANK_SIZE, 32);
         }
         else
         {
-            memcpy(outBuffer, gb->rom + addr + (gb->selected_rom_bank - 1) * ROM_BANK_SIZE, 32);
+            n64hal_ram_read(outBuffer, gb->rom, addr + (gb->selected_rom_bank - 1) * ROM_BANK_SIZE, 32);
         }
         return;
 
@@ -271,11 +271,11 @@ static void gb_read_cart(uint16_t addr, gameboycart *gb, uint8_t *outBuffer)
             }
             else if ((gb->cart_mode_select || mbc != 1) && gb->selected_ram_bank < gb->num_ram_banks)
             {
-                memcpy(outBuffer, gb->ram + addr - CART_RAM_ADDR + (gb->selected_ram_bank * CRAM_BANK_SIZE), 32);
+                n64hal_ram_read(outBuffer, gb->ram, addr - CART_RAM_ADDR + (gb->selected_ram_bank * CRAM_BANK_SIZE), 32);
             }
             else
             {
-                memcpy(outBuffer, gb->ram + addr - CART_RAM_ADDR, 32);
+                n64hal_ram_read(outBuffer, gb->ram, addr - CART_RAM_ADDR, 32);
             }
         }
         return;
