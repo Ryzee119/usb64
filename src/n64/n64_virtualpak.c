@@ -30,7 +30,6 @@
 #include "n64_transferpak_gbcarts.h"
 #include "n64_controller.h"
 #include "n64_wrapper.h"
-#include "fileio.h"
 
 #define HEADING MENU_LINE1
 #define SUBHEADING MENU_LINE2
@@ -242,7 +241,7 @@ void n64_virtualpak_init(n64_mempack *vpak)
         gbrom_titlenames[i] = NULL;
     }
 
-    num_roms = fileio_scan_for_gbroms(gbrom_filenames, MAX_GBROMS);
+    num_roms = n64hal_list_gb_roms(gbrom_filenames, MAX_GBROMS);
 
     //For each ROM, extract the ROM info and rom title
     for (int i = 0; i < num_roms; i++)
