@@ -21,8 +21,7 @@
  * SOFTWARE.
  */
 
-#include <stdint.h>
-#include <string.h>
+#include <Arduino.h>
 #include "n64_mempak.h"
 #include "n64_virtualpak.h"
 #include "n64_settings.h"
@@ -38,7 +37,7 @@ void n64_mempack_read32(n64_mempack *mempack, uint16_t address, uint8_t *rx_buff
     }
     else
     {
-        memcpy(rx_buff, mempack->data + address, 32);
+        n64hal_ram_read(rx_buff, mempack->data, address, 32);
     }
 }
 
@@ -50,6 +49,6 @@ void n64_mempack_write32(n64_mempack *mempack, uint16_t address, uint8_t *tx_buf
     }
     else
     {
-        memcpy(mempack->data + address, tx_buff, 32);
+        n64hal_ram_write(tx_buff, mempack->data, address, 32);
     }
 }
