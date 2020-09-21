@@ -54,6 +54,7 @@ uint8_t n64hal_input_read(n64_controller *controller);
   
 //FileIO wrappers
 uint32_t n64hal_list_gb_roms(char **list, uint32_t max);
+void n64hal_unbuffered_read(char *name, uint32_t file_offset, uint8_t *data, uint32_t len);
 
 #ifdef __cplusplus
 }
