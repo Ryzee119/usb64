@@ -33,7 +33,7 @@ extern "C" {
 
 void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len);
 void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, uint32_t len);
-uint8_t fileio_scan_for_gbroms(char** array, int max);
+uint32_t fileio_list_directory(char **list, uint32_t max);
 
 #ifdef __cplusplus
 }
