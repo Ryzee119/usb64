@@ -417,7 +417,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                         }
 
                         memset(&cont->data_buffer[N64_DATA_POS], (cont->tpak->access_state) ? 0x89 : 0x80, 32);
-                        debug_print_tpak("TPAK: Request powerstate. Sending 0x%02x\n", (cont->tpak->access_state) ? 0x89 : 0x80);
+                        debug_print_tpak("TPAK: Request access_state. Sending 0x%02x\n", (cont->tpak->access_state) ? 0x89 : 0x80);
                         //Set bit 2 of the first return value if the access mode was changed since last check.
                         cont->data_buffer[N64_DATA_POS] |= (cont->tpak->access_state_changed << 2);
                         cont->tpak->access_state_changed = 0;
