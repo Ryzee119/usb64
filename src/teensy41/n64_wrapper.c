@@ -175,13 +175,36 @@ void n64hal_ram_write(void *tx_buff, void *dst, uint32_t offset, uint32_t len)
 
 /*
  * Function: Returns a list of gameboy roms located on nonvolatile storage
+ * WARNING: This mallocs memory on the heap. It must be free'd by user.
  * ----------------------------
  *   Returns: Number of roms found
  *
- *   list: A list of strings to populate
+ *   gb_list: A list of char pointers to populate
  *   max: Max number of roms to return
  */
-uint32_t n64hal_list_gb_roms(char **list, uint32_t max)
+uint32_t n64hal_list_gb_roms(char **gb_list, uint32_t max)
 {
+    //Retrieve full directory list
+    char *file_list[256];
+    uint32_t num_files = fileio_list_directory(file_list, 256);
     
+    //Find only files with .gb or gbc extensions to populate rom list.
+    uint32_t rom_count = 0;
+    for (uint32_t i = 0; i < num_files; i++)
+    {
+        if (file_list[i] == NULL)
+            continue;
+
+        if (strstr(file_list[i], ".GB\0") != NULL || strstr(file_list[i], ".GBC\0") != NULL ||
+            strstr(file_list[i], ".gb\0") != NULL || strstr(file_list[i], ".gbc\0") != NULL)
+        {
+            gb_list[rom_count] = (char *)malloc(strlen(file_list[i]) + 1);
+            strcpy(gb_list[rom_count], file_list[i]);
+            rom_count++;
+        }
+        //Free file list as we go
+        free(file_list[i]);
+    }
+
+    return rom_count;
 }
