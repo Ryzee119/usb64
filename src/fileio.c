@@ -27,15 +27,16 @@
 #include "printf.h"
 FATFS fs;
 /*
- * Function: Returns are array of strings for each gameboy rom available to the system up to max.
+ * Function: Returns are array of strings for file the root directory up to max.
+ * WARNING: This allocates heap memory, and must be free'd by user.
  * Not speed critical
  * ----------------------------
- *   Returns: Number of gb roms available.
+ *   Returns: Number of files found.
  *
  *   array: array of char pointers of length greater than max.
  *   max: Max number of gb roms to find. Function exits with max is reached.
  */
-uint8_t fileio_scan_for_gbroms(char **array, int max)
+uint32_t fileio_list_directory(char **list, uint32_t max)
 {
     FRESULT res;
     DIR dir;
@@ -50,13 +51,9 @@ uint8_t fileio_scan_for_gbroms(char **array, int max)
             if (res != FR_OK || fno.fname[0] == 0 || file_count >= max)
                 break;
 
-            if (strstr(fno.fname, ".GB\0") != NULL || strstr(fno.fname, ".GBC\0") != NULL ||
-                strstr(fno.fname, ".gb\0") != NULL || strstr(fno.fname, ".gbc\0") != NULL)
-            {
-                array[file_count] = (char *)malloc(strlen(fno.fname) + 1);
-                strcpy(array[file_count], fno.fname);
-                file_count++;
-            }
+            list[file_count] = (char *)malloc(strlen(fno.fname) + 1);
+            strcpy(list[file_count], fno.fname);
+            file_count++;
         }
         f_closedir(&dir);
     }
