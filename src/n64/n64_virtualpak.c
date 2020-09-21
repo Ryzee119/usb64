@@ -249,7 +249,7 @@ void n64_virtualpak_init(n64_mempack *vpak)
         uint8_t gb_header[0x100];
         gameboycart gb_cart;
 
-        fileio_read_from_file(gbrom_filenames[i], 0x100, gb_header, sizeof(gb_header));
+        n64hal_unbuffered_read(gbrom_filenames[i], 0x100, gb_header, sizeof(gb_header));
         gb_init_cart(&gb_cart, gb_header, gbrom_filenames[i]);
 
         //Copy the gb cart title (from the rom header into an array)
