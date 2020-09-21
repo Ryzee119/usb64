@@ -31,6 +31,7 @@
 #define DEBUG_TPAK 1    //For debugging N64 TPAK low level info. It's complex so has its own flag
 #define DEBUG_USBHOST 0 //For debugging the USB Host Stack
 #define DEBUG_FATFS 0   //For debugging the FATFS io
+#define DEBUG_MEMORY 0  //For debugging the memory allocator in external RAM.
 #define DEBUG_ERROR 1   //For showing critical errors
 
 /* USB HOST STACK */
@@ -71,5 +72,6 @@
 #define debug_print_tpak(fmt, ...)       do { if (DEBUG_TPAK)    printf(fmt, ##__VA_ARGS__); } while (0)
 #define debug_print_usbhost(fmt, ...)    do { if (DEBUG_USBHOST) printf(fmt, ##__VA_ARGS__); } while (0)
 #define debug_print_fatfs(fmt, ...)      do { if (DEBUG_FATFS)   printf(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_memory(fmt, ...)     do { if (DEBUG_MEMORY)  printf(fmt, ##__VA_ARGS__); } while (0)
 #define debug_print_error(fmt, ...)      do { if (DEBUG_ERROR)   printf(fmt, ##__VA_ARGS__); } while (0)
 #endif
