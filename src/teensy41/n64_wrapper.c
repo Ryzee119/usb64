@@ -26,6 +26,7 @@
 #include "n64_wrapper.h"
 #include "memory.h"
 #include "usb64_conf.h"
+#include "fileio.h"
 
 /*
  * Function: Reads a hardware realtime clock and populates day,h,m,s
@@ -207,4 +208,19 @@ uint32_t n64hal_list_gb_roms(char **gb_list, uint32_t max)
     }
 
     return rom_count;
+}
+
+/*
+ * Function: Reads data from unbuffered memory. (i.e SD card)
+ * ----------------------------
+ *   Returns: Number of roms found
+ *
+ *   name: Name of file
+ *   file_offset: Located to start reading file
+ *   data: buffer to put data in
+ *   len: number of bytes t0 read.
+ */
+void n64hal_unbuffered_read(char *name, uint32_t file_offset, uint8_t *data, uint32_t len)
+{
+    fileio_read_from_file(name, file_offset, data, len);
 }
