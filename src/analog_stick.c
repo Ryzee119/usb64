@@ -109,17 +109,16 @@ void apply_octa_correction(float *x, float *y)
     float m1 = (0 - m45 * sinf(D2R(45))) / (1 - m45 * cosf(D2R(45)));
     float c1 = -m1;
     
-    //Draw 3rd line from the input angle
+    //Draw another line from the input angle
     float x3 = cosf(angle);
     float y3 = sinf(angle);
     float m3 = y3 / x3;
     
-    //Calculate intersection between 3rd line and octagon.
-    float xint, yint;
-    xint = (0 - c1) / (m1 - m3);
-    yint = m1 * xint + c1;
+    //Calculate intersection between line and octagon.
+    float xint = (0 - c1) / (m1 - m3);
+    float yint = m1 * xint + c1;
 
-    //Calculate magnitude of 3rd line until intersection
+    //Calculate magnitude of line until intersection.
     float mag = sqrtf(xint * xint + yint * yint);
 
     //Output corrected x,y
