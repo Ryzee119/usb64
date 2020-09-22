@@ -64,6 +64,7 @@
 #define DEFAULT_SNAP 1         //0 or 1 (0 = will output raw analog stick angle, 1 will snap to 45deg angles)
 #define SNAP_RANGE 10          //+/- what angle range will snap. 10 will be +/-10 degrees from a 45 degree angle
 #define MOUSE_SENSITIVITY 2.0f //Not configurable from the N64 console.
+#define MAG_AT_45DEG 1.1f      //Octagonal shape has a larger magnitude at the 45degree points. 1.1 times larger seems about right
 
 /* DEBUG PRINTERS */
 #include "printf.h"
