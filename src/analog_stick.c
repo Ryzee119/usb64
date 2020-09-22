@@ -106,12 +106,12 @@ void apply_octa_correction(float *x, float *y)
     if (angle > D2R(45)) angle = 90 - angle;
 
     //Build octagonal line for intersection
-    float m1 = (0 - m45 * sin(D2R(45))) / (1 - m45 * cos(D2R(45)));
+    float m1 = (0 - m45 * sinf(D2R(45))) / (1 - m45 * cosf(D2R(45)));
     float c1 = -m1;
     
     //Draw 3rd line from the input angle
-    float x3 = cos(angle);
-    float y3 = sin(angle);
+    float x3 = cosf(angle);
+    float y3 = sinf(angle);
     float m3 = y3 / x3;
     
     //Calculate intersection between 3rd line and octagon.
