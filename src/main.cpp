@@ -22,7 +22,7 @@
  */
 
 #include <Arduino.h>
-#include "indev.h"
+#include "input.h"
 #include "ff.h"
 #include "printf.h"
 #include "n64_wrapper.h"
@@ -87,7 +87,7 @@ void setup()
 
     memory_init();
 
-    indev_init();
+    input_init();
 
     n64_subsystem_init(n64_c);
 
@@ -134,17 +134,17 @@ void loop()
     ring_buffer_flush();
 
     //Scan for controller input changes
-    indev_update_input_devices();
+    input_update_input_devices();
     for (int c = 0; c < MAX_CONTROLLERS; c++)
     {
         n64_buttons[c] = 0x0000;
-        if (indev_is_connected(c))
+        if (input_is_connected(c))
         {
             int max_axis = sizeof(usb_axis[c]) / sizeof(usb_axis[c][0]);
-            indev_get_buttons(c, &usb_buttons[c], usb_axis[c], max_axis,                    //Raw usb output (if wanted)
+            input_get_buttons(c, &usb_buttons[c], usb_axis[c], max_axis,                    //Raw usb output (if wanted)
                               &n64_buttons[c], &n64_x_axis[c], &n64_y_axis[c], &n64_combo); //Mapped n64 output
 
-            if (indev_is_gamecontroller(c))
+            if (input_is_gamecontroller(c))
             {
                 /* Apply analog stick options */
                 n64_c[c].is_mouse = false;
@@ -178,9 +178,9 @@ void loop()
         if (n64_c[c].rpak != NULL)
         {
             if (n64_c[c].rpak->state == RUMBLE_START)
-                indev_apply_rumble(c, 0xFF);
+                input_apply_rumble(c, 0xFF);
             if (n64_c[c].rpak->state == RUMBLE_STOP)
-                indev_apply_rumble(c, 0x00);
+                input_apply_rumble(c, 0x00);
             n64_c[c].rpak->state = RUMBLE_APPLIED;
         }
 
@@ -221,7 +221,7 @@ void loop()
                 if (n64_c[c].rpak->state != RUMBLE_APPLIED)
                 {
                     n64_c[c].rpak->state = RUMBLE_APPLIED;
-                    indev_apply_rumble(c, 0x00);
+                    input_apply_rumble(c, 0x00);
                 }
             }
 
@@ -357,10 +357,10 @@ void loop()
             for (int i = 0; i < MAX_CONTROLLERS; i++)
             {
                 offset += sprintf(msg + offset, "1:0x%04x/0x%04x\n%.15s\n%.15s\n",
-                                  indev_get_id_vendor(i),
-                                  indev_get_id_product(i),
-                                  indev_get_manufacturer_string(i),
-                                  indev_get_product_string(i));
+                                  input_get_id_vendor(i),
+                                  input_get_id_product(i),
+                                  input_get_manufacturer_string(i),
+                                  input_get_product_string(i));
             }
             n64_virtualpak_write_info_1(msg);
             n64_virtualpak_update(n64_c[c].mempack);

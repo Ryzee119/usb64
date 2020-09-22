@@ -26,17 +26,17 @@
 
 #include <Arduino.h>
 
-void indev_init();
-void indev_update_input_devices();
-bool indev_is_connected(int id);
-bool indev_is_mouse(int id);
-bool indev_is_gamecontroller(int id);
-uint16_t indev_get_id_product(int id);
-uint16_t indev_get_id_vendor(int id);
-const char *indev_get_manufacturer_string(int id);
-const char *indev_get_product_string(int id);
-uint16_t indev_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis, uint32_t max_axis,
+void input_init();
+void input_update_input_devices();
+bool input_is_connected(int id);
+bool input_is_mouse(int id);
+bool input_is_gamecontroller(int id);
+uint16_t input_get_id_product(int id);
+uint16_t input_get_id_vendor(int id);
+const char *input_get_manufacturer_string(int id);
+const char *input_get_product_string(int id);
+uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis, uint32_t max_axis,
                                        uint16_t *n64_buttons, int8_t *n64_x_axis, int8_t *n64_y_axis, bool *combo_pressed);
-void indev_apply_rumble(int id, uint8_t stength);
+void input_apply_rumble(int id, uint8_t stength);
 
 #endif

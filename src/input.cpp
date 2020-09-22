@@ -27,7 +27,7 @@
 #include "USBHost_t36.h"
 #include "usb64_conf.h"
 #include "n64_controller.h"
-#include "indev.h"
+#include "input.h"
 #include "printf.h"
 
 //USB Host Interface
@@ -93,9 +93,9 @@ typedef struct
 {
     void *driver;
     int type;
-} indev;
+} input;
 
-static indev input_devices[MAX_CONTROLLERS];
+static input input_devices[MAX_CONTROLLERS];
 
 static int _check_id(uint8_t id)
 {
@@ -107,7 +107,7 @@ static int _check_id(uint8_t id)
     return 1;
 }
 
-void indev_init()
+void input_init()
 {
     usbh.begin();
     for (int i = 0; i < MAX_CONTROLLERS; i++)
@@ -117,12 +117,12 @@ void indev_init()
     }
 }
 
-void indev_update_input_devices()
+void input_update_input_devices()
 {
     //Clear disconnected devices
     for (int i = 0; i < MAX_CONTROLLERS; i++)
     {
-        if (indev_is_connected(i) == 0)
+        if (input_is_connected(i) == 0)
         {
             if (input_devices[i].driver != NULL)
                 debug_print_status("Cleared device from slot %u\n", i);
@@ -198,7 +198,7 @@ void indev_update_input_devices()
 #endif
 }
 
-uint16_t indev_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis, uint32_t max_axis,
+uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis, uint32_t max_axis,
                                        uint16_t *n64_buttons, int8_t *n64_x_axis, int8_t *n64_y_axis, bool *combo_pressed)
 {
     uint32_t _buttons = 0;
@@ -207,7 +207,7 @@ uint16_t indev_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
     if (_check_id(id) == 0)
         return 0;
 
-    if (indev_is_gamecontroller(id))
+    if (input_is_gamecontroller(id))
     {
         JoystickController *joy = (JoystickController *)input_devices[id].driver;
         _buttons = joy->getButtons();
@@ -269,7 +269,7 @@ uint16_t indev_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
         }
     }
 #if (MAX_MICE >= 1)
-    else if (indev_is_mouse(id))
+    else if (input_is_mouse(id))
     {
         MouseController *mouse = (MouseController *)input_devices[id].driver;
         _buttons = mouse->getButtons();
@@ -316,30 +316,30 @@ uint16_t indev_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
     return 1;
 }
 
-void indev_apply_rumble(int id, uint8_t stength)
+void input_apply_rumble(int id, uint8_t stength)
 {
     JoystickController *joy;
-    if (indev_is_gamecontroller(id))
+    if (input_is_gamecontroller(id))
     {
         joy = (JoystickController *)input_devices[id].driver;
         joy->setRumble(stength, stength, 20);
     }
 }
 
-bool indev_is_connected(int id)
+bool input_is_connected(int id)
 {
     bool connected = false;
     if (_check_id(id) == 0)
         return false;
 
-    if (indev_is_gamecontroller(id))
+    if (input_is_gamecontroller(id))
     {
         JoystickController *joy = (JoystickController *)input_devices[id].driver;
         if (*joy == true)
             connected = true;
     }
 
-    else if (indev_is_mouse(id))
+    else if (input_is_mouse(id))
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         if (*mouse == true)
@@ -349,7 +349,7 @@ bool indev_is_connected(int id)
     return connected;
 }
 
-bool indev_is_mouse(int id)
+bool input_is_mouse(int id)
 {
     if (_check_id(id) == 0)
         return false;
@@ -358,7 +358,7 @@ bool indev_is_mouse(int id)
     return false;
 }
 
-bool indev_is_gamecontroller(int id)
+bool input_is_gamecontroller(int id)
 {
     if (_check_id(id) == 0)
         return false;
@@ -367,17 +367,17 @@ bool indev_is_gamecontroller(int id)
     return false;
 }
 
-uint16_t indev_get_id_product(int id)
+uint16_t input_get_id_product(int id)
 {
-    if (_check_id(id) == 0 || indev_is_connected(id) == 0)
+    if (_check_id(id) == 0 || input_is_connected(id) == 0)
         return 0;
 
-    if (indev_is_gamecontroller(id))
+    if (input_is_gamecontroller(id))
     {
         JoystickController *joy = (JoystickController *)input_devices[id].driver;
         return joy->idProduct();
     }
-    else if (indev_is_mouse(id))
+    else if (input_is_mouse(id))
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         return mouse->idProduct();
@@ -386,17 +386,17 @@ uint16_t indev_get_id_product(int id)
     return 0;
 }
 
-uint16_t indev_get_id_vendor(int id)
+uint16_t input_get_id_vendor(int id)
 {
-    if (_check_id(id) == 0 || indev_is_connected(id) == 0)
+    if (_check_id(id) == 0 || input_is_connected(id) == 0)
         return 0;
 
-    if (indev_is_gamecontroller(id))
+    if (input_is_gamecontroller(id))
     {
         JoystickController *joy = (JoystickController *)input_devices[id].driver;
         return joy->idVendor();
     }
-    else if (indev_is_mouse(id))
+    else if (input_is_mouse(id))
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         return mouse->idVendor();
@@ -405,18 +405,18 @@ uint16_t indev_get_id_vendor(int id)
     return 0;
 }
 
-const char *indev_get_manufacturer_string(int id)
+const char *input_get_manufacturer_string(int id)
 {
     static const char NC[] = "NOT CONNECTED";
-    if (_check_id(id) == 0 || indev_is_connected(id) == false)
+    if (_check_id(id) == 0 || input_is_connected(id) == false)
         return NC;
 
-    if (indev_is_gamecontroller(id))
+    if (input_is_gamecontroller(id))
     {
         JoystickController *joy = (JoystickController *)input_devices[id].driver;
         return (const char *)joy->manufacturer();
     }
-    else if (indev_is_mouse(id))
+    else if (input_is_mouse(id))
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         return (const char *)mouse->manufacturer();
@@ -425,18 +425,18 @@ const char *indev_get_manufacturer_string(int id)
     return NC;
 }
 
-const char *indev_get_product_string(int id)
+const char *input_get_product_string(int id)
 {
     static const char NC[] = "";
-    if (_check_id(id) == 0 || indev_is_connected(id) == 0)
+    if (_check_id(id) == 0 || input_is_connected(id) == 0)
         return NC;
 
-    if (indev_is_gamecontroller(id))
+    if (input_is_gamecontroller(id))
     {
         JoystickController *joy = (JoystickController *)input_devices[id].driver;
         return (const char *)joy->product();
     }
-    else if (indev_is_mouse(id))
+    else if (input_is_mouse(id))
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         return (const char *)mouse->product();
