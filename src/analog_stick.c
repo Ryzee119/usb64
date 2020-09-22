@@ -93,5 +93,41 @@ void apply_snap(float range, float *x, float *y)
 
 void apply_octa_correction(float *x, float *y)
 {
-    //Fixme
+    #define D2R(x) (x * 3.1415f/180.0f)
+    static const float m45 = MAG_AT_45DEG;
+    float angle = atanf(*y / *x); //-90 to +90deg
+    
+    if (angle < 0) angle += D2R(90); //Make it 0 to 90deg
+
+    //Build octagonal lines
+    float m1 = (0 - m45 * sin(D2R(45))) / (1 - m45 * cos(D2R(45)));
+    float c1 = -m1;
+    
+    float m2 = (m45 * sin(D2R(45)) - 1) / (m45 * cos(D2R(45)) - 0);
+    float c2 = 1.0f;
+    
+    //Draw 3rd line from the input angle
+    float x3 = cos(angle);
+    float y3 = sin(angle);
+    float m3 = y3 / x3;
+    
+    //Calculate intersection between 3rd line and octagon.
+    float xint, yint;
+    if (angle < D2R(45))
+    {
+        xint = (0 - c1) / (m1 - m3);
+        yint = m1 * xint + c1;
+    }
+    else
+    {
+        xint = (0 - c2) / (m2 - m3);
+        yint = m2 * xint + c2;
+    }
+    
+    float mag = sqrtf(xint * xint + yint * yint);
+    
+    printf("mag: %f\n", mag);
+    //Output corrected x,y
+    *x *= mag;
+    *y *= mag;
 }
