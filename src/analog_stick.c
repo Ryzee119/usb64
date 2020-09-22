@@ -95,6 +95,24 @@ void apply_snap(float range, float *x, float *y)
 //This should be normalised/deadzone corrected before entering this function.
 void apply_octa_correction(float *x, float *y)
 {
+    /* A 90 degree quadrant of the octa output.
+     * The calculation is performed between 0-45degree section as it is mirror for each quadrant.
+     *                          
+     *  ####                    
+     *      #####               
+     *           #####          
+     *                ##        
+     *                @ #       
+     *              @@   #      
+     *            @@      @ <-xint,yint  
+     *     m45->@@       / #    
+     *        @@     /      #   
+     *      @@    /<-out_mag # <- octa line (m1*x + c1)
+     *    @@   /              # 
+     *  @@  /  | angle         #
+     * 
+     * 0                      1.0
+    */
     #define D2R(x) (x * 3.1415f/180.0f)
     static const float m45 = MAG_AT_45DEG;
     float angle = atanf(*y / *x); //-90 to +90deg
@@ -119,9 +137,9 @@ void apply_octa_correction(float *x, float *y)
     float yint = m1 * xint + c1;
 
     //Calculate magnitude of line until intersection.
-    float mag = sqrtf(xint * xint + yint * yint);
+    float out_mag = sqrtf(xint * xint + yint * yint);
 
     //Output corrected x,y
-    *x *= mag;
-    *y *= mag;
+    *x *= out_mag;
+    *y *= out_mag;
 }
