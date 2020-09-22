@@ -91,20 +91,23 @@ void apply_snap(float range, float *x, float *y)
     }
 }
 
+//Input range is expected to a circle with radius 1.00f.
+//This should be normalised/deadzone corrected before entering this function.
 void apply_octa_correction(float *x, float *y)
 {
     #define D2R(x) (x * 3.1415f/180.0f)
     static const float m45 = MAG_AT_45DEG;
     float angle = atanf(*y / *x); //-90 to +90deg
     
-    if (angle < 0) angle += D2R(90); //Make it 0 to 90deg
+    //Make it 0 to 90deg
+    if (angle < 0) angle += D2R(90);
+    
+    //Make it 0 to 45deg
+    if (angle > D2R(45)) angle = 90 - angle;
 
-    //Build octagonal lines
+    //Build octagonal line for intersection
     float m1 = (0 - m45 * sin(D2R(45))) / (1 - m45 * cos(D2R(45)));
     float c1 = -m1;
-    
-    float m2 = (m45 * sin(D2R(45)) - 1) / (m45 * cos(D2R(45)) - 0);
-    float c2 = 1.0f;
     
     //Draw 3rd line from the input angle
     float x3 = cos(angle);
@@ -113,20 +116,12 @@ void apply_octa_correction(float *x, float *y)
     
     //Calculate intersection between 3rd line and octagon.
     float xint, yint;
-    if (angle < D2R(45))
-    {
-        xint = (0 - c1) / (m1 - m3);
-        yint = m1 * xint + c1;
-    }
-    else
-    {
-        xint = (0 - c2) / (m2 - m3);
-        yint = m2 * xint + c2;
-    }
-    
+    xint = (0 - c1) / (m1 - m3);
+    yint = m1 * xint + c1;
+
+    //Calculate magnitude of 3rd line until intersection
     float mag = sqrtf(xint * xint + yint * yint);
-    
-    printf("mag: %f\n", mag);
+
     //Output corrected x,y
     *x *= mag;
     *y *= mag;
