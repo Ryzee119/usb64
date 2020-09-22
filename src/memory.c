@@ -126,7 +126,7 @@ void memory_free_item(void *ptr)
             return;
         }
     }
-    debug_print_memory("WARNING: %s: Did not free 0x%08x\n", __FUNCTION__, sram[i].data);
+    debug_print_memory("WARNING: %s: Did not free 0x%08x\n", __FUNCTION__, ptr);
 }
 
 //Flush SRAM to flash memory if required
@@ -159,5 +159,5 @@ void memory_mark_dirty(void *ptr)
             return;
         }
     }
-    debug_print_error("ERROR: %s: Could not find 0x%08x\n", __FUNCTION__, sram[i].data);
+    debug_print_error("ERROR: %s: Could not find 0x%08x\n", __FUNCTION__, ptr);
 }
