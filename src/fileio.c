@@ -79,22 +79,23 @@ void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
         f_mount(&fs, "", 1);
     }
     //Trying open the file
-    FRESULT res;
-    UINT br;
-    FIL fil;
+    FRESULT res; UINT br; FIL fil;
     res = f_open(&fil, (const TCHAR *)filename, FA_WRITE | FA_CREATE_ALWAYS);
     if (res != FR_OK)
     {
         debug_print_error("ERROR: Could not open %s for WRITE\n", filename);
         return;
     }
-    //Cool, try write to the file
+    //File opened ok. Write to it.
+    //As the data might coming from memory mapped IO external RAM,
+    //I first buffer to internal RAM.
     uint8_t buffer[512];
     while (len > 0)
     {
-        uint32_t b = (len > sizeof(buffer)) ? (512) : len;
+        uint32_t b = (len > sizeof(buffer)) ? sizeof(buffer) : len;
         memcpy(buffer, data, b);
         res = f_write(&fil, buffer, b, &br);
+        if (res != FR_OK) break;
         data += b;
         len -= b;
     }
@@ -128,9 +129,7 @@ void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, 
         f_mount(&fs, "", 1);
     }
     //Trying open the file
-    FRESULT res;
-    UINT br;
-    FIL fil;
+    FRESULT res; UINT br; FIL fil;
     res = f_open(&fil, (const TCHAR *)filename, FA_READ);
     if (res != FR_OK)
     {
@@ -141,12 +140,15 @@ void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, 
     if (file_offset > 0)
         f_lseek(&fil, file_offset);
 
-    //Cool, try read the file
+    //File opened ok. Read from it.
+    //As the data might going to memory mapped IO external RAM,
+    //I first buffer to internal RAM.
     uint8_t buffer[512];
     while (len > 0)
     {
-        uint32_t b = (len > sizeof(buffer)) ? (512) : len;
+        uint32_t b = (len > sizeof(buffer)) ? sizeof(buffer) : len;
         res = f_read(&fil, buffer, b, &br);
+        if (res != FR_OK) break;
         memcpy(data, buffer, b);
         data += b;
         len -= b;
@@ -155,18 +157,6 @@ void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, 
     if (res != FR_OK)
     {
         debug_print_error("ERROR: Could not read %s with error %i\n", filename, res);
-        int attempts = 3;
-        while (res != FR_OK && attempts-- > 0)
-        {
-            f_lseek(&fil, 0);
-            res = f_read(&fil, data, len, &br);
-        }
-        f_close(&fil);
-        if (res != FR_OK)
-        {
-            debug_print_error("ERROR: Could not read %s with 3 attempts\n", filename);
-            memset(data, 0x00, len);
-        }
     }
     else
     {
