@@ -22,10 +22,10 @@
      inkscape:current-layer="g2848"
      inkscape:window-maximized="1"
      inkscape:window-y="-8"
-     inkscape:window-x="-8"
-     inkscape:cy="514.22851"
-     inkscape:cx="654"
-     inkscape:zoom="1.0610557"
+     inkscape:window-x="1912"
+     inkscape:cy="455.41177"
+     inkscape:cx="583.70334"
+     inkscape:zoom="0.75027968"
      showgrid="false"
      id="namedview2852"
      inkscape:window-height="976"
@@ -37,7 +37,8 @@
      objecttolerance="10"
      borderopacity="1"
      bordercolor="#666666"
-     pagecolor="#ffffff" />
+     pagecolor="#ffffff"
+     inkscape:document-rotation="0" />
   <metadata
      id="metadata2">
     <rdf:RDF>
@@ -243,34 +244,6 @@
        width="203"
        y="817"
        x="569" />
-    <g
-       id="g76"
-       fill="#7f7f7f">
-      <rect
-         id="rect68"
-         height="169"
-         width="149"
-         y="684"
-         x="1235" />
-      <rect
-         id="rect70"
-         height="21"
-         width="141"
-         y="669"
-         x="1267" />
-      <rect
-         id="rect72"
-         height="12"
-         width="141"
-         y="842"
-         x="1267" />
-      <rect
-         id="rect74"
-         height="11"
-         width="45"
-         y="670"
-         x="1226" />
-    </g>
     <g
        id="g88"
        fill="#ffd966">
@@ -3996,14 +3969,15 @@
        stroke="#c55a11"
        fill-rule="evenodd"
        fill="none"
-       d="m0 0 1.05e-4 45.86"
-       transform="matrix(1 0 0 -1 530 950.9)" />
+       d="m 570,950.9 10e-5,-45.86" />
     <text
        id="text1746"
        font-weight="400"
        font-size="24px"
        font-family="Calibri, Calibri_MSFontService, sans-serif"
-       transform="rotate(-90 763.2 244.8)">DEBUG TX</text>
+       transform="rotate(-90)"
+       x="-1008"
+       y="558.40002">DEBUG TX</text>
     <g
        id="g1780"
        stroke-width="8.001"
@@ -6002,17 +5976,18 @@
        fill="#8faadc"
        d="m328 831h222.2v8h-222.2zm218.2-8.001 24 12-24 12z" />
     <text
+       y="1114.5576"
+       x="237.18584"
        id="text2752"
        font-weight="400"
        font-size="24px"
-       font-family="Calibri, Calibri_MSFontService, sans-serif"
-       transform="translate(199.2 822)">u<tspan
+       font-family="Calibri, Calibri_MSFontService, sans-serif">u<tspan
    id="tspan2748"
-   y="0"
-   x="12.6678">sb64 Compatible USB</tspan><tspan
+   y="1114.5576"
+   x="249.85364">sb64 Compatible USB</tspan><tspan
    id="tspan2750"
-   y="29"
-   x="0">Controller</tspan></text>
+   y="1143.5576"
+   x="237.18584">Controller x 4</tspan></text>
     <path
        id="path2754"
        stroke-width="8.001"
@@ -6038,12 +6013,12 @@
        d="m1042 623v-23.58h174.7v-19.42" />
     <path
        id="path2760"
-       stroke-width="8.001"
+       stroke-width="7.92018"
        stroke-miterlimit="8"
-       stroke="#000"
+       stroke="#000000"
        fill-rule="evenodd"
        fill="none"
-       d="m532 623v-23.58h199v-19.42" />
+       d="M 532,623 V 599.42 H 727 V 580" />
     <path
        id="path2762"
        fill="#8faadc"
@@ -6259,5 +6234,140 @@
        id="path2846"
        fill="#f00"
        d="m 1245,513.07992 10e-5,36.47873 -8.001,1e-4 -10e-5,-36.47873 z m 8.001,32.51149 -12,23.80342 -12,-23.80342 z" />
+    <g
+       transform="matrix(-0.38849169,0,0,-0.38849169,1782.4917,1002.8432)"
+       id="g1453">
+      <path
+         inkscape:label="Grey Part"
+         style="display:inline;opacity:1;fill:#787880;fill-opacity:1;stroke:#ffffff;stroke-width:0.833143;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m 837.77413,832.1251 c -42.05387,-0.70917 -42.86031,-0.77364 -49.43119,-4.01808 -9.02132,-4.45298 -18.76878,-14.47291 -23.12844,-23.77524 l -3.59111,-7.66297 -0.39587,-111.22005 -0.39587,-111.22027 h 307.31185 307.3119 v 100.19839 100.1984 l -32.3975,10e-4 c -17.8181,7.9e-4 -64.3001,0.39587 -103.2933,0.88279 l -70.8959,0.88279 -25.1728,27.87018 -25.1728,27.87 -23.3784,-0.36194 -23.379,-0.36194 -3.1443,-9.35187 c -2.6128,-7.76663 -4.332,-10.41766 -10.1422,-15.63987 l -6.9979,-6.28801 -21.3753,-0.0622 -21.3758,-0.0622 -20.70745,16.64612 -20.70798,16.64617 -43.41905,-0.23186 c -23.8806,-0.11876 -62.65722,-0.55422 -86.17079,-0.95009 z"
+         id="path13076"
+         inkscape:connector-curvature="0" />
+      <path
+         inkscape:label="Red Part"
+         style="display:inline;opacity:1;fill:#c7282d;fill-opacity:1;stroke:#ffffff;stroke-width:0.833143;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m 761.23261,507.59888 0.39587,-69.16776 4.38285,-8.90001 c 5.33294,-10.827 14.73259,-19.71876 25.40752,-24.03199 l 7.61711,-3.07761 h 269.86764 269.8676 l 8.8958,4.21489 c 10.6653,5.053 18.9933,13.19408 23.7058,23.173 l 3.4724,7.34787 0.3958,69.80488 0.3959,69.80483 H 1068.2713 760.90517 Z"
+         id="path13078"
+         inkscape:connector-curvature="0" />
+      <text
+         transform="scale(-1)"
+         inkscape:label="SDCARD"
+         xml:space="preserve"
+         style="font-style:normal;font-weight:normal;font-size:99.519px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;display:inline;opacity:1;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:6.21997"
+         x="-1294.8524"
+         y="-452.38956"
+         id="text13106"><tspan
+           sodipodi:role="line"
+           id="tspan13104"
+           x="-1294.8524"
+           y="-452.38956"
+           style="fill:#ffffff;stroke-width:6.21997">SD CARD</tspan></text>
+    </g>
+    <g
+       fill="#7f7f7f"
+       id="g76"
+       transform="translate(5.390214,0.50582749)">
+      <rect
+         x="1235"
+         y="684"
+         width="149"
+         height="169"
+         id="rect68" />
+      <rect
+         x="1267"
+         y="669"
+         width="141"
+         height="21"
+         id="rect70" />
+      <rect
+         x="1267"
+         y="842"
+         width="141"
+         height="12"
+         id="rect72" />
+      <rect
+         x="1226"
+         y="670"
+         width="45"
+         height="11"
+         id="rect74" />
+    </g>
+    <path
+       id="path2311-3"
+       d="M 1398.5198,908.53854 V 946.9918"
+       style="fill:none;stroke:#7f7f7f;stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:24px;line-height:1.25;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none"
+       x="-992.51923"
+       y="1390.7537"
+       id="text2330"
+       transform="rotate(-90)"><tspan
+         sodipodi:role="line"
+         id="tspan2328"
+         x="-992.51923"
+         y="1390.7537"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:24px;font-family:Calibri;-inkscape-font-specification:Calibri">ENABLE</tspan></text>
+    <path
+       style="fill:none;stroke:#4472c4;stroke-width:8.38298;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 844.11359,579.53243 v 42.22309"
+       id="path2311-3-5" />
+    <text
+       transform="rotate(-90)"
+       id="text2330-8"
+       y="835.64795"
+       x="-613.81598"
+       style="font-style:normal;font-weight:normal;font-size:24px;line-height:1.25;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:24px;font-family:Calibri;-inkscape-font-specification:Calibri"
+         y="835.64795"
+         x="-613.81598"
+         id="tspan2328-0"
+         sodipodi:role="line">ENABLE</tspan></text>
+    <text
+       id="text2387"
+       y="1227.4963"
+       x="209.521"
+       style="font-style:normal;font-weight:normal;font-size:18.6667px;line-height:1.25;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none"
+       xml:space="preserve"><tspan
+         y="1227.4963"
+         x="209.521"
+         id="tspan2385"
+         sodipodi:role="line"
+         style="font-size:18.6667px">ENABLE = Pull that pin to ground to enable that Interface</tspan></text>
+    <path
+       id="path2269"
+       d="m 332,831 v 125.42114 l -0.41413,-2.66568"
+       style="fill:none;stroke:#8faadc;stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <rect
+       y="952.42261"
+       x="261.61047"
+       height="84.635109"
+       width="145.94557"
+       id="rect2271"
+       style="fill:none;stroke:#8faadc;stroke-width:8;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       style="fill:none;stroke:#8faadc;stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 282.47289,1036.0073 v 52.5546 l -0.46123,-1.1169"
+       id="path2269-0" />
+    <path
+       id="path2269-0-7"
+       d="m 318.33446,1036.0073 v 52.5546 l -0.46123,-1.1169"
+       style="fill:none;stroke:#8faadc;stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       style="fill:none;stroke:#8faadc;stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 354.32104,1036.0073 v 52.5546 l -0.46123,-1.1169"
+       id="path2269-0-7-0" />
+    <path
+       id="path2269-0-7-0-2"
+       d="m 389.64121,1036.0073 v 52.5546 l -0.46123,-1.1169"
+       style="fill:none;stroke:#8faadc;stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <text
+       font-family="Calibri, Calibri_MSFontService, sans-serif"
+       font-size="24px"
+       font-weight="400"
+       id="text2752-8"
+       x="279.51639"
+       y="1001.9526">USB2.0 Hub</text>
   </g>
 </svg>

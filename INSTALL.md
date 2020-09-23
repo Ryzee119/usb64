@@ -1,8 +1,8 @@
 # Hardware Setup
-* Install a W25Q128 SPI Flash Chip on the designated footprint.
+* Install up to two PSRAM chips on the designated footprint. Note one is optional, two is recommended.
 * Install a 5 x 0.1" pin header on the USB OTG Header.  
 
-<img src="./images/install_setup.png" alt="setup" width="50%"/>
+<img src="./images/install_setup.png" alt="setup" width="75%"/>
 
 # Quick Start
 * Program the usb64 as per [compilation instructions](./COMPILE.md).
@@ -14,6 +14,7 @@
 <img src="./images/install_basic.png" alt="basic" width="75%"/>
 
 # Advanced Usages
+* Use a USB hub to connect up to four usb64 compatible controllers. An externally powered hub may be required.  
 * Hardwire a custom N64 controller to the designated IO (Each digital pin is internally pulled-up, Analog input respect to VCC, VCC/2 is central position).
 * Hook up a Raspberry Pi or similar via I2C and send button presses via I2C.  
 
