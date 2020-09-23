@@ -65,7 +65,9 @@ MouseController *mousecontroller[] = {&mouse1, &mouse2, &mouse3, &mouse4};
 #endif
 
 #define MOUSE 0
-#define GAMECONTROLLER 1
+#define USB_GAMECONTROLLER 1
+#define HW_GAMECONTROLLER 2
+#define I2C_GAMECONTROLLER 3
 
 typedef struct
 {
@@ -91,7 +93,7 @@ void input_init()
     for (int i = 0; i < MAX_CONTROLLERS; i++)
     {
         input_devices[i].driver = NULL;
-        input_devices[i].type = GAMECONTROLLER;
+        input_devices[i].type = USB_GAMECONTROLLER;
     }
 }
 
@@ -131,7 +133,7 @@ void input_update_input_devices()
                     if (input_devices[j].driver == NULL)
                     {
                         input_devices[j].driver = gamecontroller[i];
-                        input_devices[j].type = GAMECONTROLLER;
+                        input_devices[j].type = USB_GAMECONTROLLER;
                         debug_print_status("Registered gamecontroller to slot %u\n", j);
                         break;
                     }
@@ -245,6 +247,23 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
         default:
             break;
         }
+
+        //Use 2.4 GOODHEAD layout, axis not inverted
+        if(input_is_dualstick_mode(id) && (id % 2 == 0))
+        {
+            //Main controller mapping overwritten for dualstick mode
+            *n64_buttons &= ~N64_Z;
+            if (*n64_buttons & N64_LB)
+                *n64_buttons |= N64_Z;
+            *n64_x_axis = _axis[2] * 100 / 32768;
+            *n64_y_axis = _axis[3] * 100 / 32768;
+        }
+        else if(input_is_dualstick_mode(id) && (id % 2 != 0))
+        {
+            //Mirror controller mapping overwritten for dualstick mode
+            if (*n64_buttons & N64_RB)
+                *n64_buttons |= N64_Z;
+        }
     }
 #if (MAX_MICE >= 1)
     else if (input_is_mouse(id))
@@ -340,7 +359,7 @@ bool input_is_gamecontroller(int id)
 {
     if (_check_id(id) == 0)
         return false;
-    if (input_devices[id].type == GAMECONTROLLER)
+    if (input_devices[id].type == USB_GAMECONTROLLER)
         return true;
     return false;
 }
@@ -421,4 +440,50 @@ const char *input_get_product_string(int id)
     }
 
     return NC;
+}
+
+void input_enable_dualstick_mode(int id)
+{
+    if (_check_id(id) == 0)
+        return;
+
+    //Only player 1 or player 3
+    if ((id != 0 && id != 2) || id + 1 >= MAX_CONTROLLERS)
+        return;
+
+    //Copy driver into the next slot to make a 'fake' input
+    memcpy(&input_devices[id + 1], &input_devices[id], sizeof(input));
+
+}
+
+void input_disable_dualstick_mode(int id)
+{
+    if (_check_id(id) == 0)
+        return;
+
+    if ((id != 0 && id != 2) || id + 1 >= MAX_CONTROLLERS)
+        return;
+
+    //Clear the 'fake' controller driver
+    input_devices[id + 1].driver = NULL;
+
+}
+
+bool input_is_dualstick_mode(int id)
+{
+    if (_check_id(id) == 0)
+        return false;
+
+    //Check if this is a 'fake' mirror of a main controller
+    if ((id == 1 || id == 3) && input_devices[id].driver == input_devices[id - 1].driver)
+        return true;
+
+    if (id + 1 >= MAX_CONTROLLERS)
+        return false;
+
+    //Check if this is a main controller that is mirrored
+    if (input_devices[id].driver == input_devices[id + 1].driver)
+        return true;
+    
+    return false;
 }

@@ -22,6 +22,9 @@ const char *input_get_product_string(int id);
 uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis, uint32_t max_axis,
                                        uint16_t *n64_buttons, int8_t *n64_x_axis, int8_t *n64_y_axis, bool *combo_pressed);
 void input_apply_rumble(int id, uint8_t stength);
+void input_enable_dualstick_mode(int id);
+void input_disable_dualstick_mode(int id);
+bool input_is_dualstick_mode(int id);
 
 #ifdef __cplusplus
 }

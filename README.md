@@ -10,10 +10,10 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - [x] Transferpak emulation.
 - [x] N64 mouse emulation (Use a USB Mouse!).
 - [x] Configurable deadzones and sensitivity from the N64 Console.
+- [x] True dual analog sticks with GoldenEye and Perfect Dark.
 - [x] SD card driver with FATFS support for storage/backup of Gameboy ROMS, mempaks etc.
 
 ## Todo
-- [ ] True dual analog sticks with GoldenEye and Perfect Dark.
 - [ ] Raspberry Pi interface or equivalent for all other USB controllers.
 - [ ] A hardwired controller interface.
 - [ ] More inbuilt USB controller drivers.
@@ -33,6 +33,7 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - Back + LB = Insert Rumblepak
 - Back + RB = Insert Transferpak
 - Back + Start = Select *virtual pak* (Use in-game mempak managers to configure the device)
+- Back + B = Switch to true dual-analog stick more for GoldenEye 007/Perfect Dark
 - Back + A = Backup buffered memory to SD Card **(DO THIS BEFORE POWER OFF!)**
 
 ## Needed Parts

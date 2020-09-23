@@ -136,14 +136,23 @@ void loop()
                 n64_c[c].is_mouse = false;
                 n64_settings *settings = n64_settings_get();
                 float x, y, range;
-                astick_apply_deadzone(&x, &y, n64_x_axis[c] / 100.0f, n64_y_axis[c] / 100.0f, settings->deadzone[c] / 10.0f, 0.05f);
-
-                range = astick_apply_sensitivity(settings->sensitivity[c], &x, &y);
-
-                if (settings->snap_axis[c])
+                astick_apply_deadzone(&x, &y, n64_x_axis[c] / 100.0f,
+                                              n64_y_axis[c] / 100.0f,
+                                              settings->deadzone[c] / 10.0f, 0.05f);
+                
+                if(input_is_dualstick_mode(c) && (c % 2) == 0)
+                {
+                    //If in dual analog stick mode, force lowest sensitivity. Seems too sensitive otherwise
+                    range = astick_apply_sensitivity(0, &x, &y);
+                }
+                else
+                {
+                    range = astick_apply_sensitivity(settings->sensitivity[c], &x, &y);
+                    if (settings->snap_axis[c])
                     astick_apply_snap(range, &x, &y);
+                    astick_apply_octa_correction(&x, &y);
+                }
 
-                astick_apply_octa_correction(&x, &y);
                 n64_x_axis[c] = x * 100.0f;
                 n64_y_axis[c] = y * 100.0f;
             }
@@ -173,6 +182,22 @@ void loop()
             n64_c[c].rpak->state = RUMBLE_APPLIED;
         }
 
+        //Handle dual stick mode toggling
+        static uint32_t dual_stick_toggle[MAX_CONTROLLERS] = {0};
+        if (n64_combo && (n64_buttons[c] & N64_B))
+        {
+            if (dual_stick_toggle[c] == 0)
+            {
+                input_is_dualstick_mode(c) ? input_disable_dualstick_mode(c) : input_enable_dualstick_mode(c);
+                debug_print_status("Dual stick mode for %u is %u\n", c, input_is_dualstick_mode(c));
+                dual_stick_toggle[c] = 1;
+            }
+        }
+        else
+        {
+            dual_stick_toggle[c] = 0;
+        }
+        
         //Handle button combinations
         static uint32_t timer_peri_change[MAX_CONTROLLERS] = {0};
         if (n64_combo && (n64_buttons[c] & N64_DU ||
@@ -359,7 +384,7 @@ void loop()
 
         //If you pressed the combo to flush sram to flash, handle it here
         static uint32_t flushing[MAX_CONTROLLERS] = {0};
-        if (n64_combo && (n64_buttons[c] & (N64_A | N64_B)))
+        if (n64_combo && (n64_buttons[c] & N64_A))
         {
             if (!flushing[c])
             {
