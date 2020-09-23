@@ -1,31 +1,20 @@
-/* MIT License
- * 
- * Copyright (c) [2020] [Ryan Wendland]
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// Copyright 2020, Ryan Wendland, usb64
+// SPDX-License-Identifier: MIT
 
 #include <Arduino.h>
 #include "usb64_conf.h"
 #include "ff.h"
 #include "printf.h"
 FATFS fs;
+
+void fileio_init()
+{
+    if (fs.fs_type == 0)
+    {
+        debug_print_status("FILEIO: Mounting fs\n");
+        f_mount(&fs, "", 1);
+    }
+}
 /*
  * Function: Returns are array of strings for file the root directory up to max.
  * WARNING: This allocates heap memory, and must be free'd by user.
@@ -61,7 +50,7 @@ uint32_t fileio_list_directory(char **list, uint32_t max)
 }
 
 /*
- * Function: Backup a SRAM file to non-volatile storage.
+ * Function: Backup a ram data to non-volatile storage.
  * ----------------------------
  *   Returns: Void
  *
@@ -71,13 +60,6 @@ uint32_t fileio_list_directory(char **list, uint32_t max)
  */
 void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
 {
-    //This function will overwrite the file if it already exists.
-
-    if (fs.fs_type == 0)
-    {
-        debug_print_status("Mounting fs\n");
-        f_mount(&fs, "", 1);
-    }
     //Trying open the file
     FRESULT res;
     UINT br;
@@ -110,27 +92,23 @@ void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
     }
     else
     {
-        debug_print_status("Writing %s ok!\n", filename);
+        debug_print_status("FILEIO: Writing %s ok!\n", filename);
     }
 }
 
 /*
- * Function: Restore a SRAM file from non-volatile storage. This will return 0x00's if the file does not exist.
+ * Function: Restore a file from non-volatile storage into RAM. This will return 0x00's if the file does not exist.
  * Not speed critical
  * ----------------------------
  *   Returns: Void
  *
  *   filename: The filename of the saved file
+ *   file_offset: Number bytes from beginning of file
  *   data: Pointer to the array of data to be restored to
  *   len: Number of bytes to restore.
  */
 void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, uint32_t len)
 {
-    if (fs.fs_type == 0)
-    {
-        debug_print_status("Mounting fs\n");
-        f_mount(&fs, "", 1);
-    }
     //Trying open the file
     FRESULT res;
     UINT br;
@@ -138,7 +116,7 @@ void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, 
     res = f_open(&fil, (const TCHAR *)filename, FA_READ);
     if (res != FR_OK)
     {
-        debug_print_status("WARNING: Could not open %s for READ\n", filename);
+         debug_print_status("FILEIO: WARNING: Could not open %s for READ\n", filename);
         memset(data, 0x00, len);
         return;
     }
@@ -168,6 +146,6 @@ void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, 
     }
     else
     {
-        debug_print_status("Reading %s for %u bytes ok!\n", filename, bytes_read);
+         debug_print_status("FILEIO: Reading %s for %u bytes ok!\n", filename, bytes_read);
     }
 }

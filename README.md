@@ -4,18 +4,18 @@
 A project developed to use USB controllers on the Nintendo 64 console.  
 Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee119/usb64/releases).  
 
-- [x] N64 controller emulation.
+- [x] N64 controller emulation (up to four controllers at once!).
 - [x] Rumblepak emulation.
-- [x] Mempak emulation with 4 selectable banks. Technically unlimited.
+- [x] Mempak emulation with four selectable banks. Technically unlimited.
 - [x] Transferpak emulation.
 - [x] N64 mouse emulation (Use a USB Mouse!).
 - [x] Configurable deadzones and sensitivity from the N64 Console.
-- [x] SD card driver with FATFS support for storage of Gameboy ROMS, mempaks etc.
-- [x] Raspberry Pi interface or equivalent for all other USB controllers.
-- [x] A hardwired controller interface.
+- [x] SD card driver with FATFS support for storage/backup of Gameboy ROMS, mempaks etc.
 
 ## Todo
 - [ ] True dual analog sticks with GoldenEye and Perfect Dark.
+- [ ] Raspberry Pi interface or equivalent for all other USB controllers.
+- [ ] A hardwired controller interface.
 - [ ] More inbuilt USB controller drivers.
 - [ ] Gameboy Camera Support.
 - [ ] Touch LCD Support.
@@ -44,6 +44,7 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 | 2 | 64Mbit PSRAM  SOIC-8 | https://www.pjrc.com/store/psram.html |
 | 4 | N64 Controller Extensions | [AliExpress](https://www.aliexpress.com/wholesale?catId=0&SearchText=n64%20controller%20extension) |
 | 1 | Case | To do |
+| 1 | PCB breakout board | To do |
 
 Note: PSRAM model numbers are IPS6404L-SQ-SPN or ESP-PSRAM64H.
 
