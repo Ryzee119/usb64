@@ -54,6 +54,7 @@ void n64_virtualpak_read32(uint16_t address, uint8_t *rx_buff);
 void n64_virtualpak_write32(uint16_t address, uint8_t *tx_buff);
 void n64_virtualpak_write_info_1(char* msg);
 void n64_virtualpak_write_info_2(char* msg);
+uint8_t n64_virtualpak_get_controller_page(void);
 
 #ifdef __cplusplus
 }

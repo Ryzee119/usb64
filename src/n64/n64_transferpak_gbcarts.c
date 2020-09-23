@@ -27,10 +27,8 @@
  * Tranferpak emulation is my own RE.
  */
 
-#include <stdint.h>
-#include <string.h>
-#include "stdio.h"
-
+#include <Arduino.h>
+#include "printf.h"
 #include "n64_mempak.h"
 #include "n64_virtualpak.h"
 #include "n64_settings.h"
@@ -218,15 +216,17 @@ static void gb_write_cart(uint16_t addr, gameboycart *gb, uint8_t *inBuffer)
             if (mbc == 3 && gb->selected_ram_bank >= 0x08)
             {
                 gb->rtc[gb->selected_ram_bank - 0x08] = val;
+                n64hal_rtc_write(&gb->rtc_bits.high, &gb->rtc_bits.yday,
+                                 &gb->rtc_bits.hour, &gb->rtc_bits.min, &gb->rtc_bits.sec);
                 debug_print_tpak("TPAK: MBC%u - RTC Write Reg %02x, Val: %u\n", mbc, gb->selected_ram_bank, val);
             }
             else if (gb->cart_mode_select && gb->selected_ram_bank < gb->num_ram_banks)
             {
-                n64hal_ram_write(inBuffer, gb->ram, addr - CART_RAM_ADDR + (gb->selected_ram_bank * CRAM_BANK_SIZE), 32);
+                n64hal_buffered_write(inBuffer, gb->ram, addr - CART_RAM_ADDR + (gb->selected_ram_bank * CRAM_BANK_SIZE), 32);
             }
             else if (gb->num_ram_banks)
             {
-                n64hal_ram_write(inBuffer, gb->ram, addr - CART_RAM_ADDR, 32);
+                n64hal_buffered_write(inBuffer, gb->ram, addr - CART_RAM_ADDR, 32);
             }
         }
         return;
@@ -243,7 +243,7 @@ static void gb_read_cart(uint16_t addr, gameboycart *gb, uint8_t *outBuffer)
     case 0x1:
     case 0x2:
     case 0x3:
-        n64hal_ram_read(outBuffer, gb->rom, addr, 32);
+        n64hal_buffered_read(outBuffer, gb->rom, addr, 32);
         return;
 
     case 0x4:
@@ -252,11 +252,11 @@ static void gb_read_cart(uint16_t addr, gameboycart *gb, uint8_t *outBuffer)
     case 0x7:
         if (mbc == 1 && gb->cart_mode_select)
         {
-            n64hal_ram_read(outBuffer, gb->rom, addr + ((gb->selected_rom_bank & 0x1F) - 1) * ROM_BANK_SIZE, 32);
+            n64hal_buffered_read(outBuffer, gb->rom, addr + ((gb->selected_rom_bank & 0x1F) - 1) * ROM_BANK_SIZE, 32);
         }
         else
         {
-            n64hal_ram_read(outBuffer, gb->rom, addr + (gb->selected_rom_bank - 1) * ROM_BANK_SIZE, 32);
+            n64hal_buffered_read(outBuffer, gb->rom, addr + (gb->selected_rom_bank - 1) * ROM_BANK_SIZE, 32);
         }
         return;
 
@@ -266,16 +266,18 @@ static void gb_read_cart(uint16_t addr, gameboycart *gb, uint8_t *outBuffer)
         {
             if (mbc == 3 && gb->selected_ram_bank >= 0x08)
             {
+                n64hal_rtc_read(&gb->rtc_bits.high, &gb->rtc_bits.yday,
+                                &gb->rtc_bits.hour, &gb->rtc_bits.min, &gb->rtc_bits.sec);
                 memset(outBuffer, gb->rtc[gb->selected_ram_bank - 0x08], 32);
                 debug_print_tpak("TPAK: MBC%u - RTC Read Reg %02x\n", mbc, gb->selected_ram_bank);
             }
             else if ((gb->cart_mode_select || mbc != 1) && gb->selected_ram_bank < gb->num_ram_banks)
             {
-                n64hal_ram_read(outBuffer, gb->ram, addr - CART_RAM_ADDR + (gb->selected_ram_bank * CRAM_BANK_SIZE), 32);
+                n64hal_buffered_read(outBuffer, gb->ram, addr - CART_RAM_ADDR + (gb->selected_ram_bank * CRAM_BANK_SIZE), 32);
             }
             else
             {
-                n64hal_ram_read(outBuffer, gb->ram, addr - CART_RAM_ADDR, 32);
+                n64hal_buffered_read(outBuffer, gb->ram, addr - CART_RAM_ADDR, 32);
             }
         }
         return;

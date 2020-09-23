@@ -35,8 +35,8 @@ extern "C" {
 #define N64_INPUT 2
 
 //RTC wrapper prototypes (For gameboy roms with RTC, i.e Pokemon games)
-void n64hal_rtc_read(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
-void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst);
+void n64hal_rtc_read(uint8_t *day_high, uint8_t *day_low, uint8_t *h, uint8_t *m, uint8_t *s);
+void n64hal_rtc_write(uint8_t *day_high, uint8_t *day_low, uint8_t *h, uint8_t *m, uint8_t *s);
   
 //Timer wrappers
 uint32_t n64hal_hs_tick_get_speed();
@@ -45,8 +45,8 @@ void n64hal_hs_tick_reset();
 uint32_t n64hal_hs_tick_get();
   
 //RAM access wrappers
-void n64hal_ram_read(void *rx_buff, void *src, uint32_t offset, uint32_t len);
-void n64hal_ram_write(void *tx_buff, void *dst, uint32_t offset, uint32_t len);
+void n64hal_buffered_read(void *rx_buff, void *src, uint32_t offset, uint32_t len);
+void n64hal_buffered_write(void *tx_buff, void *dst, uint32_t offset, uint32_t len);
 
 //GPIO wrappers
 void n64hal_input_swap(n64_controller *controller, uint8_t val);

@@ -21,9 +21,10 @@
  * SOFTWARE.
  */
 
-#include <stdint.h>
+#include <Arduino.h>
 #include "n64_settings.h"
 #include "n64_wrapper.h"
+#include "printf.h"
 
 n64_settings *_settings = NULL;
 
@@ -60,7 +61,7 @@ void n64_settings_init(n64_settings *settings)
 void n64_settings_update_checksum(n64_settings *settings)
 {
     uint8_t start = 0x64; 
-    n64hal_ram_write(&start, settings, 0, 1); //This marks the memory as dirty.
+    n64hal_buffered_write(&start, settings, 0, 1); //This marks the memory as dirty.
     settings->checksum = _calc_checksum(settings);
     debug_print_n64("N64: Settings updated, new checksum %02x\n", settings->checksum);
 }

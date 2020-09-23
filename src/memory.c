@@ -36,7 +36,6 @@ void memory_init()
 {
     //Init external RAM and memory heap
     uint32_t psram_bytes = 1024 * 1024 * external_psram_size;
-    printf("Ext ram detected %u\n", external_psram_size);
     ta_init((void *)(ext_ram),               //Base of heap
             (void *)(ext_ram + psram_bytes), //End of heap
             psram_bytes / 32768,             //Number of memory chunks (32k/per chunk)

@@ -44,25 +44,29 @@ n64_settings *settings;
 #if (MAX_CONTROLLERS >= 1)
 void n64_controller1_clock_edge()
 {
-    n64_controller_hande_new_edge(&n64_c[0]);
+    if(input_is_connected(0))
+        n64_controller_hande_new_edge(&n64_c[0]);
 }
 #endif
 #if (MAX_CONTROLLERS >= 2)
 void n64_controller2_clock_edge()
 {
-    n64_controller_hande_new_edge(&n64_c[1]);
+    if(input_is_connected(1))
+        n64_controller_hande_new_edge(&n64_c[1]);
 }
 #endif
 #if (MAX_CONTROLLERS >= 3)
 void n64_controller3_clock_edge()
 {
-    n64_controller_hande_new_edge(&n64_c[2]);
+    if(input_is_connected(2))
+        n64_controller_hande_new_edge(&n64_c[2]);
 }
 #endif
 #if (MAX_CONTROLLERS >= 4)
 void n64_controller4_clock_edge()
 {
-    n64_controller_hande_new_edge(&n64_c[3]);
+    if(input_is_connected(3))
+        n64_controller_hande_new_edge(&n64_c[3]);
 }
 #endif
 
@@ -150,11 +154,14 @@ void loop()
                 n64_c[c].is_mouse = false;
                 n64_settings *settings = n64_settings_get();
                 float x, y, range;
-                apply_deadzone(&x, &y, n64_x_axis[c] / 100.0f, n64_y_axis[c] / 100.0f, settings->deadzone[c] / 10.0f, 0.05f);
-                range = apply_sensitivity(settings->sensitivity[c], &x, &y);
+                astick_apply_deadzone(&x, &y, n64_x_axis[c] / 100.0f, n64_y_axis[c] / 100.0f, settings->deadzone[c] / 10.0f, 0.05f);
+
+                range = astick_apply_sensitivity(settings->sensitivity[c], &x, &y);
+
                 if (settings->snap_axis[c])
-                    apply_snap(range, &x, &y);
-                apply_octa_correction(&x, &y);
+                    astick_apply_snap(range, &x, &y);
+
+                astick_apply_octa_correction(&x, &y);
                 n64_x_axis[c] = x * 100.0f;
                 n64_y_axis[c] = y * 100.0f;
             }
@@ -336,6 +343,7 @@ void loop()
                 }
                 else
                 {
+                    debug_print_error("ERROR: Could not alloc RAM for %s, seting to rpak\n", filename);
                     n64_c[c].next_peripheral = PERI_RUMBLE; //Error, set to rumblepak
                 }
             }
@@ -352,17 +360,18 @@ void loop()
         //Update the virtual pak if required
         if (n64_c[c].mempack->virtual_update_req == 1)
         {
+            //For the USB64-INFO1 Page I write the controller info (PID,VID etc)
             char msg[256];
-            int offset = 0;
-            for (int i = 0; i < MAX_CONTROLLERS; i++)
-            {
-                offset += sprintf(msg + offset, "1:0x%04x/0x%04x\n%.15s\n%.15s\n",
-                                  input_get_id_vendor(i),
-                                  input_get_id_product(i),
-                                  input_get_manufacturer_string(i),
-                                  input_get_product_string(i));
-            }
+            n64_virtualpak_update(n64_c[c].mempack); //Update so we get the right page
+            uint8_t c_page = n64_virtualpak_get_controller_page();
+            sprintf(msg, "%u:0x%04x/0x%04x\n%.15s\n%.15s\n", c_page+1,
+                        input_get_id_vendor(c_page),
+                        input_get_id_product(c_page),
+                        input_get_manufacturer_string(c_page),
+                        input_get_product_string(c_page));
             n64_virtualpak_write_info_1(msg);
+
+            //Normal update
             n64_virtualpak_update(n64_c[c].mempack);
         }
 

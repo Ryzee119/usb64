@@ -22,11 +22,10 @@
  */
 
 #include <Arduino.h>
-#include <stdint.h>
-#include <stdbool.h>
 #include "usb64_conf.h"
+#include "printf.h"
 
-void apply_deadzone(float *out_x, float *out_y, float x, float y, float dz_low, float dz_high) {
+void astick_apply_deadzone(float *out_x, float *out_y, float x, float y, float dz_low, float dz_high) {
     float magnitude = sqrtf(x * x + y * y);
     if (magnitude > dz_low) {
         //Scale such that output magnitude is in the range [0.0f, 1.0f]
@@ -45,7 +44,7 @@ void apply_deadzone(float *out_x, float *out_y, float x, float y, float dz_low, 
     }
 }
 
-float apply_sensitivity(int sensitivity, float *x, float *y)
+float astick_apply_sensitivity(int sensitivity, float *x, float *y)
 {
     float range;
     switch (sensitivity)
@@ -62,7 +61,7 @@ float apply_sensitivity(int sensitivity, float *x, float *y)
     return range;
 }
 
-void apply_snap(float range, float *x, float *y)
+void astick_apply_snap(float range, float *x, float *y)
 {
      //+/- SNAP_RANGE degrees within a 45 degree angle will snap (MAX is 45/2)
     const int snap = SNAP_RANGE;
@@ -93,7 +92,7 @@ void apply_snap(float range, float *x, float *y)
 
 //Input range is expected to a circle with radius 1.00f.
 //This should be normalised/deadzone corrected before entering this function.
-void apply_octa_correction(float *x, float *y)
+void astick_apply_octa_correction(float *x, float *y)
 {
     /* A 90 degree quadrant of the octa output.
      * The calculation is performed between 0-45degree section as it is mirror for each quadrant.
@@ -113,20 +112,19 @@ void apply_octa_correction(float *x, float *y)
      * 
      * 0                      1.0
     */
-    #define D2R(x) (x * 3.1415f/180.0f)
+    #define D2R(a) (a * 3.1415f/180.0f)
     static const float m45 = MAG_AT_45DEG;
     float angle = atanf(*y / *x); //-90 to +90deg
-    
     //Make it 0 to 90deg
     if (angle < 0) angle += D2R(90);
-    
+
     //Make it 0 to 45deg
-    if (angle > D2R(45)) angle = 90 - angle;
+    if (angle > D2R(45)) angle = D2R(90) - angle;
 
     //Build octagonal line for intersection
     float m1 = (0 - m45 * sinf(D2R(45))) / (1 - m45 * cosf(D2R(45)));
     float c1 = -m1;
-    
+
     //Draw another line from the input angle
     float x3 = cosf(angle);
     float y3 = sinf(angle);

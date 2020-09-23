@@ -29,33 +29,41 @@
 #include "fileio.h"
 
 /*
- * Function: Reads a hardware realtime clock and populates day,h,m,s
+ * Function: Reads a hardware realtime clock and populates day,h,m,s.
+ * Used by Pokemon Gameboy games only with TPAK that have a RTC.
  * ----------------------------
  *   Returns void
  *
- *   day: Pointer to a day value (0-6)
+ *   day_high: Bit 0  Most significant bit of Day Counter (Bit 8)
+ *             Bit 6  Halt (0=Active, 1=Stop Timer)
+ *             Bit 7  Day Counter Carry Bit (1=Counter Overflow)
+ *   day_low: Lower 8 bits of Day Counter (0-255)
  *   h: Pointer to an hour value (0-23)
  *   m: Pointer to a minute value (0-59)
  *   s: Pointer to a second value (0-59)
- *   dst: Returns 1 if day light savings is active
  */
-void n64hal_rtc_read(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst)
+void n64hal_rtc_read(uint8_t *day_high, uint8_t *day_low, uint8_t *h, uint8_t *m, uint8_t *s)
 {
+    //Not implemented
 }
 
 /*
  * Function: Writes to a hardware realtime clock with day,h,m,s,dst
+ * Used by Pokemon Gameboy games only with TPAK that have a RTC.
  * ----------------------------
  *   Returns void
  *
- *   day: Pointer to a day value (0-6)
+ *   day_high: Bit 0  Most significant bit of Day Counter (Bit 8)
+ *             Bit 6  Halt (0=Active, 1=Stop Timer)
+ *             Bit 7  Day Counter Carry Bit (1=Counter Overflow)
+ *   day_low: Lower 8 bits of Day Counter (0-255)
  *   h: Pointer to an hour value (0-23)
  *   m: Pointer to a minute value (0-59)
  *   s: Pointer to a second value (0-59)
- *   dst: Write 1 to enable day light savings
  */
-void n64hal_rtc_write(uint16_t *day, uint8_t *h, uint8_t *m, uint8_t *s, uint32_t *dst)
+void n64hal_rtc_write(uint8_t *day_high, uint8_t *day_low, uint8_t *h, uint8_t *m, uint8_t *s)
 {
+    //Not implemented
 }
 
 /*
@@ -142,7 +150,6 @@ uint8_t n64hal_input_read(n64_controller *controller)
     return digitalRead(controller->gpio_pin);
 }
 
-
 /*
  * Function: Returns an array of data read from external ram.
  * ----------------------------
@@ -153,9 +160,9 @@ uint8_t n64hal_input_read(n64_controller *controller)
  *   offset: Bytes from the base address the actual data is we need.
  *   len: How many bytes to read.
  */
-void n64hal_ram_read(void *rx_buff, void *src, uint32_t offset, uint32_t len)
+void n64hal_buffered_read(void *rx_buff, void *src, uint32_t offset, uint32_t len)
 {
-    memcpy(rx_buff + offset, src, len);
+    memcpy(rx_buff, src + offset, len);
 }
 
 /*
@@ -168,7 +175,7 @@ void n64hal_ram_read(void *rx_buff, void *src, uint32_t offset, uint32_t len)
  *   offset: Bytes from the base address where we need to write.
  *   len: How many bytes to write.
  */
-void n64hal_ram_write(void *tx_buff, void *dst, uint32_t offset, uint32_t len)
+void n64hal_buffered_write(void *tx_buff, void *dst, uint32_t offset, uint32_t len)
 {
     memcpy(dst + offset, tx_buff, len);
     memory_mark_dirty(dst);
@@ -188,7 +195,7 @@ uint32_t n64hal_list_gb_roms(char **gb_list, uint32_t max)
     //Retrieve full directory list
     char *file_list[256];
     uint32_t num_files = fileio_list_directory(file_list, 256);
-    
+
     //Find only files with .gb or gbc extensions to populate rom list.
     uint32_t rom_count = 0;
     for (uint32_t i = 0; i < num_files; i++)
@@ -199,9 +206,12 @@ uint32_t n64hal_list_gb_roms(char **gb_list, uint32_t max)
         if (strstr(file_list[i], ".GB\0") != NULL || strstr(file_list[i], ".GBC\0") != NULL ||
             strstr(file_list[i], ".gb\0") != NULL || strstr(file_list[i], ".gbc\0") != NULL)
         {
-            gb_list[rom_count] = (char *)malloc(strlen(file_list[i]) + 1);
-            strcpy(gb_list[rom_count], file_list[i]);
-            rom_count++;
+            if (rom_count < max)
+            {
+                gb_list[rom_count] = (char *)malloc(strlen(file_list[i]) + 1);
+                strcpy(gb_list[rom_count], file_list[i]);
+                rom_count++;
+            }
         }
         //Free file list as we go
         free(file_list[i]);

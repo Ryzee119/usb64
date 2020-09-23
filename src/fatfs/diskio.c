@@ -26,6 +26,7 @@
 #include "diskio.h"
 #include "usb64_conf.h"
 #include "diskio_wrapper.h"
+#include "printf.h"
 
 //Read sector first then compare to see if sector has actually changed
 //Can reduce flash wear and actually speed up larger writes as only small parts

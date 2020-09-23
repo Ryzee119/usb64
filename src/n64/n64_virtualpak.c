@@ -213,7 +213,7 @@ static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
 
         //Sanity check this
         if (line > 15)
-            line  = 15;
+            line = 15;
 
         //Write the character to the note table
         if (ext)
@@ -363,7 +363,7 @@ void n64_virtualpak_update(n64_mempack *vpak)
             }
         }
 
-        //Print a * next to the selected ROM. //FIXME. I think this will cause a bug with two roms with the same title
+        //Print a * next to the selected ROM.
         for (uint32_t i = 0; i < num_roms; i++)
         {
             n64_virtualpak_write_string(gbrom_titlenames[i], SUBHEADING + 2 + i, MENU_NAME_FIELD);
@@ -378,51 +378,51 @@ void n64_virtualpak_update(n64_mempack *vpak)
     {
         sprintf(buff, "CONTROLLER %u", controller_page + 1);
         n64_virtualpak_write_string(buff, SUBHEADING + 0, MENU_NAME_FIELD);
-        n64_virtualpak_write_string("________________", SUBHEADING + 1,  MENU_NAME_FIELD);
-        n64_virtualpak_write_string("CONT SETTINGS",    SUBHEADING + 2,  MENU_NAME_FIELD);
+        n64_virtualpak_write_string("________________", SUBHEADING + 1, MENU_NAME_FIELD);
+        n64_virtualpak_write_string("CONT SETTINGS", SUBHEADING + 2, MENU_NAME_FIELD);
 
-        n64_virtualpak_write_string("SENSITIVITY+",     SUBHEADING + 4,  MENU_NAME_FIELD);
-        n64_virtualpak_write_string("SENSITIVITY-",     SUBHEADING + 5,  MENU_NAME_FIELD);
+        n64_virtualpak_write_string("SENSITIVITY+", SUBHEADING + 4, MENU_NAME_FIELD);
+        n64_virtualpak_write_string("SENSITIVITY-", SUBHEADING + 5, MENU_NAME_FIELD);
 
-        n64_virtualpak_write_string("DEADZONE+",        SUBHEADING + 7,  MENU_NAME_FIELD);
-        n64_virtualpak_write_string("DEADZONE-",        SUBHEADING + 8,  MENU_NAME_FIELD);
+        n64_virtualpak_write_string("DEADZONE+", SUBHEADING + 7, MENU_NAME_FIELD);
+        n64_virtualpak_write_string("DEADZONE-", SUBHEADING + 8, MENU_NAME_FIELD);
 
-        n64_virtualpak_write_string("SNAP TOGGLE",      SUBHEADING + 10, MENU_NAME_FIELD);
+        n64_virtualpak_write_string("SNAP TOGGLE", SUBHEADING + 10, MENU_NAME_FIELD);
 
-        n64_virtualpak_write_string("RESTORE DEFAULT",  SUBHEADING + 12, MENU_NAME_FIELD);
+        n64_virtualpak_write_string("RESTORE DEFAULT", SUBHEADING + 12, MENU_NAME_FIELD);
 
         //A row has been selected, adjust settings accordingly
         uint32_t selected_row = vpak->virtual_selected_row;
         if (selected_row != -1)
         {
-            if(selected_row == SUBHEADING + 4 && settings->sensitivity[controller_page] < 4)
-                 settings->sensitivity[controller_page]++;
-            if(selected_row == SUBHEADING + 5 && settings->sensitivity[controller_page] > 0)
-                 settings->sensitivity[controller_page]--;
-            if(selected_row == SUBHEADING + 7 && settings->deadzone[controller_page] < 4)
-                 settings->deadzone[controller_page]++;
-            if(selected_row == SUBHEADING + 8 && settings->deadzone[controller_page] > 0)
-                 settings->deadzone[controller_page]--;
-            if(selected_row == SUBHEADING + 10)
-                 settings->snap_axis[controller_page] ^= 1;
-            if(selected_row == SUBHEADING + 12)
+            if (selected_row == SUBHEADING + 4 && settings->sensitivity[controller_page] < 4)
+                settings->sensitivity[controller_page]++;
+            if (selected_row == SUBHEADING + 5 && settings->sensitivity[controller_page] > 0)
+                settings->sensitivity[controller_page]--;
+            if (selected_row == SUBHEADING + 7 && settings->deadzone[controller_page] < 4)
+                settings->deadzone[controller_page]++;
+            if (selected_row == SUBHEADING + 8 && settings->deadzone[controller_page] > 0)
+                settings->deadzone[controller_page]--;
+            if (selected_row == SUBHEADING + 10)
+                settings->snap_axis[controller_page] ^= 1;
+            if (selected_row == SUBHEADING + 12)
             {
-                settings->deadzone[controller_page]    = DEFAULT_DEADZONE;
+                settings->deadzone[controller_page] = DEFAULT_DEADZONE;
                 settings->sensitivity[controller_page] = DEFAULT_SENSITIVITY;
-                settings->snap_axis[controller_page]   = DEFAULT_SNAP;
+                settings->snap_axis[controller_page] = DEFAULT_SNAP;
             }
             n64_settings_update_checksum(settings);
         }
 
         //Print the current values of each setting
         sprintf(buff, "%03u\0", settings->sensitivity[controller_page]);
-        n64_virtualpak_write_string(buff, SUBHEADING + 4,  MENU_EXT_FIELD);
+        n64_virtualpak_write_string(buff, SUBHEADING + 4, MENU_EXT_FIELD);
 
         sprintf(buff, "%03u\0", settings->deadzone[controller_page]);
-        n64_virtualpak_write_string(buff, SUBHEADING + 7,  MENU_EXT_FIELD);
+        n64_virtualpak_write_string(buff, SUBHEADING + 7, MENU_EXT_FIELD);
 
         sprintf(buff, "%03u\0", settings->snap_axis[controller_page]);
-        n64_virtualpak_write_string(buff, SUBHEADING + 10,  MENU_EXT_FIELD);
+        n64_virtualpak_write_string(buff, SUBHEADING + 10, MENU_EXT_FIELD);
 
         vpak->virtual_selected_row = -1;
     }
@@ -435,18 +435,18 @@ void n64_virtualpak_update(n64_mempack *vpak)
         uint32_t pos = 0;
         uint32_t line = SUBHEADING + 3;
 
-        if(current_menu == MENU_INFO0)
+        if (current_menu == MENU_INFO0)
             msg = info_text_0;
-        if(current_menu == MENU_INFO1)
+        if (current_menu == MENU_INFO1)
             msg = info_text_0;
 
-        while(*msg && msg != NULL && pos < sizeof(info_text_0))
+        while (*msg && msg != NULL && pos < sizeof(info_text_0))
         {
             //On a line break or end of line print that line and prep to print on next line
             if ((*msg == '\n' || pos == 16) && line < 15)
             {
                 n64_virtualpak_write_string(line_text, line, MENU_NAME_FIELD);
-                memset(line_text,0x00,sizeof(line_text));
+                memset(line_text, 0x00, sizeof(line_text));
                 line += 1;
                 pos = 0;
             }
@@ -462,12 +462,17 @@ void n64_virtualpak_update(n64_mempack *vpak)
     vpak->virtual_update_req = 0;
 }
 
-void n64_virtualpak_write_info_1(char* msg)
+void n64_virtualpak_write_info_1(char *msg)
 {
     strncpy(info_text_0, msg, sizeof(info_text_0));
 }
 
-void n64_virtualpak_write_info_2(char* msg)
+void n64_virtualpak_write_info_2(char *msg)
 {
     strncpy(info_text_1, msg, sizeof(info_text_1));
+}
+
+uint8_t n64_virtualpak_get_controller_page()
+{
+    return controller_page;
 }

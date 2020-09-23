@@ -79,7 +79,9 @@ void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
         f_mount(&fs, "", 1);
     }
     //Trying open the file
-    FRESULT res; UINT br; FIL fil;
+    FRESULT res;
+    UINT br;
+    FIL fil;
     res = f_open(&fil, (const TCHAR *)filename, FA_WRITE | FA_CREATE_ALWAYS);
     if (res != FR_OK)
     {
@@ -95,7 +97,8 @@ void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
         uint32_t b = (len > sizeof(buffer)) ? sizeof(buffer) : len;
         memcpy(buffer, data, b);
         res = f_write(&fil, buffer, b, &br);
-        if (res != FR_OK) break;
+        if (res != FR_OK)
+            break;
         data += b;
         len -= b;
     }
@@ -129,7 +132,9 @@ void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, 
         f_mount(&fs, "", 1);
     }
     //Trying open the file
-    FRESULT res; UINT br; FIL fil;
+    FRESULT res;
+    UINT br;
+    FIL fil;
     res = f_open(&fil, (const TCHAR *)filename, FA_READ);
     if (res != FR_OK)
     {
@@ -144,14 +149,17 @@ void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, 
     //As the data might going to memory mapped IO external RAM,
     //I first buffer to internal RAM.
     uint8_t buffer[512];
+    uint32_t bytes_read = 0;
     while (len > 0)
     {
         uint32_t b = (len > sizeof(buffer)) ? sizeof(buffer) : len;
         res = f_read(&fil, buffer, b, &br);
-        if (res != FR_OK) break;
+        if (res != FR_OK)
+            break;
         memcpy(data, buffer, b);
         data += b;
         len -= b;
+        bytes_read += b;
     }
 
     if (res != FR_OK)
@@ -160,6 +168,6 @@ void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, 
     }
     else
     {
-        debug_print_status("Reading %s ok!\n", filename);
+        debug_print_status("Reading %s for %u bytes ok!\n", filename, bytes_read);
     }
 }

@@ -22,8 +22,6 @@
  */
 
 #include <Arduino.h>
-#include <stdint.h>
-#include <stdbool.h>
 #include "USBHost_t36.h"
 #include "usb64_conf.h"
 #include "n64_controller.h"
