@@ -36,7 +36,7 @@ uint8_t *memory_alloc_ram(const char *name, uint32_t alloc_len, uint32_t read_on
 {
     if (alloc_len == 0)
     {
-        debug_print_memory("MEMORY: WARNING: %s Passed 0 len\n", __FUNCTION__);
+        debug_print_memory("MEMORY: WARNING: Passed 0 len\n");
         return NULL;
     }
 
@@ -82,7 +82,7 @@ uint8_t *memory_alloc_ram(const char *name, uint32_t alloc_len, uint32_t read_on
             return sram[i].data;
         }
     }
-    debug_print_error("ERROR: %s, No SRAM space or slots left. Flush RAM to Flash!\n", __FUNCTION__);
+    debug_print_error("ERROR: No SRAM space or slots left. Flush RAM to Flash!\n");
     return NULL;
 }
 
@@ -105,7 +105,7 @@ void memory_free_item(void *ptr)
             return;
         }
     }
-    debug_print_memory("WARNING: %s: Did not free 0x%08x\n", __FUNCTION__, ptr);
+    debug_print_memory("WARNING: Did not free 0x%08x\n", ptr);
 }
 
 //Flush SRAM to flash memory if required
@@ -138,5 +138,5 @@ void memory_mark_dirty(void *ptr)
             return;
         }
     }
-    debug_print_error("ERROR: %s: Could not find 0x%08x\n", __FUNCTION__, ptr);
+    debug_print_error("ERROR: Could not find 0x%08x\n", ptr);
 }
