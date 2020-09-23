@@ -10,7 +10,8 @@
 
 extern uint8_t external_psram_size; //in MB
 EXTMEM uint8_t ext_ram[1024 * 1024 * 16];
-sram_storage sram[32] = {0};
+static uint32_t internal_size = 8092; //Smaller than this will malloc to internal RAM instead
+static sram_storage sram[32] = {0};
 
 void memory_init()
 {
@@ -55,7 +56,8 @@ uint8_t *memory_alloc_ram(const char *name, uint32_t alloc_len, uint32_t read_on
 
             debug_print_error("MEMORY: ERROR: SRAM malloced memory isnt right, resetting memory\n");
             //Allocated length isnt long enough. Reset it to be memory safe
-            ta_free(sram[i].data);
+            (sram[i].len <= internal_size) ? (free(sram[i].data)) :
+                                             (ta_free(sram[i].data));
             sram[i].data = NULL;
             sram[i].len = 0;
         }
@@ -65,7 +67,8 @@ uint8_t *memory_alloc_ram(const char *name, uint32_t alloc_len, uint32_t read_on
     {
         if (sram[i].len == 0)
         {
-            sram[i].data = (uint8_t *)ta_alloc(alloc_len);
+            (alloc_len <= internal_size) ? (sram[i].data = (uint8_t *)malloc(alloc_len)) :
+                                           (sram[i].data = (uint8_t *)ta_alloc(alloc_len));
             if (sram[i].data == NULL)
                 break;
             sram[i].len = alloc_len;
@@ -97,7 +100,8 @@ void memory_free_item(void *ptr)
         if (sram[i].data == ptr)
         {
             debug_print_memory("MEMORY: Freeing %s at 0x%08x\n", sram[i].name, sram[i].data);
-            ta_free(sram[i].data);
+            (sram[i].len <= internal_size) ? (free(sram[i].data)) :
+                                             (ta_free(sram[i].data));
             sram[i].name[0] = '\0';
             sram[i].data = NULL;
             sram[i].len = 0;
