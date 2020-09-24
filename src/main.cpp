@@ -61,7 +61,7 @@ void setup()
     extern FATFS fs;
     if (f_mount(&fs, "", 1) != FR_OK)
     {
-        debug_print_error("ERROR: Could not mount FATFS, probably not formatted correctly. Formatting flash...\n");
+        debug_print_error("[MAIN] ERROR: Could not mount FATFS, probably not formatted correctly. Formatting flash...\n");
         MKFS_PARM defopt = {FM_FAT, 1, 0, 0, 4096};
         BYTE *work = (BYTE *)malloc(4096);
         f_mkfs("", &defopt, work, 4096);
@@ -193,7 +193,7 @@ void loop()
             if (dual_stick_toggle[c] == 0)
             {
                 input_is_dualstick_mode(c) ? input_disable_dualstick_mode(c) : input_enable_dualstick_mode(c);
-                debug_print_status("Dual stick mode for %u is %u\n", c, input_is_dualstick_mode(c));
+                debug_print_status("[MAIN] Dual stick mode for %u is %u\n", c, input_is_dualstick_mode(c));
                 dual_stick_toggle[c] = 1;
             }
         }
@@ -209,7 +209,7 @@ void loop()
             if (flushing_toggle[c] == 0)
             {
                 memory_flush_all();
-                debug_print_status("Flushed RAM to SD card as required\n");
+                debug_print_status("[MAIN] Flushed RAM to SD card as required\n");
                 flushing_toggle[c] = 1;
             }
         }
@@ -268,14 +268,14 @@ void loop()
             if (n64_buttons[c] & N64_LB)
             {
                 n64_c[c].next_peripheral = PERI_RUMBLE;
-                debug_print_status("C%u to rpak\n", c);
+                debug_print_status("[MAIN] C%u to rpak\n", c);
             }
 
             //Changing peripheral to TPAK
             if (n64_buttons[c] & N64_RB)
             {
                 n64_c[c].next_peripheral = PERI_TPAK;
-                debug_print_status("C%u to tpak\n", c);
+                debug_print_status("[MAIN] C%u to tpak\n", c);
 
                 gameboycart *gb_cart = n64_c[c].tpak->gbcart;
                 uint8_t gb_header[0x100];
@@ -304,7 +304,7 @@ void loop()
                     if (gb_cart->rom == NULL || gb_cart->ram == NULL)
                     {
                         n64_c[c].next_peripheral = PERI_RUMBLE; //Error, just set to rumblepak
-                        debug_print_error("ERROR: Could not allocate rom or ram buffer for %s\n", n64_c[c].tpak->gbcart->filename);
+                        debug_print_error("[MAIN] ERROR: Could not allocate rom or ram buffer for %s\n", n64_c[c].tpak->gbcart->filename);
                         n64_c[c].tpak->gbcart->romsize = 0;
                         n64_c[c].tpak->gbcart->ramsize = 0;
                         n64_c[c].tpak->gbcart->ram = NULL;
@@ -316,9 +316,9 @@ void loop()
                 {
                     n64_c[c].next_peripheral = PERI_RUMBLE; //Error, just set to rumblepak
                     if (gb_cart->filename[0] == '\0')
-                        debug_print_error("ERROR: No default TPAK set or no ROMs found\n");
+                        debug_print_error("[MAIN] ERROR: No default TPAK set or no ROMs found\n");
                     else
-                        debug_print_error("ERROR: Could not read %s\n", gb_cart->filename);
+                        debug_print_error("[MAIN] ERROR: Could not read %s\n", gb_cart->filename);
                 }
             }
 
@@ -348,7 +348,7 @@ void loop()
                 {
                     if (n64_c[i].mempack->id == mempak_bank && mempak_bank != VIRTUAL_PAK)
                     {
-                        debug_print_status("WARNING: map in use by C%u. Setting to rpak\n", i);
+                        debug_print_status("[MAIN] WARNING: map in use by C%u. Setting to rpak\n", i);
                         n64_c[c].next_peripheral = PERI_RUMBLE;
                     }
                 }
@@ -361,18 +361,18 @@ void loop()
 
                 if (n64_c[c].mempack->data != NULL)
                 {
-                    debug_print_status("C%u to mpak %u\n", c, mempak_bank);
+                    debug_print_status("[MAIN] C%u to mpak %u\n", c, mempak_bank);
                     n64_c[c].mempack->virtual_is_active = 0;
                     n64_c[c].mempack->id = mempak_bank;
                 }
                 else if (mempak_bank == VIRTUAL_PAK)
                 {
-                    debug_print_status("C%u to virtual pak\n", c);
+                    debug_print_status("[MAIN] C%u to virtual pak\n", c);
                     n64_virtualpak_init(n64_c[c].mempack);
                 }
                 else
                 {
-                    debug_print_error("ERROR: Could not alloc RAM for %s, seting to rpak\n", filename);
+                    debug_print_error("[MAIN] ERROR: Could not alloc RAM for %s, seting to rpak\n", filename);
                     n64_c[c].next_peripheral = PERI_RUMBLE; //Error, set to rumblepak
                 }
             }

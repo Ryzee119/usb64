@@ -245,7 +245,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             if (!n64_compare_addr_crc(peri_address[cont->id]))
             {
                 cont->crc_error = 1;
-                debug_print_error("ERROR: Address CRC Error %04x\n", peri_address[cont->id]);
+                debug_print_error("[N64] ERROR: Address CRC Error %04x\n", peri_address[cont->id]);
             }
 
             peri_address[cont->id] &= 0xFFE0;
@@ -276,7 +276,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                         uint32_t row = (peri_address[cont->id] - 0x300) / 0x20; //What row you have 'selected' 0-15
                         cont->mempack->virtual_update_req = 1;
                         cont->mempack->virtual_selected_row = row;
-                        debug_print_n64("N64: Virtualpak write at row %u\n", row);
+                        debug_print_n64("[N64] Virtualpak write at row %u\n", row);
                         break;
                     }
                     //Intentional fallthrough
@@ -296,14 +296,14 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                         //N64 writes 32 bytes of 0x84 to turn on the TPAK
                         (cont->data_buffer[N64_DATA_POS] == 0x84) ? cont->tpak->power_state = 1 : (0);
                         (cont->data_buffer[N64_DATA_POS] == 0xFE) ? tpak_reset(cont->tpak)      : (0);
-                        debug_print_tpak("TPAK: Powerstate set to %u\n", cont->tpak->power_state);
+                        debug_print_tpak("[TPAK] Powerstate set to %u\n", cont->tpak->power_state);
                     }
                     else if (cont->current_peripheral == PERI_RUMBLE)
                     {
                         //N64 writes 32 bytes of 0x80 to initialise the rumblepak, 0xFE to reset it
                         (cont->data_buffer[N64_DATA_POS] == 0x80) ? cont->rpak->initialised = 1 : (0);
                         (cont->data_buffer[N64_DATA_POS] == 0xFE) ? cont->rpak->initialised = 0 : (0);
-                        debug_print_n64("N64: Rumblepak Status %u\n", cont->rpak->initialised);
+                        debug_print_n64("[N64] Rumblepak Status %u\n", cont->rpak->initialised);
                     }
                     break;
                 case 0xA:
@@ -311,7 +311,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                     {
                         //0x00, 0x01, or 0x02 and switches over the MBC memory space.
                         cont->tpak->selected_mbc_bank = cont->data_buffer[N64_DATA_POS];
-                        debug_print_tpak("TPAK: MBC bank changed to %u\n",  cont->tpak->selected_mbc_bank);
+                        debug_print_tpak("[TPAK] MBC bank changed to %u\n",  cont->tpak->selected_mbc_bank);
                     }
                     break;
                 case 0xB:
@@ -319,7 +319,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                     {
                         cont->tpak->access_state_changed = cont->tpak->access_state != cont->data_buffer[N64_DATA_POS];
                         cont->tpak->access_state = cont->data_buffer[N64_DATA_POS];
-                        debug_print_tpak("TPAK: Access state set to %u\n",  cont->tpak->access_state);
+                        debug_print_tpak("[TPAK] Access state set to %u\n",  cont->tpak->access_state);
                     }
                     break;
                 case 0xC:
@@ -367,7 +367,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             if (!n64_compare_addr_crc(peri_address[cont->id]))
             {
                 cont->crc_error = 1;
-                debug_print_error("ERROR: Address CRC Error %04x\n", peri_address[cont->id]);
+                debug_print_error("[N64] ERROR: Address CRC Error %04x\n", peri_address[cont->id]);
             }
 #endif
 
@@ -380,7 +380,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                     if (cont->current_peripheral == PERI_TPAK && cont->tpak->power_state == 1)
                     {
                         memset(&cont->data_buffer[N64_DATA_POS], 0x84, 32);
-                        debug_print_tpak("TPAK: Request powerstate. Sending 0x84s (its enabled)\n");
+                        debug_print_tpak("[TPAK] Request powerstate. Sending 0x84s (its enabled)\n");
                         break;
                     }
                     //Fall through intentional
@@ -396,7 +396,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                         }
 
                         memset(&cont->data_buffer[N64_DATA_POS], (cont->tpak->access_state) ? 0x89 : 0x80, 32);
-                        debug_print_tpak("TPAK: Request access_state. Sending 0x%02x\n", (cont->tpak->access_state) ? 0x89 : 0x80);
+                        debug_print_tpak("[TPAK] Request access_state. Sending 0x%02x\n", (cont->tpak->access_state) ? 0x89 : 0x80);
                         //Set bit 2 of the first return value if the access mode was changed since last check.
                         cont->data_buffer[N64_DATA_POS] |= (cont->tpak->access_state_changed << 2);
                         cont->tpak->access_state_changed = 0;
@@ -418,13 +418,13 @@ void n64_controller_hande_new_edge(n64_controller *cont)
                     if (cont->current_peripheral == PERI_RUMBLE && cont->rpak->initialised == 1)
                     {
                         memset(&cont->data_buffer[N64_DATA_POS], 0x80, 32);
-                        debug_print_n64("N64: Request rumblepak state. Sending 0x80s (its initialised)\n");
+                        debug_print_n64("[N64] Request rumblepak state. Sending 0x80s (its initialised)\n");
                     }
                     //If tpak is powered up, respond with 32bytes of 0x84.
                     else if (cont->current_peripheral == PERI_TPAK && cont->tpak->power_state == 1)
                     {
                         memset(&cont->data_buffer[N64_DATA_POS], 0x84, 32);
-                        debug_print_tpak("TPAK: Request tpak power state. Sending 0x84s (its powered up)\n");
+                        debug_print_tpak("[TPAK] Request tpak power state. Sending 0x84s (its powered up)\n");
                     }
                     break;
                 case 0xC:

@@ -26,12 +26,12 @@ DSTATUS disk_initialize(
     BYTE pdrv /* Physical drive number to identify the drive */
 )
 {
-    debug_print_fatfs("FATFS: Initialise disk\n");
+    debug_print_fatfs("[FATFS] Initialise disk\n");
     _disk_init();
     sector_size = _disk_volume_get_block_size();
-    debug_print_fatfs("FATFS: Sector size %u\n", sector_size);
-    debug_print_fatfs("FATFS: Num sectors %u\n", _disk_volume_num_blocks());
-    debug_print_fatfs("FATFS: Sectors per cluster %u\n", _disk_volume_get_cluster_size());
+    debug_print_fatfs("[FATFS] Sector size %u\n", sector_size);
+    debug_print_fatfs("[FATFS] Num sectors %u\n", _disk_volume_num_blocks());
+    debug_print_fatfs("[FATFS] Sectors per cluster %u\n", _disk_volume_get_cluster_size());
     return RES_OK;
 }
 
@@ -45,7 +45,7 @@ DRESULT disk_read(
     if (sector_size == 0)
         return RES_NOTRDY;
 
-    debug_print_fatfs("FATFS: Read from sector %i for %i sector(s)\n", sector, count);
+    debug_print_fatfs("[FATFS] Read from sector %i for %i sector(s)\n", sector, count);
     _read_sector(buff, sector, count);
     return RES_OK;
 }
@@ -62,7 +62,7 @@ DRESULT disk_write(
         return RES_NOTRDY;
 
     _write_sector(buff, sector, count);
-    debug_print_fatfs("FATFS: Wrote to sector %i for %i sector(s)\n", sector, count);
+    debug_print_fatfs("[FATFS] Wrote to sector %i for %i sector(s)\n", sector, count);
     return RES_OK;
 }
 #endif
@@ -79,16 +79,16 @@ DRESULT disk_ioctl(
     switch (cmd)
     {
     case GET_SECTOR_SIZE:
-        debug_print_fatfs("FATFS: disk_ioctl: Sector size %i\n", _disk_volume_get_block_size());
+        debug_print_fatfs("[FATFS] disk_ioctl: Sector size %i\n", _disk_volume_get_block_size());
         *(WORD *)buff = _disk_volume_get_block_size();
         ;
         break;
     case GET_BLOCK_SIZE:
-        debug_print_fatfs("FATFS: disk_ioctl: Block size %i\n", _disk_volume_get_cluster_size());
+        debug_print_fatfs("[FATFS] disk_ioctl: Block size %i\n", _disk_volume_get_cluster_size());
         *(WORD *)buff = _disk_volume_get_cluster_size();
         break;
     case GET_SECTOR_COUNT:
-        debug_print_fatfs("FATFS: disk_ioctl: Sector count %i\n", _disk_volume_num_blocks());
+        debug_print_fatfs("[FATFS] disk_ioctl: Sector count %i\n", _disk_volume_num_blocks());
         *(WORD *)buff = _disk_volume_num_blocks();
         break;
     default:

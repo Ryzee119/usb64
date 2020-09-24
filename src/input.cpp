@@ -105,7 +105,7 @@ void input_update_input_devices()
         if (input_is_connected(i) == 0)
         {
             if (input_devices[i].driver != NULL)
-                debug_print_status("Cleared device from slot %u\n", i);
+                debug_print_status("[INPUT] Cleared device from slot %u\n", i);
             input_devices[i].driver = NULL;
         }
     }
@@ -134,7 +134,7 @@ void input_update_input_devices()
                     {
                         input_devices[j].driver = gamecontroller[i];
                         input_devices[j].type = USB_GAMECONTROLLER;
-                        debug_print_status("Registered gamecontroller to slot %u\n", j);
+                        debug_print_status("[INPUT] Registered gamecontroller to slot %u\n", j);
                         break;
                     }
                 }
@@ -168,7 +168,7 @@ void input_update_input_devices()
                     {
                         input_devices[j].driver = mousecontroller[i];
                         input_devices[j].type = MOUSE;
-                        debug_print_status("Register mouse to slot %u\n", j);
+                        debug_print_status("[INPUT] Register mouse to slot %u\n", j);
                         break;
                     }
                 }

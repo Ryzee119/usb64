@@ -35,7 +35,7 @@ static uint32_t _gb_get_rom_size(uint8_t rom_type)
     case (KB_1536): rom_len = 1572864UL; break;
     default:
         rom_len = 0;
-        debug_print_error("ERROR: Unknown ROM size\n");
+        debug_print_error("[TPAK] ERROR: Unknown ROM size\n");
         break;
     }
     return rom_len;
@@ -111,7 +111,7 @@ static void gb_write_cart(uint16_t addr, gameboycart *gb, uint8_t *inBuffer)
         else if (mbc > 0 && gb->ramsize > 0)
         {
             gb->enable_cart_ram = ((val & 0x0F) == 0x0A);
-            debug_print_tpak("TPAK: MBC%u - Enable Cart Ram\n", mbc);
+            debug_print_tpak("[TPAK] MBC%u - Enable Cart Ram\n", mbc);
         }
         return;
 
@@ -121,7 +121,7 @@ static void gb_write_cart(uint16_t addr, gameboycart *gb, uint8_t *inBuffer)
             //MBC5 lower ROM bank byte is set
             gb->selected_rom_bank = (gb->selected_rom_bank & 0x100) | val;
             gb->selected_rom_bank = gb->selected_rom_bank % gb->num_rom_banks;
-            debug_print_tpak("TPAK: MBC%u - ROM Bank changed to %u/%u\n", mbc,
+            debug_print_tpak("[TPAK] MBC%u - ROM Bank changed to %u/%u\n", mbc,
                              gb->selected_rom_bank,
                              gb->num_rom_banks);
             return;
@@ -159,7 +159,7 @@ static void gb_write_cart(uint16_t addr, gameboycart *gb, uint8_t *inBuffer)
         }
         gb->selected_rom_bank = gb->selected_rom_bank % gb->num_rom_banks;
 
-        debug_print_tpak("TPAK: MBC%u - ROM Bank changed to %u/%u\n", mbc,
+        debug_print_tpak("[TPAK] MBC%u - ROM Bank changed to %u/%u\n", mbc,
                          gb->selected_rom_bank,
                          gb->num_rom_banks);
         return;
@@ -180,13 +180,13 @@ static void gb_write_cart(uint16_t addr, gameboycart *gb, uint8_t *inBuffer)
         {
             gb->selected_ram_bank = (val & 0x0F);
         }
-        debug_print_tpak("TPAK: MBC%u - RAM Bank changed to %u\n", mbc, gb->selected_ram_bank);
+        debug_print_tpak("[TPAK] MBC%u - RAM Bank changed to %u\n", mbc, gb->selected_ram_bank);
         return;
 
     case 0x6:
     case 0x7:
         gb->cart_mode_select = (val & 1);
-        debug_print_tpak("TPAK: MBC%u - Cart Mode changed to %u\n", mbc, gb->cart_mode_select);
+        debug_print_tpak("[TPAK] MBC%u - Cart Mode changed to %u\n", mbc, gb->cart_mode_select);
         return;
 
     case 0xA:
@@ -198,7 +198,7 @@ static void gb_write_cart(uint16_t addr, gameboycart *gb, uint8_t *inBuffer)
                 gb->rtc[gb->selected_ram_bank - 0x08] = val;
                 n64hal_rtc_write(&gb->rtc_bits.high, &gb->rtc_bits.yday,
                                  &gb->rtc_bits.hour, &gb->rtc_bits.min, &gb->rtc_bits.sec);
-                debug_print_tpak("TPAK: MBC%u - RTC Write Reg %02x, Val: %u\n", mbc, gb->selected_ram_bank, val);
+                debug_print_tpak("[TPAK] MBC%u - RTC Write Reg %02x, Val: %u\n", mbc, gb->selected_ram_bank, val);
             }
             else if (gb->cart_mode_select && gb->selected_ram_bank < gb->num_ram_banks)
             {
@@ -249,7 +249,7 @@ static void gb_read_cart(uint16_t addr, gameboycart *gb, uint8_t *outBuffer)
                 n64hal_rtc_read(&gb->rtc_bits.high, &gb->rtc_bits.yday,
                                 &gb->rtc_bits.hour, &gb->rtc_bits.min, &gb->rtc_bits.sec);
                 memset(outBuffer, gb->rtc[gb->selected_ram_bank - 0x08], 32);
-                debug_print_tpak("TPAK: MBC%u - RTC Read Reg %02x\n", mbc, gb->selected_ram_bank);
+                debug_print_tpak("[TPAK] MBC%u - RTC Read Reg %02x\n", mbc, gb->selected_ram_bank);
             }
             else if ((gb->cart_mode_select || mbc != 1) && gb->selected_ram_bank < gb->num_ram_banks)
             {
@@ -303,7 +303,7 @@ void gb_init_cart(gameboycart *cart, uint8_t *gb_header, char *filename)
 
     if (memcmp(GB_HEADER_LOGO, &gb_header[GB_LOGO_OFFSET - 0x100], 0x18) != 0)
     {
-        debug_print_tpak("gb_init_cart: GB header not valid\n");
+        debug_print_error("[TPAK] ERROR: gb_init_cart: GB header not valid\n");
         return;
     }
 
@@ -320,10 +320,10 @@ void gb_init_cart(gameboycart *cart, uint8_t *gb_header, char *filename)
     cart->num_rom_banks = cart->romsize / ROM_BANK_SIZE;
 
     memcpy(cart->filename, filename, sizeof(cart->filename));
-    debug_print_tpak("gb_init_cart: GB Name: %.15s\n", cart->title);
-    debug_print_tpak("gb_init_cart: ROM Bytes: %lu\n", cart->romsize);
-    debug_print_tpak("gb_init_cart: SRAM Bytes: %lu\n", cart->ramsize);
-    debug_print_tpak("gb_init_cart: MBC Type: 0x%02x\n", cart->mbc);
+    debug_print_tpak("[TPAK] gb_init_cart: GB Name: %.15s\n", cart->title);
+    debug_print_tpak("[TPAK] gb_init_cart: ROM Bytes: %lu\n", cart->romsize);
+    debug_print_tpak("[TPAK] gb_init_cart: SRAM Bytes: %lu\n", cart->ramsize);
+    debug_print_tpak("[TPAK] gb_init_cart: MBC Type: 0x%02x\n", cart->mbc);
 }
 
 uint8_t gb_has_battery(uint8_t mbc_type)
@@ -384,12 +384,12 @@ void gb_set_pokemon_time(gameboycart *cart)
     memcpy(&baseMin,  cart->ram + 0x2046, 1);
     memcpy(&baseSec,  cart->ram + 0x2047, 1);
 
-    debug_print_tpak("Base d:%u h:%u m:%u s:%u\n",baseDay,baseHour,baseMin,baseSec);
+    debug_print_tpak("[TPAK] Base d:%u h:%u m:%u s:%u\n",baseDay,baseHour,baseMin,baseSec);
 
     uint16_t d;
     uint8_t h, m, s;
     n64hal_rtc_read(&d, &h, &m, &s);
 
-    debug_print_tpak("Actual d:%u h:%u m:%u s:%u\n",d,h,m,s);
+    debug_print_tpak("[TPAK] Actual d:%u h:%u m:%u s:%u\n",d,h,m,s);
     */
 }

@@ -23,7 +23,7 @@ void n64_settings_init(n64_settings *settings)
 {
     if (settings->start != 0x64 || settings->checksum != _calc_checksum(settings))
     {
-        debug_print_error("ERROR: %s not found or invalid, setting to default\n", SETTINGS_FILENAME);
+        debug_print_error("[N64 SETTINGS] ERROR: %s not found or invalid, setting to default\n", SETTINGS_FILENAME);
         for (int i = 0; i < MAX_CONTROLLERS; i++)
         {
             memset(settings, 0x00, sizeof(n64_settings));
@@ -43,14 +43,14 @@ void n64_settings_update_checksum(n64_settings *settings)
     uint8_t start = 0x64; 
     n64hal_buffered_write(&start, settings, 0, 1); //This marks the memory as dirty.
     settings->checksum = _calc_checksum(settings);
-    debug_print_n64("N64: Settings updated, new checksum %02x\n", settings->checksum);
+    debug_print_n64("[N64 SETTINGS] Settings updated, new checksum %02x\n", settings->checksum);
 }
 
 n64_settings *n64_settings_get()
 {
     if (_settings == NULL)
     {
-        debug_print_error("ERROR: n64_settings_get returning null. Did you init?\n");
+        debug_print_error("[N64 SETTINGS] ERROR: n64_settings_get returning null. Did you init?\n");
     }
     return _settings;
 }

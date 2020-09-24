@@ -11,7 +11,7 @@ void fileio_init()
 {
     if (fs.fs_type == 0)
     {
-        debug_print_status("FILEIO: Mounting fs\n");
+        debug_print_status("[FILEIO] Mounting fs\n");
         f_mount(&fs, "", 1);
     }
 }
@@ -65,7 +65,7 @@ void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
     res = f_open(&fil, (const TCHAR *)filename, FA_WRITE | FA_CREATE_ALWAYS);
     if (res != FR_OK)
     {
-        debug_print_error("FILEIO: ERROR: Could not open %s for WRITE\n", filename);
+        debug_print_error("[FILEIO] ERROR: Could not open %s for WRITE\n", filename);
         return;
     }
     //File opened ok. Write to it.
@@ -88,11 +88,11 @@ void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
     f_close(&fil);
     if (res != FR_OK)
     {
-        debug_print_error("FILEIO: ERROR: Could not write %s with error %i\n", filename, res);
+        debug_print_error("[FILEIO] ERROR: Could not write %s with error %i\n", filename, res);
     }
     else
     {
-        debug_print_status("FILEIO: Writing %s for %u bytes ok!\n", filename, bytes_written);
+        debug_print_status("[FILEIO] Writing %s for %u bytes ok!\n", filename, bytes_written);
     }
 }
 
@@ -114,7 +114,7 @@ void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, 
     res = f_open(&fil, (const TCHAR *)filename, FA_READ);
     if (res != FR_OK)
     {
-        debug_print_status("FILEIO: WARNING: Could not open %s for READ\n", filename);
+        debug_print_status("[FILEIO] WARNING: Could not open %s for READ\n", filename);
         memset(data, 0x00, len);
         return;
     }
@@ -140,10 +140,10 @@ void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, 
 
     if (res != FR_OK)
     {
-        debug_print_error("FILEIO: ERROR: Could not read %s with error %i\n", filename, res);
+        debug_print_error("[FILEIO] ERROR: Could not read %s with error %i\n", filename, res);
     }
     else
     {
-        debug_print_status("FILEIO: Reading %s for %u bytes ok!\n", filename, bytes_read);
+        debug_print_status("[FILEIO] Reading %s for %u bytes ok!\n", filename, bytes_read);
     }
 }
