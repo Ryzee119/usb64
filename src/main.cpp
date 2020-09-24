@@ -197,7 +197,23 @@ void loop()
         {
             dual_stick_toggle[c] = 0;
         }
-        
+ 
+        //If you pressed the combo to flush sram to SD card, handle it here
+        static uint32_t flushing_toggle[MAX_CONTROLLERS] = {0};
+        if (n64_combo && (n64_buttons[c] & N64_A))
+        {
+            if (flushing_toggle[c] == 0)
+            {
+                memory_flush_all();
+                debug_print_status("Flushed RAM to SD card as required\n");
+                flushing_toggle[c] = 1;
+            }
+        }
+        else if (n64_combo)
+        {
+            flushing_toggle[c] = 0;
+        }
+
         //Handle button combinations
         static uint32_t timer_peri_change[MAX_CONTROLLERS] = {0};
         if (n64_combo && (n64_buttons[c] & N64_DU ||
@@ -380,21 +396,6 @@ void loop()
 
             //Normal update
             n64_virtualpak_update(n64_c[c].mempack);
-        }
-
-        //If you pressed the combo to flush sram to flash, handle it here
-        static uint32_t flushing[MAX_CONTROLLERS] = {0};
-        if (n64_combo && (n64_buttons[c] & N64_A))
-        {
-            if (!flushing[c])
-            {
-                memory_flush_all();
-                flushing[c] = 1;
-            }
-        }
-        else if (n64_combo)
-        {
-            flushing[c] = 0;
         }
 
     } //END FOR LOOP
