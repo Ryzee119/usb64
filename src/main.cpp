@@ -81,6 +81,10 @@ void setup()
     settings = (n64_settings *)memory_alloc_ram(SETTINGS_FILENAME, sizeof(n64_settings), 0);
     n64_settings_init(settings);
 
+    //Set up N64 sense pin. To determine is the N64 is turned on or off
+    //Input is connected to the N64 3V3 line on the controller port.
+    pinMode(N64_CONSOLE_SENSE, INPUT_PULLDOWN);
+
 #if (MAX_CONTROLLERS >= 1)
     n64_c[0].gpio_pin = N64_CONTROLLER_1_PIN;
     pinMode(N64_CONTROLLER_1_PIN, INPUT_PULLUP);
@@ -198,9 +202,9 @@ void loop()
             dual_stick_toggle[c] = 0;
         }
  
-        //If you pressed the combo to flush sram to SD card, handle it here
+        //Handle ram flushing. Auto flushes when the N64 is turned off :)
         static uint32_t flushing_toggle[MAX_CONTROLLERS] = {0};
-        if (n64_combo && (n64_buttons[c] & N64_A))
+        if ((n64_combo && (n64_buttons[c] & N64_A)) || digitalReadFast(N64_CONSOLE_SENSE) == 0)
         {
             if (flushing_toggle[c] == 0)
             {
@@ -209,12 +213,12 @@ void loop()
                 flushing_toggle[c] = 1;
             }
         }
-        else if (n64_combo)
+        else
         {
             flushing_toggle[c] = 0;
         }
 
-        //Handle button combinations
+        //Handle peripheral change combinations
         static uint32_t timer_peri_change[MAX_CONTROLLERS] = {0};
         if (n64_combo && (n64_buttons[c] & N64_DU ||
                           n64_buttons[c] & N64_DD ||
@@ -233,6 +237,7 @@ void loop()
                 n64_c[c].mempack->data = NULL;
                 n64_c[c].mempack->id = VIRTUAL_PAK;
             }
+
             if (n64_c[c].tpak != NULL)
             {
                 tpak_reset(n64_c[c].tpak);
@@ -242,10 +247,11 @@ void loop()
                     n64_c[c].tpak->gbcart->filename[0] = '\0';
                     n64_c[c].tpak->gbcart->romsize = 0;
                     n64_c[c].tpak->gbcart->ramsize = 0;
-                    n64_c[c].tpak->gbcart->ram = NULL;
+                    n64_c[c].tpak->gbcart->ram = NULL; //Not free'd intentionally
                     n64_c[c].tpak->gbcart->rom = NULL;
                 }
             }
+
             if (n64_c[c].rpak != NULL)
             {
                 if (n64_c[c].rpak->state != RUMBLE_APPLIED)
@@ -401,7 +407,7 @@ void loop()
     } //END FOR LOOP
 } // MAIN LOOP
 
-//Ring buffer is used to buffer printf outputs
+/* PRINTF HANDLING */
 static uint32_t ring_buffer_pos = 0;
 static char ring_buffer[4096];
 void _putchar(char character)
