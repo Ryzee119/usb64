@@ -21,6 +21,9 @@ JoystickController joy1(usbh);
 USBHIDParser hid1(usbh);
 MouseController mouse1(usbh);
 #endif
+#if (ENABLE_HARDWIRED_CONTROLLER >=1)
+volatile uint32_t *hardwired;
+#endif
 #endif
 #if (MAX_CONTROLLERS >= 2)
 JoystickController joy2(usbh);
@@ -109,6 +112,17 @@ void input_update_input_devices()
             input_devices[i].driver = NULL;
         }
     }
+
+#if (ENABLE_HARDWIRED_CONTROLLER >=1)
+    //Find hardwired game controller
+    if (digitalRead(HW_EN) == 0)
+    {
+        //Hardwired will always overwrite the first slot
+        input_devices[0].driver = hardwired;
+        input_devices[0].type = HW_GAMECONTROLLER;
+    }
+#endif
+
     //Find new game controllers
     for (int i = 0; i < MAX_CONTROLLERS; i++)
     {
@@ -203,6 +217,7 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
         case JoystickController::XBOX360:
         case JoystickController::XBOX360_WIRED:
             //Digital usb_buttons
+            //FIXME Modifier to make A,B,X,Y be C buttons
             if (n64_buttons == NULL || n64_x_axis == NULL || n64_y_axis == NULL)
                 break;
             if (_buttons & (1 << 0))  *n64_buttons |= N64_DU;  //DUP
@@ -222,9 +237,9 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
             if (_buttons & (1 << 14)) *n64_buttons |= N64_B;   //X
             if (_buttons & (1 << 15)) *n64_buttons |= 0;       //Y
             if (_buttons & (1 << 7))  *n64_buttons |= N64_CU | //RS triggers
-                                                            N64_CD | //all C usb_buttons
-                                                            N64_CL |
-                                                            N64_CR;
+                                                      N64_CD | //all C usb_buttons
+                                                      N64_CL |
+                                                      N64_CR;
             //Analog stick (Normalise 0 to +/-100)
             *n64_x_axis = _axis[0] * 100 / 32768;
             *n64_y_axis = _axis[1] * 100 / 32768;
@@ -298,6 +313,32 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
         }
     }
 #endif
+#if (ENABLE_HARDWIRED_CONTROLLER >=1)
+    else if (input_is_hw_gamecontroller(id))
+    {
+        if (!digitalRead(HW_A)) *n64_buttons |= N64_A;
+        if (!digitalRead(HW_B)) *n64_buttons |= N64_B;
+        if (!digitalRead(HW_CU)) *n64_buttons |= N64_CU;
+        if (!digitalRead(HW_CD)) *n64_buttons |= N64_CD;
+        if (!digitalRead(HW_CL)) *n64_buttons |= N64_CL;
+        if (!digitalRead(HW_CR)) *n64_buttons |= N64_CR;
+        if (!digitalRead(HW_DU)) *n64_buttons |= N64_DU;
+        if (!digitalRead(HW_DD)) *n64_buttons |= N64_DD;
+        if (!digitalRead(HW_DL)) *n64_buttons |= N64_DL;
+        if (!digitalRead(HW_DR)) *n64_buttons |= N64_DR;
+        if (!digitalRead(HW_START)) *n64_buttons |= N64_START;
+        if (!digitalRead(HW_Z)) *n64_buttons |= N64_Z;
+        if (!digitalRead(HW_L)) *n64_buttons |= N64_L;
+        if (!digitalRead(HW_R)) *n64_buttons |= N64_R;
+        
+        //10bit ADC
+        *n64_x_axis = analogRead(HW_X) * 100 / 1024;
+        *n64_y_axis = analogRead(HW_Y) * 100 / 1024;
+        
+        if (combo_pressed)
+            *combo_pressed = !digitalRead(HW_L) && !digitalRead(HW_R) //FIXME: ADD A COMBO INPUT?
+    }
+#endif
     else
     {
         return 0;
@@ -321,6 +362,12 @@ void input_apply_rumble(int id, uint8_t stength)
         joy = (JoystickController *)input_devices[id].driver;
         joy->setRumble(stength, stength, 20);
     }
+#if (ENABLE_HARDWIRED_CONTROLLER >=1)
+    else if (input_is_hw_gamecontroller(id))
+    {
+        (strength > 0) ? digitalWrite(HW_RUMBLE, HIGH) : digitalWrite(HW_RUMBLE, LOW);
+    }
+#endif
 }
 
 bool input_is_connected(int id)
@@ -336,12 +383,22 @@ bool input_is_connected(int id)
             connected = true;
     }
 
+#if (MAX_MICE >=1)   
     else if (input_is_mouse(id))
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         if (*mouse == true)
             connected = true;
     }
+#endif
+    
+#if (ENABLE_HARDWIRED_CONTROLLER >=1)
+    else if (input_is_hw_gamecontroller(id))
+    {
+        if (digitalRead(HW_EN) == 0)
+            connected = true;
+    }
+#endif
 
     return connected;
 }
@@ -364,6 +421,15 @@ bool input_is_gamecontroller(int id)
     return false;
 }
 
+bool input_is_hw_gamecontroller(int id)
+{
+    if (_check_id(id) == 0)
+        return false;
+    if (input_devices[id].type == HW_GAMECONTROLLER)
+        return true;
+    return false;
+}
+
 uint16_t input_get_id_product(int id)
 {
     if (_check_id(id) == 0 || input_is_connected(id) == 0)
@@ -378,6 +444,10 @@ uint16_t input_get_id_product(int id)
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         return mouse->idProduct();
+    }
+    else if (input_is_hw_gamecontroller(id))
+    {
+        return 0xBEEF;   
     }
 
     return 0;
@@ -397,6 +467,10 @@ uint16_t input_get_id_vendor(int id)
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         return mouse->idVendor();
+    }
+    else if (input_is_hw_gamecontroller(id))
+    {
+        return 0xDEAD;   
     }
 
     return 0;
@@ -418,6 +492,10 @@ const char *input_get_manufacturer_string(int id)
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         return (const char *)mouse->manufacturer();
     }
+    else if (input_is_hw_gamecontroller(id))
+    {
+        return "USB64";   
+    }
 
     return NC;
 }
@@ -437,6 +515,10 @@ const char *input_get_product_string(int id)
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         return (const char *)mouse->product();
+    }
+    else if (input_is_hw_gamecontroller(id))
+    {
+        return "HARDWIRED";   
     }
 
     return NC;
