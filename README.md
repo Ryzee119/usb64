@@ -7,8 +7,8 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - [x] N64 controller emulation (up to four controllers at once!).
 - [x] Rumblepak emulation.
 - [x] Mempak emulation with four selectable banks. Technically unlimited.
-- [x] Transferpak emulation.
-- [x] N64 mouse emulation (Use a USB Mouse!).
+- [x] Transferpak emulation. Put Gameboy ROMS on an SD Card!
+- [x] N64 mouse emulation. Use a USB Mouse!
 - [x] Configurable deadzones and sensitivity from the N64 Console.
 - [x] True dual analog sticks with GoldenEye and Perfect Dark.
 - [x] SD card driver with FATFS support for storage/backup of Gameboy ROMS, mempaks etc.
