@@ -131,8 +131,8 @@ void loop()
         if (input_is_connected(c))
         {
             int max_axis = sizeof(usb_axis[c]) / sizeof(usb_axis[c][0]);
-            input_get_buttons(c, &usb_buttons[c], usb_axis[c], max_axis,                    //Raw usb output (if wanted)
-                              &n64_buttons[c], &n64_x_axis[c], &n64_y_axis[c], &n64_combo); //Mapped n64 output
+            input_get_buttons(c, &usb_buttons[c], usb_axis[c], max_axis,                       //Raw usb output (if wanted)
+                                 &n64_buttons[c], &n64_x_axis[c], &n64_y_axis[c], &n64_combo); //Mapped n64 output
 
             if (input_is_gamecontroller(c))
             {

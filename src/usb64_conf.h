@@ -20,15 +20,13 @@
 
 /* N64 LIB */
 #define MAX_CONTROLLERS 4 //Max is 4
-#define MAX_MICE 4 //0 to disable N64 mouse support, Must be <= MAX_CONTROLLERS
+#define MAX_MICE 4 //0 to disable N64 mouse support. Must be <= MAX_CONTROLLERS
 #define MAX_GBROMS 10 //ROMS over this will just get ignored
 #define ENABLE_I2C_CONTROLLERS 0 //Received button presses over I2C, useful for integrating with a rasp pi etc.
 #define ENABLE_HARDWIRED_CONTROLLER 0 //Ability to hardware a N64 controller into the usb64.
 
-
 /* PIN MAPPING */
 #define N64_CONSOLE_SENSE 37 //High when usb64 is connected to the n64 console
-#define N64_CONSOLE_SENSE_DELAY 50 //ms to wait at power up for n64 console to power on
 #define N64_CONTROLLER_1_PIN 36
 #define N64_CONTROLLER_2_PIN 35
 #define N64_CONTROLLER_3_PIN 34
@@ -43,8 +41,10 @@
 #define DEFAULT_SENSITIVITY 2  //0 to 4 (0 = low sensitivity, 4 = max)
 #define DEFAULT_DEADZONE 2     //0 to 4 (0 = no deadzone correction, 4 = max (40%))
 #define DEFAULT_SNAP 1         //0 or 1 (0 = will output raw analog stick angle, 1 will snap to 45deg angles)
-#define SNAP_RANGE 10          //+/- what angle range will snap. 10 will be +/-10 degrees from a 45 degree angle
-#define MOUSE_SENSITIVITY 2.0f //Not configurable from the N64 console.
+
+/* FIRMWARE DEFAULTS (NOT CONFIGURABLE DURING USE) */
+#define SNAP_RANGE 5          //+/- what angle range will snap. 5 will snap to 45 degree if between 40 and 50 degrees.
+#define MOUSE_SENSITIVITY 2.0f //Just what felt right to me with my mouse.
 #define MAG_AT_45DEG 1.1f      //Octagonal shape has a larger magnitude at the 45degree points. 1.1 times larger seems about right
 
 /* DEBUG PRINTERS */
