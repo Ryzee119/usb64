@@ -61,19 +61,18 @@ uint32_t fileio_list_directory(char **list, uint32_t max)
 void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
 {
     //Trying open the file
-    FRESULT res;
-    UINT br;
-    FIL fil;
+    FRESULT res; UINT br; FIL fil;
     res = f_open(&fil, (const TCHAR *)filename, FA_WRITE | FA_CREATE_ALWAYS);
     if (res != FR_OK)
     {
-        debug_print_error("ERROR: Could not open %s for WRITE\n", filename);
+        debug_print_error("FILEIO: ERROR: Could not open %s for WRITE\n", filename);
         return;
     }
     //File opened ok. Write to it.
     //As the data might coming from memory mapped IO external RAM,
     //I first buffer to internal RAM.
     uint8_t buffer[512];
+    uint32_t bytes_written = 0;
     while (len > 0)
     {
         uint32_t b = (len > sizeof(buffer)) ? sizeof(buffer) : len;
@@ -83,16 +82,17 @@ void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
             break;
         data += b;
         len -= b;
+        bytes_written += b;
     }
 
     f_close(&fil);
     if (res != FR_OK)
     {
-        debug_print_error("ERROR: Could not write %s\n", filename);
+        debug_print_error("FILEIO: ERROR: Could not write %s with error %i\n", filename, res);
     }
     else
     {
-        debug_print_status("FILEIO: Writing %s ok!\n", filename);
+        debug_print_status("FILEIO: Writing %s for %u bytes ok!\n", filename, bytes_written);
     }
 }
 
@@ -110,13 +110,11 @@ void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
 void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, uint32_t len)
 {
     //Trying open the file
-    FRESULT res;
-    UINT br;
-    FIL fil;
+    FRESULT res; UINT br; FIL fil;
     res = f_open(&fil, (const TCHAR *)filename, FA_READ);
     if (res != FR_OK)
     {
-         debug_print_status("FILEIO: WARNING: Could not open %s for READ\n", filename);
+        debug_print_status("FILEIO: WARNING: Could not open %s for READ\n", filename);
         memset(data, 0x00, len);
         return;
     }
@@ -142,10 +140,10 @@ void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, 
 
     if (res != FR_OK)
     {
-        debug_print_error("ERROR: Could not read %s with error %i\n", filename, res);
+        debug_print_error("FILEIO: ERROR: Could not read %s with error %i\n", filename, res);
     }
     else
     {
-         debug_print_status("FILEIO: Reading %s for %u bytes ok!\n", filename, bytes_read);
+        debug_print_status("FILEIO: Reading %s for %u bytes ok!\n", filename, bytes_read);
     }
 }
