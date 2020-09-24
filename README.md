@@ -12,10 +12,10 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - [x] Configurable deadzones and sensitivity from the N64 Console.
 - [x] True dual analog sticks with GoldenEye and Perfect Dark.
 - [x] SD card driver with FATFS support for storage/backup of Gameboy ROMS, mempaks etc.
+- [x] A single hardwired controller interface for ultimate hacking.
 
 ## Todo
 - [ ] Raspberry Pi interface or equivalent for all other USB controllers.
-- [ ] A hardwired controller interface.
 - [ ] More inbuilt USB controller drivers.
 - [ ] Gameboy Camera Support.
 - [ ] Touch LCD Support.
@@ -26,7 +26,7 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - Xbox 360 Wired
 - Xbox 360 Wireless (Via PC USB Receiver)
 - Raspberry Pi interface or equivalent for all other USB controllers.
-- Hardwired interface for upto one controller.
+- A hardwired controller, use your own buttons etc.
 
 ## Controls
 - Back + D-Pad = Insert Mempak banks 1 to 4
@@ -61,7 +61,7 @@ See [USAGE.md](./USAGE.md).
 ## License and Attribution
 usb64 is shared under the [MIT license](https://github.com/Ryzee119/usb64/blob/dev/LICENSE), however this project includes code by others. Refer to the list below.
 * [mpaland](https://github.com/mpaland)/**[printf](https://github.com/mpaland/printf)** shared under the [MIT License](https://github.com/mpaland/printf/blob/master/LICENSE).
-* [thi-ng](https://github.com/thi-ng)/**[tinyalloc](https://github.com/thi-ng/tinyalloc)** shared under the [Apache-2.0 License ](https://github.com/thi-ng/tinyalloc/blob/master/LICENSE).
+* [thi-ng](https://github.com/thi-ng)/**[tinyalloc](https://github.com/thi-ng/tinyalloc)** shared under the [Apache-2.0 License](https://github.com/thi-ng/tinyalloc/blob/master/LICENSE).
 * [FatFs by ChaN](http://elm-chan.org/fsw/ff/00index_e.html) shared under a [BSD-style license](https://github.com/Ryzee119/usb64/blob/dev/src/fatfs/LICENSE.txt).
 * [USBHost_t36 fork](https://github.com/Ryzee119/USBHost_t36) shared under an '[MIT or MIT-like license](https://forum.pjrc.com/threads/29382-open-source-license-issues-when-using-teensy-products?p=79667&viewfull=1#post79667)'.
 * [Teensy cores](https://github.com/PaulStoffregen/cores) shared under an '[MIT or MIT-like license](https://forum.pjrc.com/threads/29382-open-source-license-issues-when-using-teensy-products?p=79667&viewfull=1#post79667)'.
