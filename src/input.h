@@ -15,6 +15,7 @@ void input_update_input_devices();
 bool input_is_connected(int id);
 bool input_is_mouse(int id);
 bool input_is_gamecontroller(int id);
+bool input_is_hw_gamecontroller(int id);
 uint16_t input_get_id_product(int id);
 uint16_t input_get_id_vendor(int id);
 const char *input_get_manufacturer_string(int id);
