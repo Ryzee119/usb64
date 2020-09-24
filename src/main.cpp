@@ -84,6 +84,25 @@ void setup()
     //Set up N64 sense pin. To determine is the N64 is turned on or off
     //Input is connected to the N64 3V3 line on the controller port.
     pinMode(N64_CONSOLE_SENSE, INPUT_PULLDOWN);
+    
+#if (ENABLE_HARDWIRED_CONTROLLER >=1)
+    pinMode(HW_A, INPUT_PULLUP);
+    pinMode(HW_B, INPUT_PULLUP);
+    pinMode(HW_CU, INPUT_PULLUP);
+    pinMode(HW_CD, INPUT_PULLUP);
+    pinMode(HW_CL, INPUT_PULLUP);
+    pinMode(HW_CR, INPUT_PULLUP);
+    pinMode(HW_DU, INPUT_PULLUP);
+    pinMode(HW_DD, INPUT_PULLUP);
+    pinMode(HW_DL, INPUT_PULLUP);
+    pinMode(HW_DR, INPUT_PULLUP);
+    pinMode(HW_START, INPUT_PULLUP);
+    pinMode(HW_Z, INPUT_PULLUP);
+    pinMode(HW_R, INPUT_PULLUP);
+    pinMode(HW_L, INPUT_PULLUP);
+    pinMode(HW_EN, INPUT_PULLUP);
+    pinMode(HW_RUMBLE, OUTPUT);
+#endif
 
 #if (MAX_CONTROLLERS >= 1)
     n64_c[0].gpio_pin = N64_CONTROLLER_1_PIN;
