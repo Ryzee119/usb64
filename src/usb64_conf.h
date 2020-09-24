@@ -33,6 +33,26 @@
 #define N64_CONTROLLER_4_PIN 33
 #define USER_LED_PIN 13
 
+//Hardwired interface. All digital inputs are pulled up, active low.
+#define HW_A 2
+#define HW_B 3
+#define HW_CU 4
+#define HW_CD 5
+#define HW_CL 6
+#define HW_CR 7
+#define HW_DU 8
+#define HW_DD 9
+#define HW_DL 10
+#define HW_DR 11
+#define HW_START 12
+#define HW_Z 28
+#define HW_R 29
+#define HW_L 30
+#define HW_RUMBLE 31 //Output, 1 when should be rumbling
+#define HW_EN 32 //Active low, pulled high
+#define HW_X 24 //Analog input, 0V to VCC. VCC/2 centre
+#define HW_Y 25 //Analog input, 0V to VCC. VCC/2 centre
+
 /* FILESYSTEM */
 #define MAX_FILENAME_LEN 256
 #define SETTINGS_FILENAME "SETTINGS.DAT"
