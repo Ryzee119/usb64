@@ -1,0 +1,11 @@
+[submodule "src/printf"]
+	path = src/printf
+	url = https://github.com/mpaland/printf
+
+[submodule "src/tinyalloc"]
+	path = src/tinyalloc
+	url = https://github.com/thi-ng/tinyalloc.git
+
+[submodule "src/USBHost_t36"]
+	path = src/USBHost_t36
+	url = https://github.com/Ryzee119/USBHost_t36.git
