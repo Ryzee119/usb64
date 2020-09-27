@@ -201,7 +201,7 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
 {
     uint32_t _buttons = 0;
     int32_t _axis[max_axis] = {0};
-    int32_t right_axis[2];
+    int32_t right_axis[2] = {0};
 
     if (_check_id(id) == 0)
         return 0;
@@ -263,6 +263,10 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
             if (combo_pressed)
                 *combo_pressed = (_buttons & (1 << 5)); //back
 
+            //Map right axis for dual stick mode
+            right_axis[0] = _axis[2] * 100 / 32768;
+            right_axis[1] = _axis[3] * 100 / 32768;
+
             break;
         case JoystickController::XBOXONE:
             if (n64_buttons == NULL || n64_x_axis == NULL || n64_y_axis == NULL)
@@ -318,8 +322,8 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
             *n64_buttons &= ~N64_Z;
             if (*n64_buttons & N64_LB)
                 *n64_buttons |= N64_Z;
-            *n64_x_axis = _axis[2] * 100 / 32768;
-            *n64_y_axis = _axis[3] * 100 / 32768;
+            *n64_x_axis = right_axis[0];
+            *n64_y_axis = right_axis[1];
         }
         else if(input_is_dualstick_mode(id) && (id % 2 != 0))
         {
