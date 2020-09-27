@@ -322,6 +322,8 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
             *n64_buttons &= ~N64_Z;
             if (*n64_buttons & N64_LB)
                 *n64_buttons |= N64_Z;
+            *n64_buttons &= ~N64_LB;
+            *n64_buttons &= ~N64_RB;
             *n64_x_axis = right_axis[0];
             *n64_y_axis = right_axis[1];
         }
@@ -330,6 +332,7 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
             //Mirror controller mapping overwritten for dualstick mode
             if (*n64_buttons & N64_RB)
                 *n64_buttons |= N64_Z;
+            *n64_buttons &= N64_Z;
         }
     }
 #if (MAX_MICE >= 1)
