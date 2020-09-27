@@ -201,6 +201,7 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
 {
     uint32_t _buttons = 0;
     int32_t _axis[max_axis] = {0};
+    int32_t right_axis[2];
 
     if (_check_id(id) == 0)
         return 0;
@@ -261,7 +262,50 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
             //Button to hold for 'combos'
             if (combo_pressed)
                 *combo_pressed = (_buttons & (1 << 5)); //back
+
             break;
+        case JoystickController::XBOXONE:
+            if (n64_buttons == NULL || n64_x_axis == NULL || n64_y_axis == NULL)
+                break;
+            if (_buttons & (1 << 8))   *n64_buttons |= N64_DU;   //DUP
+            if (_buttons & (1 << 9))   *n64_buttons |= N64_DD;   //DDOWN
+            if (_buttons & (1 << 10))  *n64_buttons |= N64_DL;   //DLEFT
+            if (_buttons & (1 << 11))  *n64_buttons |= N64_DR;   //DRIGHT
+            if (_buttons & (1 << 2))   *n64_buttons |= N64_ST;   //START
+            if (_buttons & (1 << 3))   *n64_buttons |= 0;        //BACK
+            if (_buttons & (1 << 14))  *n64_buttons |= 0;        //LS
+            if (_buttons & (1 << 15))  *n64_buttons |= 0;        //RS
+            if (_buttons & (1 << 12))  *n64_buttons |= N64_LB;   //LB
+            if (_buttons & (1 << 13))  *n64_buttons |= N64_RB;   //RB
+            if (_buttons & (1 << 4))   *n64_buttons |= N64_A;    //A
+            if (_buttons & (1 << 5))   *n64_buttons |= N64_B;    //B
+            if (_buttons & (1 << 6))   *n64_buttons |= N64_B;    //X
+            if (_buttons & (1 << 7))   *n64_buttons |= 0;        //Y
+            if (_buttons & (1 << 15))   *n64_buttons |= N64_CU | //RS triggers
+                                                        N64_CD | //all C usb_buttons
+                                                        N64_CL |
+                                                        N64_CR;
+            //Analog stick (Normalise 0 to +/-100)
+            *n64_x_axis = _axis[0] * 100 / 32768;
+            *n64_y_axis = _axis[1] * 100 / 32768;
+
+            //Z button
+            if (_axis[3] > 10) *n64_buttons |= N64_Z; //LT
+            if (_axis[4] > 10) *n64_buttons |= N64_Z; //RT
+
+            //C usb_buttons
+            if (_axis[2] > 16000)  *n64_buttons |= N64_CR;
+            if (_axis[2] < -16000) *n64_buttons |= N64_CL;
+            if (_axis[5] > 16000)  *n64_buttons |= N64_CU;
+            if (_axis[5] < -16000) *n64_buttons |= N64_CD;
+
+            //Button to hold for 'combos'
+            if (combo_pressed)
+                *combo_pressed = (_buttons & (1 << 3)); //back
+
+            right_axis[0] = _axis[2] * 100 / 32768;
+            right_axis[1] = _axis[5] * 100 / 32768;
+
         //TODO: OTHER USB CONTROLLERS
         default:
             break;
