@@ -71,6 +71,8 @@ void setup()
 
     pinMode(N64_FRAME, OUTPUT);
 
+    pinMode(USER_LED_PIN, OUTPUT);
+
 #if (ENABLE_HARDWIRED_CONTROLLER >=1)
     pinMode(HW_A, INPUT_PULLUP);
     pinMode(HW_B, INPUT_PULLUP);
@@ -115,6 +117,8 @@ void setup()
 #endif
 
     NVIC_SET_PRIORITY(IRQ_GPIO6789, 1);
+
+    digitalWrite(USER_LED_PIN, HIGH);
 }
 
 static bool n64_combo = false;
