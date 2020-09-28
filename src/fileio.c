@@ -39,6 +39,10 @@ uint32_t fileio_list_directory(char **list, uint32_t max)
     DIR dir;
     UINT file_count = 0;
     static FILINFO fno;
+
+    if (fs.fs_type == 0)
+        return 0;
+
     res = f_opendir(&dir, "");
     if (res == FR_OK)
     {
@@ -70,6 +74,10 @@ void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
 {
     //Trying open the file
     FRESULT res; UINT br; FIL fil;
+
+    if (fs.fs_type == 0)
+        return;
+
     res = f_open(&fil, (const TCHAR *)filename, FA_WRITE | FA_CREATE_ALWAYS);
     if (res != FR_OK)
     {
@@ -119,6 +127,10 @@ void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, 
 {
     //Trying open the file
     FRESULT res; UINT br; FIL fil;
+
+    if (fs.fs_type == 0)
+        return;
+
     res = f_open(&fil, (const TCHAR *)filename, FA_READ);
     if (res != FR_OK)
     {
