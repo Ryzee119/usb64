@@ -291,7 +291,7 @@ void loop()
                 uint8_t gb_header[0x100];
 
                 strcpy(gb_cart->filename, settings->default_tpak_rom[c]);
-                if (gb_cart->filename[0] != '\0')
+                if (gb_cart->filename[0] != '\0' && memory_get_ext_ram_size() > 0)
                 {
                     fileio_read_from_file(gb_cart->filename, 0x100, gb_header, sizeof(gb_header));
                     gb_init_cart(gb_cart, gb_header, settings->default_tpak_rom[c]);
@@ -326,6 +326,8 @@ void loop()
                     n64_c[c].next_peripheral = PERI_RUMBLE; //Error, just set to rumblepak
                     if (gb_cart->filename[0] == '\0')
                         debug_print_error("[MAIN] ERROR: No default TPAK ROM set or no ROMs found\n");
+                    else if (memory_get_ext_ram_size() == 0)
+                        debug_print_error("[MAIN] ERROR: No external RAM installed. TPAK disabled\n");
                     else
                         debug_print_error("[MAIN] ERROR: Could not read %s\n", gb_cart->filename);
                 }

@@ -25,6 +25,9 @@ static sram_storage sram[32] = {0};
 
 void memory_init()
 {
+    if (external_psram_size == 0)
+        return;
+
     //Init external RAM and memory heap
     uint32_t psram_bytes = 1024 * 1024 * external_psram_size;
     ta_init((void *)(ext_ram),               //Base of heap
@@ -84,11 +87,11 @@ uint8_t *memory_alloc_ram(const char *name, uint32_t alloc_len, uint32_t read_on
         {
             //Smaller blocks are RAM are mallocs internally for better performance. Teensy has a reasonable
             //amount of internal RAM :)
-            (alloc_len <= internal_size) ? (sram[i].data = (uint8_t *)malloc(alloc_len)) :
-                                           (sram[i].data = (uint8_t *)ta_alloc(alloc_len));
+            (alloc_len <= internal_size || external_psram_size == 0) ? (sram[i].data = (uint8_t *)malloc(alloc_len)) :
+                                                                       (sram[i].data = (uint8_t *)ta_alloc(alloc_len));
 
             //If failed to malloc to internal RAM, try external RAM
-            if (sram[i].data == NULL && alloc_len <= internal_size)
+            if (sram[i].data == NULL && alloc_len <= internal_size && external_psram_size > 0)
                 sram[i].data = (uint8_t *)ta_alloc(alloc_len);
 
             //If it still failed, no RAM left?
@@ -169,4 +172,9 @@ void memory_mark_dirty(void *ptr)
         }
     }
     debug_print_error("[MEMORY] ERROR: Could not find 0x%08x\n", ptr);
+}
+
+uint8_t memory_get_ext_ram_size()
+{
+    return external_psram_size;
 }
