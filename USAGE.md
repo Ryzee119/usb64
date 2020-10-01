@@ -36,9 +36,9 @@
 * **USB64 INFO2** is currently a placeholder.
 
 ## Dual Stick Mode
-* Dual stick mode exploits a feature present and Perfect Dark and GoldenEye 007 to use two controllers at once for true dual analog stick input.
-* To use, the usb64 must be connected to controller port one and two as a minimum. It works by simulating two controllers with one and injecting the 2nd analog stick into port two. If a 2nd controller is connected to the usb64 when using this mode, it will get pushed to slot 3.
-* To enable press `START+B`.
+* Dual stick mode exploits a feature present in Perfect Dark and GoldenEye 007 to use two controllers at once for true dual analog stick input.
+* To use, the usb64 must be connected to controller port one and two as a minimum. It works by simulating two controllers with one and injecting the 2nd analog stick into port two. If a 2nd controller is connected to the usb64 when using this mode, it will get pushed to slot three.
+* To enable press `BACK+B`.
 * Set the game controller input for dual stick mode. It has been designed to work best with `Layout 2.4`. <p align="center"><img src="./images/dual_goldeneye.png" alt="dual_goldeneye" width="35%"/>  <img src="./images/dual_perfectdark.png" alt="dual_perfectdark" width="35%"/></p>
 
 ## N64 Mouse
