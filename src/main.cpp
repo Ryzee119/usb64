@@ -311,7 +311,7 @@ void loop()
                         gb_cart->ram = memory_alloc_ram(save_filename, gb_cart->ramsize, gb_has_battery(gb_cart->mbc) == 0);
                     }
 
-                    if (gb_cart->rom == NULL || gb_cart->ram == NULL)
+                    if (gb_cart->rom == NULL || (gb_cart->ram == NULL && gb_cart->ramsize > 0))
                     {
                         n64_c[c].next_peripheral = PERI_RUMBLE; //Error, just set to rumblepak
                         debug_print_error("[MAIN] ERROR: Could not allocate rom or ram buffer for %s\n", n64_c[c].tpak->gbcart->filename);
