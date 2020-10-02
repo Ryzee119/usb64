@@ -14,6 +14,8 @@
 #include "analog_stick.h"
 #include "memory.h"
 #include "fileio.h"
+#include "tft.h"
+
 
 static void ring_buffer_init(void);
 static void ring_buffer_flush();
@@ -59,6 +61,7 @@ void setup()
     fileio_init();
     memory_init();
     input_init();
+    tft_init();
     n64_subsystem_init(n64_c);
 
     //Read in settings from flash
@@ -134,6 +137,8 @@ void loop()
 
     input_update_input_devices();
 
+    tft_try_update();
+
     for (uint32_t c = 0; c < MAX_CONTROLLERS; c++)
     {
         n64_buttons[c] = 0x0000;
@@ -146,7 +151,11 @@ void loop()
             if (input_is_gamecontroller(c))
             {
                 /* Apply analog stick options */
-                n64_c[c].is_mouse = false;
+                if(n64_c[c].is_mouse == true)
+                {
+                    n64_c[c].is_mouse = false;
+                    tft_flag_update();
+                }
                 n64_settings *settings = n64_settings_get();
                 float x, y, range;
                 astick_apply_deadzone(&x, &y, n64_x_axis[c] / 100.0f,
@@ -171,7 +180,11 @@ void loop()
 #if (MAX_MICE >= 1)
             else
             {
-                n64_c[c].is_mouse = true;
+                if(n64_c[c].is_mouse == false)
+                {
+                    n64_c[c].is_mouse = true;
+                    tft_flag_update();
+                }
             }
 #endif
         }
@@ -219,12 +232,33 @@ void loop()
                 memory_flush_all();
                 debug_print_status("[MAIN] Flushed RAM to SD card as required\n");
                 flushing_toggle[c] = 1;
+                tft_flag_update();
             }
         }
         else
         {
+            if (flushing_toggle[c]) tft_flag_update();
             flushing_toggle[c] = 0;
         }
+
+#if (ENABLE_TFT_DISPLAY >= 1)
+        //Cycle TFT display
+        static uint32_t tft_toggle[MAX_CONTROLLERS] = {0};
+        if (n64_buttons[c] & N64_LB && n64_buttons[c] & N64_RB)
+        {
+            static uint8_t tft_page = 0;
+            if (tft_toggle[c] == 0)
+            {
+                tft_page = tft_change_page(++tft_page);
+                tft_toggle[c] = 1;
+                tft_flag_update();
+            }
+        }
+        else
+        {
+            tft_toggle[c] = 0;
+        }
+#endif
 
         //Handle peripheral change combinations
         static uint32_t timer_peri_change[MAX_CONTROLLERS] = {0};
@@ -273,6 +307,7 @@ void loop()
 
             /* HANDLE NEXT PERIPHERAL */
             n64_c[c].current_peripheral = PERI_NONE; //Go to none whilst changing
+            tft_force_update();
 
             //Changing peripheral to RUMBLEPAK
             if (n64_buttons[c] & N64_LB)
@@ -394,6 +429,7 @@ void loop()
         if (n64_c[c].current_peripheral == PERI_NONE && (millis() - timer_peri_change[c]) > PERI_CHANGE_TIME)
         {
             n64_c[c].current_peripheral = n64_c[c].next_peripheral;
+            tft_flag_update();
         }
 
         //Update the virtual pak if required
@@ -424,6 +460,7 @@ static char ring_buffer[4096];
 void _putchar(char character)
 {
     ring_buffer[ring_buffer_pos] = character;
+    tft_add_log(character);
     ring_buffer_pos++;
     if (ring_buffer_pos >= sizeof(ring_buffer))
         ring_buffer_pos = 0;
