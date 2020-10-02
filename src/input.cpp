@@ -7,6 +7,7 @@
 #include "n64_controller.h"
 #include "input.h"
 #include "printf.h"
+#include "tft.h"
 
 //USB Host Interface
 USBHost usbh;
@@ -108,7 +109,10 @@ void input_update_input_devices()
         if (input_is_connected(i) == 0)
         {
             if (input_devices[i].driver != NULL)
+            {
                 debug_print_status("[INPUT] Cleared device from slot %u\n", i);
+                tft_flag_update();
+            }
             input_devices[i].driver = NULL;
         }
     }
@@ -123,6 +127,7 @@ void input_update_input_devices()
             input_devices[0].driver = &hardwired;
             input_devices[0].type = HW_GAMECONTROLLER;
             debug_print_status("[INPUT] Registered hardwired gamecontroller to slot %u\n", 0);
+            tft_flag_update();
         }
     }
 #endif
@@ -153,6 +158,7 @@ void input_update_input_devices()
                         input_devices[j].driver = gamecontroller[i];
                         input_devices[j].type = USB_GAMECONTROLLER;
                         debug_print_status("[INPUT] Registered gamecontroller to slot %u\n", j);
+                        tft_flag_update();
                         break;
                     }
                 }
@@ -187,6 +193,7 @@ void input_update_input_devices()
                         input_devices[j].driver = mousecontroller[i];
                         input_devices[j].type = MOUSE;
                         debug_print_status("[INPUT] Register mouse to slot %u\n", j);
+                        tft_flag_update();
                         break;
                     }
                 }

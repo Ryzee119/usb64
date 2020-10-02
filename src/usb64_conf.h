@@ -72,6 +72,17 @@
 #define MOUSE_SENSITIVITY 2.0f //Just what felt right to me with my mouse.
 #define MAG_AT_45DEG 1.1f      //Octagonal shape has a larger magnitude at the 45degree points. 1.1 times larger seems about right
 
+/* TFT DISPLAY */
+#define ENABLE_TFT_DISPLAY 1
+#define TFT_ROTATION 1 //0-3
+#define TFT_DC 40
+#define TFT_CS 41
+#define TFT_MOSI 26
+#define TFT_SCK 27
+#define TFT_MISO 39
+#define TFT_RST 255
+
+
 /* DEBUG PRINTERS */
 #include "printf.h"
 #define debug_print_status(fmt, ...)     do { if (DEBUG_STATUS)  printf(fmt, ##__VA_ARGS__); } while (0)
