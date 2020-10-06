@@ -84,11 +84,11 @@ DRESULT disk_ioctl(
         break;
     case GET_BLOCK_SIZE:
         debug_print_fatfs("[FATFS] disk_ioctl: Block size %i\n", _disk_volume_get_cluster_size());
-        *(WORD *)buff = _disk_volume_get_cluster_size();
+        *(DWORD *)buff = _disk_volume_get_cluster_size();
         break;
     case GET_SECTOR_COUNT:
         debug_print_fatfs("[FATFS] disk_ioctl: Sector count %i\n", _disk_volume_num_blocks());
-        *(WORD *)buff = _disk_volume_num_blocks();
+        *(LBA_t *)buff = _disk_volume_num_blocks();
         break;
     default:
         break;
