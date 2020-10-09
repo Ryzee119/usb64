@@ -5,6 +5,7 @@
 * [Virtualpak](#virtualpak)
 * [Dual Stick Mode](#dual-stick-mode)
 * [N64 Mouse](#n64-mouse)
+* [TFT LCD Display](#tft-lcd-display)
 * [Debug](#debug)
 
 ## Mempaks
@@ -45,6 +46,11 @@
 * usb64 can simulate four N64 Mouse peripherals simulateneously!
 * Just plug in a USB mouse and the usb64 will auto detect it and emulate a N64 Mouse.
 * The middle mouse button is mapped to START. <p align="center"><img src="./images/mouse_2.png" alt="mouse_2" width="35%"/> <img src="./images/mouse_1.png" alt="mouse_1" width="35%"/></p>
+
+## TFT LCD Display
+* usb64 supports an optional TFT LCD display based on the low cost and extremely common ILI9341 display controller.
+* The display will automatically work once connected.
+* To cycle through different screens press `L+R`. Currently the default screen shows an overview of the current controller status. The other screen shows some useful debug info. <p align="center"><img src="./images/tft_1.png" alt="tft_1" width="35%"/> <img src="./images/tft_2.png" alt="tft_2" width="35%"/></p>
 
 ## Debug
 * There's alot going, and currently it may not be clear what the usb64 is doing. Until something better is implemented, you can connect the usb64 to your PC via a MicroUSB cable. This will enumerate as a serial comport. Connect to it with your favourite terminal to get some feedback. The code can be recompiled with [additional debug flags](./src/usb64_conf.h). <p align="center"><img src="./images/debug.png" alt="debug" width="65%"/></p>
