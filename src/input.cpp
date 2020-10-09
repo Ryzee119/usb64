@@ -399,6 +399,13 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
         return 0;
     }
 
+    //Assert reset bit if L+R+START is pressed. Start bit is cleared.
+    if ((*n64_buttons & N64_LB) && (*n64_buttons & N64_RB) && (*n64_buttons & N64_ST))
+    {
+        *n64_buttons &= ~N64_ST;
+        *n64_buttons |= N64_RES;
+    }
+
     //Output the raw data too
     if (raw_buttons) *raw_buttons = _buttons;
     for (uint32_t i = 0; i < max_axis; i ++)
