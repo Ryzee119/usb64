@@ -14,11 +14,11 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - [x] True dual analog sticks with GoldenEye and Perfect Dark.
 - [x] SD card driver with FATFS support for storage/backup of Gameboy ROMS, mempaks etc.
 - [x] A single hardwired controller interface for ultimate hacking.
+- [x] Optional TFT LCD Support.
 
 ## Todo
 - [ ] Raspberry Pi interface or equivalent for all other USB controllers.
 - [ ] More inbuilt USB controller drivers.
-- [ ] Touch LCD Support.
 
 ## Supported Controllers
 - Bluetooth 8bitdo/compatible controllers via the [8BitDo Wireless USB Adapter](https://www.8bitdo.com/wireless-usb-adapter/)
