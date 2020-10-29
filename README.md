@@ -25,6 +25,7 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - Xbox one Wired (Genuine Only)
 - Xbox 360 Wired
 - Xbox 360 Wireless (Via PC USB Receiver)
+- PS4 Wired
 - Raspberry Pi interface or equivalent for all other USB controllers.
 - A hardwired controller, use your own buttons etc.
 

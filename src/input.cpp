@@ -317,6 +317,52 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
             right_axis[0] = _axis[2] * 100 / 32768;
             right_axis[1] = _axis[5] * 100 / 32768;
             break;
+        case JoystickController::PS4:
+            if (n64_buttons == NULL || n64_x_axis == NULL || n64_y_axis == NULL)
+                break;
+            if (_buttons & (1 << 9))  *n64_buttons |= N64_ST;  //START
+            if (_buttons & (1 << 4))  *n64_buttons |= N64_LB;  //L1
+            if (_buttons & (1 << 5))  *n64_buttons |= N64_RB;  //R1
+            if (_buttons & (1 << 6))  *n64_buttons |= N64_Z;   //L2
+            if (_buttons & (1 << 7))  *n64_buttons |= N64_Z;   //R2
+            if (_buttons & (1 << 1))  *n64_buttons |= N64_A;   //X
+            if (_buttons & (1 << 0))  *n64_buttons |= N64_B;   //SQUARE
+            if (_buttons & (1 << 2))  *n64_buttons |= N64_B;   //CIRCLE
+            if (_buttons & (1 << 11)) *n64_buttons |= N64_CU | //RS triggers
+                                                      N64_CD | //all C usb_buttons
+                                                      N64_CL |
+                                                      N64_CR;
+            //Analog stick (Normalise 0 to +/-100)
+            *n64_x_axis =  (_axis[0] - 127) * 100 / 127;
+            *n64_y_axis = -(_axis[1] - 127) * 100 / 127;
+
+            //D Pad button
+            switch(_axis[9])
+            {
+                case 0: *n64_buttons |= N64_DU; break;
+                case 1: *n64_buttons |= N64_DU | N64_DR; break;
+                case 2: *n64_buttons |= N64_DR; break;
+                case 3: *n64_buttons |= N64_DR | N64_DD; break;
+                case 4: *n64_buttons |= N64_DD; break;
+                case 5: *n64_buttons |= N64_DD | N64_DL; break;
+                case 6: *n64_buttons |= N64_DL; break;
+                case 7: *n64_buttons |= N64_DL | N64_DU; break;
+            }
+
+            //C usb_buttons
+            if (_axis[2] > 256/2 + 64)  *n64_buttons |= N64_CR;
+            if (_axis[2] < 256/2 - 64)  *n64_buttons |= N64_CL;
+            if (_axis[5] > 256/2 + 64)  *n64_buttons |= N64_CD;
+            if (_axis[5] < 256/2 - 64)  *n64_buttons |= N64_CU;
+
+            //Button to hold for 'combos'
+            if (combo_pressed)
+                *combo_pressed = (_buttons & (1 << 8)); //back
+
+            //Map right axis for dual stick mode
+            right_axis[0] =  (_axis[2] - 127) * 100 / 127;
+            right_axis[1] = -(_axis[5] - 127) * 100 / 127;
+            break;
         case JoystickController::UNKNOWN:
             #if (0)
             //Mapper helper
@@ -360,7 +406,6 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
             break;
         //TODO: OTHER USB CONTROLLERS
         case JoystickController::PS3:
-        case JoystickController::PS4:
         case JoystickController::PS3_MOTION:
         default:
             break;

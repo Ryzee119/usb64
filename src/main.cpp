@@ -128,7 +128,7 @@ static bool n64_combo = false;
 void loop()
 {
     static uint32_t usb_buttons[MAX_CONTROLLERS] = {0};
-    static int32_t usb_axis[MAX_CONTROLLERS][6] = {0};
+    static int32_t usb_axis[MAX_CONTROLLERS][10] = {0};
     static uint16_t n64_buttons[MAX_CONTROLLERS] = {0};
     static int8_t n64_x_axis[MAX_CONTROLLERS] = {0};
     static int8_t n64_y_axis[MAX_CONTROLLERS] = {0};
