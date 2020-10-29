@@ -316,8 +316,52 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
 
             right_axis[0] = _axis[2] * 100 / 32768;
             right_axis[1] = _axis[5] * 100 / 32768;
+            break;
+        case JoystickController::UNKNOWN:
+            #if (0)
+            //Mapper helper
+            static uint32_t print_slower = 0;
+            if (millis() - print_slower > 100)
+            {
+                debug_print_status("%04x %04i %04i %04i %04i\n", _buttons, _axis[0], _axis[1], _axis[2], _axis[3]);
+                if (_buttons)
+                {
+                    int bit = 0;
+                    while ((_buttons & (1 << bit++)) == 0);
+                    debug_print_status("button bit: %i\n", bit-1);
+                }
+                print_slower = millis();
+            }
+            #endif
+            //Generic HID controllers //FIXME: Load from file?
+            //Example of a basic Chinese NES HID Controller. The button mapping nubmers are from a bit of trial and error.
+            //You can use the mapper helper above to assist.
+            //The controller doesnt have enough buttons, so we're missing alot here.
+            //NEXT SNES Controller
+            if (joy->idVendor() == 0x0810 && joy->idProduct() == 0xE501)
+            {
+                if (n64_buttons == NULL || n64_x_axis == NULL || n64_y_axis == NULL)
+                    break;
+                if (_buttons & (1 << 9))  *n64_buttons |= N64_ST;
+                if (_buttons & (1 << 4))  *n64_buttons |= N64_Z;
+                if (_buttons & (1 << 6))  *n64_buttons |= N64_RB;
+                if (_buttons & (1 << 2)) *n64_buttons |= N64_A;
+                if (_buttons & (1 << 1)) *n64_buttons |= N64_B;
+                if (_buttons & (1 << 3)) *n64_buttons |= N64_B;
 
+                //Button to hold for 'combos'
+                if (combo_pressed)
+                    *combo_pressed = (_buttons & (1 << 8)); //back
+
+                //Analog stick (Normalise 0 to +/-100)
+                *n64_x_axis = (_axis[0] - 127) * 100 / 127;
+                *n64_y_axis = - (_axis[1] - 127) * 100 / 127;
+            }
+            break;
         //TODO: OTHER USB CONTROLLERS
+        case JoystickController::PS3:
+        case JoystickController::PS4:
+        case JoystickController::PS3_MOTION:
         default:
             break;
         }
@@ -516,7 +560,7 @@ uint16_t input_get_id_product(int id)
     }
     else if (input_is_hw_gamecontroller(id))
     {
-        return 0xBEEF;   
+        return 0xBEEF;
     }
 
     return 0;
@@ -539,7 +583,7 @@ uint16_t input_get_id_vendor(int id)
     }
     else if (input_is_hw_gamecontroller(id))
     {
-        return 0xDEAD;   
+        return 0xDEAD;
     }
 
     return 0;
@@ -563,7 +607,7 @@ const char *input_get_manufacturer_string(int id)
     }
     else if (input_is_hw_gamecontroller(id))
     {
-        return "USB64";   
+        return "USB64";
     }
 
     return NC;
@@ -587,7 +631,7 @@ const char *input_get_product_string(int id)
     }
     else if (input_is_hw_gamecontroller(id))
     {
-        return "HARDWIRED";   
+        return "HARDWIRED";
     }
 
     return NC;
@@ -604,7 +648,6 @@ void input_enable_dualstick_mode(int id)
 
     //Copy driver into the next slot to make a 'fake' input
     memcpy(&input_devices[id + 1], &input_devices[id], sizeof(input));
-
 }
 
 void input_disable_dualstick_mode(int id)
