@@ -167,3 +167,46 @@ void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, 
         debug_print_status("[FILEIO] Reading %s for %u bytes ok!\n", filename, bytes_read);
     }
 }
+
+static FIL fp;
+int fileio_open_file_readonly(const char *filename)
+{
+    FRESULT res;
+    f_close(&fp);
+
+    res = f_open(&fp, filename, FA_READ);
+
+    if (res != FR_OK)
+    {
+        debug_print_status("Could not open %s for read1\n", filename);
+        return 0;
+    }
+    return 1;
+}
+
+void fileio_close_file()
+{
+    f_close(&fp);
+}
+
+int fileio_get_line(char *buffer, int max_len)
+{
+    FRESULT res;
+    UINT br;
+    int i = 0;
+    char c = 0;
+
+    if (f_eof(&fp))
+        return 0;
+
+    while (!f_eof(&fp) && c != '\n')
+    {
+        res = f_read(&fp, &c, 1, &br);
+        buffer[i++] = c;
+        if (c == '\n')
+            buffer[i++] = '\0';
+        if (res != FR_OK || i > (max_len - 1))
+            return 0;
+    }
+    return 1;
+}
