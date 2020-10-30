@@ -22,6 +22,7 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 
 ## Supported Controllers
 - Bluetooth 8bitdo/compatible controllers via the [8BitDo Wireless USB Adapter](https://www.8bitdo.com/wireless-usb-adapter/)
+- Wired 8bitdo controllers when they are started in X-input mode.
 - Xbox one Wired (Genuine Only)
 - Xbox 360 Wired
 - Xbox 360 Wireless (Via PC USB Receiver)
