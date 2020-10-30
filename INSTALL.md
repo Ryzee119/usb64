@@ -1,6 +1,6 @@
 # Hardware Setup
 * Install up to two PSRAM chips on the designated footprint. Note one is optional, two is recommended.
-* Install a 5 x 0.1" pin header on the USB OTG Header.  
+* Install a 5 x 0.1" pin header on the USB OTG Header. Note if using the PCB breakout board, the header should go on the underside.  
 
 <img src="./images/install_setup.png" alt="setup" width="75%"/>
 

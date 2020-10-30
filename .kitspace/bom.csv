@@ -1,0 +1,5 @@
+Reference,Qty,Description,Part Number,Manufacturer,Digikey
+C1,1,"CAP 100UF, 5MM DIA, 2MM LEAD",860010372006,Wurth Elektronik,732-8598-1-ND
+"C2,C3,C4",3,"CAP 100NF, 0805",885012207016,Wurth Elektronik,732-8026-1-ND
+"TFT1,TFT2",2,"FEMALE HEADER 0.1""",1-215307-0,TE Connectivity AMP Connectors,A106616-ND
+USB1,1,USB TYPE A RECEPTACLE,USB-A1HSW6,On Shore Technology Inc,ED2989-ND
