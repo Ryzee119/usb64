@@ -31,8 +31,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install platformio
         export BUILD_TAG=build-$(date -u +'%Y%m%d%H%M')
-        echo "::set-env name=BUILD_TAG::$BUILD_TAG"
-
+        echo "BUILD_TAG=$BUILD_TAG" >> $GITHUB_ENV
+        echo -n $BUILD_TAG > dist/tag
+        echo "BUILD_TAG=$(cat dist/tag)" >> $GITHUB_ENV
+        
     - name: Compile code
       run: platformio run -e teensy41
 
