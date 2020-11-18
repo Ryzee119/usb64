@@ -32,8 +32,6 @@ jobs:
         pip install platformio
         export BUILD_TAG=build-$(date -u +'%Y%m%d%H%M')
         echo "BUILD_TAG=$BUILD_TAG" >> $GITHUB_ENV
-        echo -n $BUILD_TAG > dist/tag
-        echo "BUILD_TAG=$(cat dist/tag)" >> $GITHUB_ENV
         
     - name: Compile code
       run: platformio run -e teensy41
@@ -43,8 +41,8 @@ jobs:
       id: create_release
       uses: "actions/create-release@v1"
       with:
-        tag_name: ${{ env.BUILD_TAG }}
-        release_name: ${{ env.BUILD_TAG }}
+        tag_name: ${{ BUILD_TAG }}
+        release_name: ${{ BUILD_TAG }}
         draft: false
         prerelease: false
 
