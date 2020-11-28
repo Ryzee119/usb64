@@ -48,7 +48,7 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 | 4 | N64 Controller Extensions | [AliExpress](https://www.aliexpress.com/wholesale?catId=0&SearchText=n64%20controller%20extension) |
 | 1 | (Optional) ILI9341 TFT LCD Display (320x240) | [AliExpress](https://www.aliexpress.com/wholesale?catId=0&SearchText=ili9341%20tft) |
 | 1 | MicroSD Card | - |
-| 1 | Case | To do |
+| 1 | Case | https://a360.co/2HPz0U0 |
 | 1 | PCB breakout board | [Kitspace](https://kitspace.org/boards/github.com/ryzee119/usb64/) |
 
 Note: PSRAM model numbers are IPS6404L-SQ-SPN or ESP-PSRAM64H.
