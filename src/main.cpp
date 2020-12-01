@@ -270,6 +270,14 @@ void loop()
         {
             tft_toggle[c] = 0;
         }
+
+        //Measure Teensy temp and if it has changed, flag a TFT update
+        static int32_t teensy_temp = 0;
+        if (abs((int32_t)tempmonGetTemp() - teensy_temp) > 2)
+        {
+            teensy_temp = (int32_t)tempmonGetTemp();
+            tft_flag_update();
+        }
 #endif
 
         //Handle peripheral change combinations

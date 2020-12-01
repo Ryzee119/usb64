@@ -30,6 +30,8 @@ static char *_tft_log_text_lines[_tft_log_max_lines];
 extern n64_controller n64_c[MAX_CONTROLLERS];
 extern n64_transferpak n64_tpak[MAX_CONTROLLERS];
 
+extern float tempmonGetTemp(void);
+
 static const char *n64_peri_to_string(n64_controller *c)
 {
     static char text_buff[32];
@@ -226,6 +228,13 @@ void tft_force_update()
         tft.setTextColor(ILI9341_GREEN);
         tft.print("N64 is ON");
     }
+
+    //Write Teensy temperature
+    tft.setTextColor(ILI9341_WHITE);
+    snprintf(text_buff, sizeof(text_buff), "%i°C", (int32_t)tempmonGetTemp());
+    tft.setCursor(125, 20);
+    tft.fillRect(tft.getCursorX(), tft.getCursorY(), tft.width() - tft.getCursorX(), 8, BG_COLOUR);
+    tft.print(text_buff);
 
     //These elements are present on specific pages only.
     switch (_tft_page)
