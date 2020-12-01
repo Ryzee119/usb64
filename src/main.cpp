@@ -52,6 +52,18 @@ void n64_controller4_clock_edge()
 }
 #endif
 
+extern "C" {
+extern void startup_early_hook(void)
+{
+    //Get these up as early as possible.
+    pinMode(N64_CONTROLLER_1_PIN, INPUT_PULLUP);
+    pinMode(N64_CONTROLLER_2_PIN, INPUT_PULLUP);
+    pinMode(N64_CONTROLLER_3_PIN, INPUT_PULLUP);
+    pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP);
+    pinMode(N64_CONSOLE_SENSE, INPUT_PULLDOWN);
+}
+}
+
 void setup()
 {
     //Init the serial port and ring buffer
