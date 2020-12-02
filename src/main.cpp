@@ -22,32 +22,33 @@ static void ring_buffer_flush();
 
 n64_controller n64_c[MAX_CONTROLLERS];
 n64_settings *settings;
+int n64_is_on = 0;
 
 #if (MAX_CONTROLLERS >= 1)
 void n64_controller1_clock_edge()
 {
-    if(input_is_connected(0))
+    if(input_is_connected(0) && n64_is_on)
         n64_controller_hande_new_edge(&n64_c[0]);
 }
 #endif
 #if (MAX_CONTROLLERS >= 2)
 void n64_controller2_clock_edge()
 {
-    if(input_is_connected(1))
+    if(input_is_connected(1) && n64_is_on)
         n64_controller_hande_new_edge(&n64_c[1]);
 }
 #endif
 #if (MAX_CONTROLLERS >= 3)
 void n64_controller3_clock_edge()
 {
-    if(input_is_connected(2))
+    if(input_is_connected(2) && n64_is_on)
         n64_controller_hande_new_edge(&n64_c[2]);
 }
 #endif
 #if (MAX_CONTROLLERS >= 4)
 void n64_controller4_clock_edge()
 {
-    if(input_is_connected(3))
+    if(input_is_connected(3) && n64_is_on)
         n64_controller_hande_new_edge(&n64_c[3]);
 }
 #endif
@@ -237,7 +238,8 @@ void loop()
  
         //Handle ram flushing. Auto flushes when the N64 is turned off :)
         static uint32_t flushing_toggle[MAX_CONTROLLERS] = {0};
-        if ((n64_combo && (n64_buttons[c] & N64_A)) || digitalRead(N64_CONSOLE_SENSE) == 0)
+        n64_is_on = digitalRead(N64_CONSOLE_SENSE);
+        if ((n64_combo && (n64_buttons[c] & N64_A)) || (n64_is_on == 0))
         {
             if (flushing_toggle[c] == 0)
             {
