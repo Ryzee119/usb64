@@ -71,4 +71,5 @@ usb64 is shared under the [MIT license](https://github.com/Ryzee119/usb64/blob/d
 * [Teensy cores](https://github.com/PaulStoffregen/cores) shared under an '[MIT or MIT-like license](https://forum.pjrc.com/threads/29382-open-source-license-issues-when-using-teensy-products?p=79667&viewfull=1#post79667)'.
 * [MBC emulation code](src/n64/n64_transferpak_gbcarts.c) is adapted from [Peanut-GB](https://github.com/deltabeard/Peanut-GB) shared under an MIT License.
 
-<p align="center"><img src="./images/setup.jpg" alt="vp_cont" width="50%"/></p>
+usb64 with optional case and TFT display.
+<p align="center"><img src="./images/usb64.jpg" alt="vp_cont" width="100%"/></p>
