@@ -73,3 +73,6 @@ usb64 is shared under the [MIT license](https://github.com/Ryzee119/usb64/blob/d
 
 usb64 with optional case and TFT display.
 <p align="center"><img src="./images/usb64.jpg" alt="vp_cont" width="100%"/></p>
+
+If you like my work please consider a small donation<br>
+[![paypal](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=49HV7N8QH9KQ8&currency_code=AUD&source=url)<br>
