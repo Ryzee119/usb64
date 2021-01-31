@@ -13,6 +13,11 @@
 
 <img src="./images/install_basic.png" alt="basic" width="75%"/>
 
+# Breakout PCB
+* For a clean finish you can use this breakout PCB to house the Teensy which provide nice labelled solder pads and an embedded USB connector.
+* See [Hardware](./hw/README.md) for info.
+* Can be ordered [here](https://kitspace.org/boards/github.com/ryzee119/usb64/).
+
 # Advanced Usages
 * Use a USB hub to connect up to four usb64 compatible controllers. An externally powered hub may be required.  
 * Hardwire a custom N64 controller to the designated IO (Each digital pin is internally pulled-up, Analog input respect to VCC, VCC/2 is central position).
