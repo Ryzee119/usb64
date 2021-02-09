@@ -46,7 +46,7 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 | 3 | 0.1" Pin Header | https://www.pjrc.com/store/header_24x1.html |
 | 2 | 64Mbit PSRAM  SOIC-8 | https://www.pjrc.com/store/psram.html |
 | 4 | N64 Controller Extensions | [AliExpress](https://www.aliexpress.com/wholesale?catId=0&SearchText=n64%20controller%20extension) |
-| 1 | (Optional) ILI9341 TFT LCD Display (320x240) | [AliExpress](https://www.aliexpress.com/wholesale?catId=0&SearchText=ili9341%20tft) |
+| 1 | (Optional) ILI9341 TFT LCD Display 2.2" (320x240) | [AliExpress](https://www.aliexpress.com/wholesale?catId=0&SearchText=ili9341%20tft) |
 | 1 | MicroSD Card | - |
 | 1 | Case | https://a360.co/2HPz0U0 |
 | 1 | PCB breakout board | [Kitspace](https://kitspace.org/boards/github.com/ryzee119/usb64/) |
