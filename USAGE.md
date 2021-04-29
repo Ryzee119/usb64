@@ -11,7 +11,7 @@
 ## Mempaks
 * usb64 can simulate four Mempaks simultaneously. To select a Mempak press `BACK+D-PAD` direction to select the respective bank.
 * Two controllers cannot have the same bank selected. The second controller will revert to a Rumblepak.
-* Mempak saves are managed in RAM, so you need to be flushed to the SD card. You can do this by holding BACK then pressing A. usb64 will also sense when the n64 is powered off and automatically flush the RAM to the SD card.
+* Do not unplug the usb64's power before turning off the n64 console to prevent data loss. The usb64 senses the n64 console turning off and flushes data to the SD Card.
 * Inserting the SD card into your PC will show Mempaks as `MEMPAKXX.MPK` where XX is the bank number. You can back these up to your PC.
 
 ## Rumblepaks
@@ -22,7 +22,7 @@
 * usb64 can simulate four transferpaks simulateneously. The select a Transferpak press `BACK+RB`. The transferpak will attempt to load the previously set Gameboy or Gameboy Colour ROM from the SD Card.
 * To select the ROM to load, you must first use the [*VirtualPak*](#virtualpak). If a ROM isn't selected, or fails to load, it will revert to a Rumblepak.
 * Avoid having two controllers access the same ROM at once.
-* Gameboy ROMS that save the SRAM, can be backed up to the SD Card by pressing `BACK+A`. Note: Don't do this mid game as it causes the controller to disconnect briefly and the game might error out.
+* Do not unplug the usb64's power before turning off the n64 console to prevent data loss. The usb64 senses the n64 console turning off and flushes data to the SD Card.
 * Gameboy saves can be copied over to the SD Card for use with the Transferpak. The file name must match the ROM save with a `.SAV` extension.
 * You can simulate four transferpaks, with four difference ROMS, with four different save files! <p align="center"><img src="./images/tpak_6.png" alt="tpak_6" width="35%"/>  <img src="./images/tpak_7.png" alt="tpak_7" width="35%"/></p> <p align="center"><img src="./images/silver.gif" alt="silver" width="35%"/>  <img src="./images/tpak_1.png" alt="tpak_1" width="35%"/></p> <p align="center"><img src="./images/tpak_5.png" alt="tpak_5" width="35%"/>  <img src="./images/tpak_8.png" alt="tpak_8" width="35%"/></p> 
 
