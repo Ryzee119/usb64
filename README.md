@@ -3,7 +3,7 @@
 ![Build](https://github.com/Ryzee119/usb64/workflows/Build/badge.svg) ![badge](https://img.shields.io/badge/license-MIT-green)  
 A project developed to use USB controllers on the Nintendo 64 console.  
 Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee119/usb64/releases).  
-**NOTE: This project is still in development and bugs are certainly still present. I plan to play alot of N64 to test :smile:.**
+**NOTE: This project is still in development, PRs and ideas are welcome. See todo list for ideas.**
 
 - [x] N64 controller emulation (up to four controllers at once!).
 - [x] Rumblepak emulation.
@@ -18,7 +18,12 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 
 ## Todo
 - [ ] Raspberry Pi interface or equivalent for all other USB controllers.
-- [ ] More inbuilt USB controller drivers.
+- [ ] More inbuilt USB controller drivers. (PS3, Aftermarket Xbox One, OG Xbox, improved Generic HID).
+- [ ] USB Bluetooth stack.
+- [ ] Randnet keyboard emulation.
+- [ ] Mouse/Keyboard input for controllers.
+- [ ] Gamecube controller support.
+- [ ] Better debug output (Flashing LED, SD card logging)
 
 ## Supported Controllers
 - Bluetooth 8bitdo/compatible controllers via the [8BitDo Wireless USB Adapter](https://www.8bitdo.com/wireless-usb-adapter/)
