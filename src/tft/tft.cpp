@@ -229,12 +229,14 @@ void tft_force_update()
         tft.print("N64 is ON");
     }
 
+#ifdef __IMXRT1062__
     //Write Teensy temperature
     tft.setTextColor(ILI9341_WHITE);
     snprintf(text_buff, sizeof(text_buff), "%i°C", (int32_t)tempmonGetTemp());
     tft.setCursor(125, 20);
     tft.fillRect(tft.getCursorX(), tft.getCursorY(), tft.width() - tft.getCursorX(), 8, BG_COLOUR);
     tft.print(text_buff);
+#endif
 
     //These elements are present on specific pages only.
     switch (_tft_page)

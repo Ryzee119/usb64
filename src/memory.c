@@ -18,8 +18,14 @@
 #include "fileio.h"
 #include "printf.h"
 
+#ifndef EXTMEM
+#warning Warning: EXTMEM not supported.
+uint8_t ext_ram[1];
+uint8_t external_psram_size = 0; //in MB. Set in startup.c
+#else
 extern uint8_t external_psram_size; //in MB. Set in startup.c
 EXTMEM uint8_t ext_ram[1024 * 1024 * 16];
+#endif
 static uint32_t internal_size = 32768; //Smaller than this will malloc to internal RAM instead
 static sram_storage sram[32] = {0};
 
