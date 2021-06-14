@@ -73,7 +73,9 @@
 #define MAG_AT_45DEG 1.1f      //Octagonal shape has a larger magnitude at the 45degree points. 1.1 times larger seems about right
 
 /* TFT DISPLAY */
+#ifndef ENABLE_TFT_DISPLAY
 #define ENABLE_TFT_DISPLAY 1
+#endif
 #define TFT_ROTATION 1 //0-3
 #define TFT_DC 40
 #define TFT_CS 41

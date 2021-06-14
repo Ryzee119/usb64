@@ -132,8 +132,6 @@ void setup()
     attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_4_PIN), n64_controller4_clock_edge, FALLING);
 #endif
 
-    NVIC_SET_PRIORITY(IRQ_GPIO6789, 1);
-
     digitalWrite(USER_LED_PIN, HIGH);
 }
 
@@ -272,7 +270,7 @@ void loop()
         {
             tft_toggle[c] = 0;
         }
-
+#ifdef __IMXRT1062__
         //Measure Teensy temp and if it has changed, flag a TFT update
         static int32_t teensy_temp = 0;
         if (abs((int32_t)tempmonGetTemp() - teensy_temp) > 2)
@@ -280,6 +278,7 @@ void loop()
             teensy_temp = (int32_t)tempmonGetTemp();
             tft_flag_update();
         }
+#endif
 #endif
 
         //Handle peripheral change combinations
