@@ -16,57 +16,28 @@ USBHost usbh;
 USBHub hub1(usbh);
 #endif
 
-#if (MAX_CONTROLLERS >= 1)
 JoystickController joy1(usbh);
-#if (MAX_MICE >= 1)
-USBHIDParser hid1(usbh);
-MouseController mouse1(usbh);
-#endif
-#if (ENABLE_HARDWIRED_CONTROLLER >=1)
-uint32_t hardwired = 1;
-#endif
-#endif
-#if (MAX_CONTROLLERS >= 2)
 JoystickController joy2(usbh);
-#if (MAX_MICE >= 2)
-USBHIDParser hid2(usbh);
-MouseController mouse2(usbh);
-#endif
-#endif
-#if (MAX_CONTROLLERS >= 3)
 JoystickController joy3(usbh);
-#if (MAX_MICE >= 3)
-USBHIDParser hid3(usbh);
-MouseController mouse3(usbh);
-#endif
-#endif
-#if (MAX_CONTROLLERS >= 4)
 JoystickController joy4(usbh);
-#if (MAX_MICE >= 4)
+JoystickController joy5(usbh);
+JoystickController joy6(usbh);
+JoystickController joy7(usbh);
+JoystickController joy8(usbh);
+
+USBHIDParser hid1(usbh);
+USBHIDParser hid2(usbh);
+USBHIDParser hid3(usbh);
 USBHIDParser hid4(usbh);
+MouseController mouse1(usbh);
+MouseController mouse2(usbh);
+MouseController mouse3(usbh);
 MouseController mouse4(usbh);
-#endif
-#endif
 
-#if MAX_CONTROLLERS == 1
-JoystickController *gamecontroller[] = {&joy1};
-#elif MAX_CONTROLLERS == 2
-JoystickController *gamecontroller[] = {&joy1, &joy2};
-#elif MAX_CONTROLLERS == 3
-JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3};
-#elif MAX_CONTROLLERS == 4
-JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3, &joy4};
-#endif
-
-#if MAX_MICE == 1
-MouseController *mousecontroller[] = {&mouse1, NULL, NULL, NULL};
-#elif MAX_MICE == 2
-MouseController *mousecontroller[] = {&mouse1, &mouse2, NULL, NULL};
-#elif MAX_MICE == 3
-MouseController *mousecontroller[] = {&mouse1, &mouse2, &mouse3.NULL};
-#elif MAX_MICE == 4
+JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3, &joy4, &joy5, &joy6, &joy7, &joy8};
 MouseController *mousecontroller[] = {&mouse1, &mouse2, &mouse3, &mouse4};
-#endif
+
+uint32_t hardwired = 1;
 
 #define MOUSE 0
 #define USB_GAMECONTROLLER 1
