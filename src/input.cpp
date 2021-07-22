@@ -206,7 +206,7 @@ void input_update_input_devices()
     //Find new keyboard
     for (int i = 0; i < MAX_KB; i++)
     {
-        //Mouse is connected
+        //Keyboard is connected
         USBHIDInput *kb = (USBHIDInput *)kbcontroller[i];
         if (*kb == true)
         {
@@ -220,7 +220,7 @@ void input_update_input_devices()
                     break;
                 }
             }
-            //Its a new mouse, find empty slot and register it now
+            //Its a new keyboard, find empty slot and register it now
             if (already_registered == false)
             {
                 for (int j = 0; j < MAX_CONTROLLERS; j++)
