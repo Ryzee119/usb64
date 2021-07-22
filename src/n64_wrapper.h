@@ -30,8 +30,8 @@ void n64hal_buffered_write(void *tx_buff, void *dst, uint32_t offset, uint32_t l
 
 //GPIO wrappers
 void n64hal_output_set(uint8_t pin, uint8_t level);
-void n64hal_input_swap(n64_controller *controller, uint8_t val);
-uint8_t n64hal_input_read(n64_controller *controller);
+void n64hal_input_swap(n64_input_dev_t *controller, uint8_t val);
+uint8_t n64hal_input_read(n64_input_dev_t *controller);
   
 //FileIO wrappers
 uint32_t n64hal_list_gb_roms(char **list, uint32_t max);
