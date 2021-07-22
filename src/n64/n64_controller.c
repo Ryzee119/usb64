@@ -22,22 +22,22 @@ n64_mempack n64_mpack[MAX_CONTROLLERS];
 n64_transferpak n64_tpak[MAX_CONTROLLERS];
 gameboycart gb_cart[MAX_CONTROLLERS];
 
-void n64_subsystem_init(n64_controller *controllers)
+void n64_subsystem_init(n64_input_dev_t *in_dev)
 {
     // INITIALISE THE N64 STRUCTS //
     for (uint32_t i = 0; i < MAX_CONTROLLERS; i++)
     {
-        controllers[i].id = i;
-        controllers[i].current_bit = 7;
-        controllers[i].current_byte = 0;
-        controllers[i].current_peripheral = PERI_RUMBLE;
-        controllers[i].next_peripheral = controllers[i].current_peripheral;
-        controllers[i].rpak = &n64_rpak[i];
-        controllers[i].mempack = &n64_mpack[i];
-        controllers[i].mempack->id = VIRTUAL_PAK;
-        controllers[i].mempack->data = NULL;
-        controllers[i].tpak = &n64_tpak[i];
-        controllers[i].tpak->gbcart = &gb_cart[i];
+        in_dev[i].id = i;
+        in_dev[i].current_bit = 7;
+        in_dev[i].current_byte = 0;
+        in_dev[i].current_peripheral = PERI_RUMBLE;
+        in_dev[i].next_peripheral = in_dev[i].current_peripheral;
+        in_dev[i].rpak = &n64_rpak[i];
+        in_dev[i].mempack = &n64_mpack[i];
+        in_dev[i].mempack->id = VIRTUAL_PAK;
+        in_dev[i].mempack->data = NULL;
+        in_dev[i].tpak = &n64_tpak[i];
+        in_dev[i].tpak->gbcart = &gb_cart[i];
     }
 
     //Setup the Controller pin IO mapping and interrupts
@@ -98,7 +98,7 @@ static uint8_t n64_compare_addr_crc(uint16_t encoded_add_console)
     return encoded_add_cont == encoded_add_console;
 }
 
-static void n64_send_stream(uint8_t *txbuff, uint32_t len, n64_controller *c)
+static void n64_send_stream(uint8_t *txbuff, uint32_t len, n64_input_dev_t *c)
 {
     uint32_t cycle_cnt = 0;
     uint32_t current_byte = 0;
@@ -135,7 +135,7 @@ static void n64_send_stream(uint8_t *txbuff, uint32_t len, n64_controller *c)
     n64hal_input_swap(c, N64_INPUT); //Release bus. We're done
 }
 
-static void n64_reset_stream(n64_controller *cont)
+static void n64_reset_stream(n64_input_dev_t *cont)
 {
     cont->current_bit = 7;
     cont->current_byte = 0;
@@ -148,7 +148,7 @@ static void inline n64_wait_micros(uint32_t micros){
 }
 
 //This function is called in the falling edge of the n64 data bus.
-void n64_controller_hande_new_edge(n64_controller *cont)
+void n64_controller_hande_new_edge(n64_input_dev_t *cont)
 {
     uint32_t start_clock = n64hal_hs_tick_get();
 

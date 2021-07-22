@@ -103,7 +103,7 @@ uint32_t n64hal_hs_tick_get()
  *   controller: Pointer to the n64 controller struct which contains the gpio mapping
  *   val: N64_OUTPUT or N64_INPUT
  */
-void n64hal_input_swap(n64_controller *controller, uint8_t val)
+void n64hal_input_swap(n64_input_dev_t *controller, uint8_t val)
 {
     switch (val)
     {
@@ -125,7 +125,7 @@ void n64hal_input_swap(n64_controller *controller, uint8_t val)
  *
  *   controller: Pointer to the n64 controller struct which contains the gpio mapping
  */
-uint8_t n64hal_input_read(n64_controller *controller)
+uint8_t n64hal_input_read(n64_input_dev_t *controller)
 {
     return digitalRead(controller->gpio_pin);
 }

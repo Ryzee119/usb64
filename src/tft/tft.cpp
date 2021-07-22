@@ -27,12 +27,12 @@ static uint8_t _tft_update_needed = 0;
 static const uint8_t _tft_log_max_lines = 15;
 static char *_tft_log_text_lines[_tft_log_max_lines];
 
-extern n64_controller n64_c[MAX_CONTROLLERS];
+extern n64_input_dev_t n64_in_dev[MAX_CONTROLLERS];
 extern n64_transferpak n64_tpak[MAX_CONTROLLERS];
 
 extern float tempmonGetTemp(void);
 
-static const char *n64_peri_to_string(n64_controller *c)
+static const char *n64_peri_to_string(n64_input_dev_t *c)
 {
     static char text_buff[32];
 
@@ -254,7 +254,7 @@ void tft_force_update()
                      input_get_id_vendor(i),
                      input_get_id_product(i));
 
-            write_controller_status(i, 0, n64_peri_to_string(&n64_c[i]));
+            write_controller_status(i, 0, n64_peri_to_string(&n64_in_dev[i]));
             write_controller_status(i, 1, text_buff);
         }
         break;

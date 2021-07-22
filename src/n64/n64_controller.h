@@ -23,7 +23,7 @@ typedef struct __attribute__((packed))
 {
     uint8_t led_state;
     uint16_t buttons[3];
-    uint8_t error_flags;
+    uint8_t flags;
 } n64_randnet_kb;
 
 typedef struct
@@ -43,11 +43,11 @@ typedef struct
     uint32_t is_kb;             //Set to emulate a n64 randnet keyboard
     n64_randnet_kb kb_state;    //Randnet keyboard object
 
-    uint32_t bus_idle_timer_us; //Timer counter for bus idle timing
+    uint32_t bus_idle_timer_clks; //Timer counter for bus idle timing
     uint32_t gpio_pin;          //What pin is this controller connected to
-} n64_controller;
+} n64_input_dev_t;
 
-//N64 RELATED
+//N64 JOYBUS
 #define N64_IDENTIFY 0x00
 #define N64_CONTROLLER_STATUS 0x01
 #define N64_PERI_READ 0x02
@@ -60,12 +60,8 @@ typedef struct
 #define N64_DATA_POS 3
 #define N64_CRC_POS 35
 #define N64_MAX_POS 36
-#define PERI_RUMBLE 0
-#define PERI_MEMPAK 1
-#define PERI_NONE 2
-#define PERI_TPAK 3
 
-//N64 Buttons
+//N64 Controller
 #define N64_A (1UL << 7)
 #define N64_B (1UL << 6)
 #define N64_Z (1UL << 5)
@@ -83,23 +79,29 @@ typedef struct
 #define N64_CL (1UL << 9)
 #define N64_CR (1UL << 8)
 
-//RANDNET Buttons
+//RANDNET
 #define RANDNET_MAX_BUTTONS 3
-#define RANDNET_LED_NUMLOCK  (1 << 0)
-#define RANDNET_LED_CAPSLOCK (1 << 1)
-#define RANDNET_LED_POWER    (1 << 2)
-#define RANDNET_ERROR_HOME_KEY          (1 << 0)
-#define RANDNET_ERROR_EXCESS_BUTTONS    (1 << 4)
+#define RANDNET_LED_NUMLOCK            (1 << 0)
+#define RANDNET_LED_CAPSLOCK           (1 << 1)
+#define RANDNET_LED_POWER              (1 << 2)
+#define RANDNET_FLAG_HOME_KEY          (1 << 0)
+#define RANDNET_FLAG_EXCESS_BUTTONS    (1 << 4)
 
-//N64 Controller Flags
-
+//Mempak
 #define MEMPAK_SIZE 32768
-
 #define MAX_MEMPAKS MAX_CONTROLLERS
 #define VIRTUAL_PAK MAX_MEMPAKS
 
-void n64_subsystem_init(n64_controller *controllers);
-void n64_controller_hande_new_edge(n64_controller *cont);
+enum
+{
+    PERI_RUMBLE,
+    PERI_MEMPAK,
+    PERI_NONE,
+    PERI_TPAK,
+};
+
+void n64_subsystem_init(n64_input_dev_t *in_dev);
+void n64_controller_hande_new_edge(n64_input_dev_t *cont);
 
 #ifdef __cplusplus
 }
