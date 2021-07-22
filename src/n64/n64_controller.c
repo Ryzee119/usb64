@@ -242,22 +242,25 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
     }
 
     //If it's a RANDNET keyboard packet
-    if (cont->data_buffer[N64_COMMAND_POS] == N64_RANDNET_REQ && cont->current_byte == (N64_DATA_POS + 1))
+    if (cont->is_kb && cont->data_buffer[N64_COMMAND_POS] == N64_RANDNET_REQ && cont->current_byte == RANDNET_BTN_POS)
     {
         //First received byte is the led state of the keyboard LEDs
-        cont->kb_state.led_state = cont->data_buffer[cont->current_byte];
+        cont->kb_state.led_state = cont->data_buffer[RANDNET_LED_POS];
         debug_print_n64("[N64] Randnet LED Status %02x\n",  cont->kb_state.led_state);
+
+        //Build the output. Buttons are byte reversed so its correct on the output
+        cont->data_buffer[RANDNET_BTN_POS + 0] = cont->kb_state.buttons[0] >> 8;
+        cont->data_buffer[RANDNET_BTN_POS + 1] = cont->kb_state.buttons[0] >> 0;
+        cont->data_buffer[RANDNET_BTN_POS + 2] = cont->kb_state.buttons[1] >> 8;
+        cont->data_buffer[RANDNET_BTN_POS + 3] = cont->kb_state.buttons[1] >> 0;
+        cont->data_buffer[RANDNET_BTN_POS + 4] = cont->kb_state.buttons[2] >> 8;
+        cont->data_buffer[RANDNET_BTN_POS + 5] = cont->kb_state.buttons[2] >> 0;
+        cont->data_buffer[RANDNET_BTN_POS + 6] = cont->kb_state.flags;
         n64_wait_micros(2);
 
         //Response is 7 bytes. 3 x 16bit buttons + 1 x 8bit status flags
-        n64_send_stream((uint8_t *)&cont->kb_state.buttons, 7, cont);
+        n64_send_stream(&cont->data_buffer[RANDNET_BTN_POS], 7, cont);
 
-        if (cont->kb_state.buttons[0] || cont->kb_state.buttons[1] || cont->kb_state.buttons[2])
-        {
-            debug_print_n64("[N64] Randnet button %02x %02x %02x\n", cont->kb_state.buttons[0],
-                            cont->kb_state.buttons[1],
-                            cont->kb_state.buttons[2]);
-        }
         //We're done with this packet
         n64_reset_stream(cont);
     }

@@ -80,6 +80,8 @@ typedef struct
 #define N64_CR (1UL << 8)
 
 //RANDNET
+#define RANDNET_LED_POS     1
+#define RANDNET_BTN_POS     2
 #define RANDNET_MAX_BUTTONS 3
 #define RANDNET_LED_NUMLOCK            (1 << 0)
 #define RANDNET_LED_CAPSLOCK           (1 << 1)
