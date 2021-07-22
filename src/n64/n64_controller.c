@@ -246,11 +246,18 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
     {
         //First received byte is the led state of the keyboard LEDs
         cont->kb_state.led_state = cont->data_buffer[cont->current_byte];
+        debug_print_n64("[N64] Randnet LED Status %02x\n",  cont->kb_state.led_state);
         n64_wait_micros(2);
 
-        //Response is 7 bytes. 3 x 16bit buttons + 1 x 8bit error status
+        //Response is 7 bytes. 3 x 16bit buttons + 1 x 8bit status flags
         n64_send_stream((uint8_t *)&cont->kb_state.buttons, 7, cont);
 
+        if (cont->kb_state.buttons[0] || cont->kb_state.buttons[1] || cont->kb_state.buttons[2])
+        {
+            debug_print_n64("[N64] Randnet button %02x %02x %02x\n", cont->kb_state.buttons[0],
+                            cont->kb_state.buttons[1],
+                            cont->kb_state.buttons[2]);
+        }
         //We're done with this packet
         n64_reset_stream(cont);
     }
