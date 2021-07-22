@@ -154,7 +154,6 @@ void n64_controller_hande_new_edge(n64_controller *cont)
 
     static uint16_t peri_address[MAX_CONTROLLERS] = {0};
     static uint32_t peri_access[MAX_CONTROLLERS] = {0};
-    static uint32_t bus_timer[MAX_CONTROLLERS] = {0};
 
     //Hardcoded controller responses for indentify requests
     static uint8_t n64_mouse[]          = {0x02, 0x00, 0x00};
@@ -164,7 +163,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
     static uint8_t n64_cont_crc_error[] = {0x05, 0x00, 0x04};
 
     //If bus has been idle for 300us, start of a new stream.
-    if ((n64hal_hs_tick_get() - bus_timer[cont->id]) > (300 * n64hal_hs_tick_get_speed() / 1000000))
+    if ((n64hal_hs_tick_get() - cont->bus_idle_timer_clks) > (300 * n64hal_hs_tick_get_speed() / 1000000))
     {
         n64_reset_stream(cont);
         peri_access[cont->id] = 0;
@@ -189,7 +188,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
 
     //Reset idle timer
     n64hal_hs_tick_reset();
-    bus_timer[cont->id] = n64hal_hs_tick_get();
+    cont->bus_idle_timer_clks = n64hal_hs_tick_get();
 
     //If byte 0 has been completed, we need to identify what the command is
     if (cont->current_byte == 1)
