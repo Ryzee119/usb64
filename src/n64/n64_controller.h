@@ -12,12 +12,19 @@ extern "C" {
 #include "n64_rumblepak.h"
 #include "n64_transferpak_gbcarts.h"
 
-typedef struct
+typedef struct  __attribute__((packed))
 {
     uint16_t dButtons;
     int8_t x_axis;
     int8_t y_axis;
 } n64_buttonmap;
+
+typedef struct __attribute__((packed))
+{
+    uint8_t led_state;
+    uint16_t buttons[3];
+    uint8_t error_flags;
+} n64_randnet_kb;
 
 typedef struct
 {
@@ -32,7 +39,9 @@ typedef struct
     n64_transferpak *tpak;      //Pointer to installed transferpak
     n64_rumblepak *rpak;        //Pointer to installed rumblepak
     n64_mempack *mempack;       //Pointer to installed mempack
-    uint32_t is_mouse;           //Set to emulate a n64 mouse
+    uint32_t is_mouse;          //Set to emulate a n64 mouse
+    uint32_t is_kb;             //Set to emulate a n64 randnet keyboard
+    n64_randnet_kb kb_state;    //Randnet keyboard object
 
     uint32_t bus_idle_timer_us; //Timer counter for bus idle timing
     uint32_t gpio_pin;          //What pin is this controller connected to
@@ -44,6 +53,7 @@ typedef struct
 #define N64_PERI_READ 0x02
 #define N64_PERI_WRITE 0x03
 #define N64_CONTROLLER_RESET 0xFF
+#define N64_RANDNET_REQ 0x13
 #define N64_COMMAND_POS 0
 #define N64_ADDRESS_MSB_POS 1
 #define N64_ADDRESS_LSB_POS 2
@@ -72,6 +82,14 @@ typedef struct
 #define N64_CD (1UL << 10)
 #define N64_CL (1UL << 9)
 #define N64_CR (1UL << 8)
+
+//RANDNET Buttons
+#define RANDNET_MAX_BUTTONS 3
+#define RANDNET_LED_NUMLOCK  (1 << 0)
+#define RANDNET_LED_CAPSLOCK (1 << 1)
+#define RANDNET_LED_POWER    (1 << 2)
+#define RANDNET_ERROR_HOME_KEY          (1 << 0)
+#define RANDNET_ERROR_EXCESS_BUTTONS    (1 << 4)
 
 //N64 Controller Flags
 

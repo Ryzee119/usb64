@@ -140,11 +140,7 @@ void setup()
 static bool n64_combo = false;
 void loop()
 {
-    static uint32_t usb_buttons[MAX_CONTROLLERS] = {0};
-    static int32_t usb_axis[MAX_CONTROLLERS][10] = {0};
-    static uint16_t n64_buttons[MAX_CONTROLLERS] = {0};
-    static int8_t n64_x_axis[MAX_CONTROLLERS] = {0};
-    static int8_t n64_y_axis[MAX_CONTROLLERS] = {0};
+    static uint8_t n64_response[MAX_CONTROLLERS][32] = {0};
 
     ring_buffer_flush();
 
@@ -154,25 +150,23 @@ void loop()
 
     for (uint32_t c = 0; c < MAX_CONTROLLERS; c++)
     {
-        n64_buttons[c] = 0x0000;
         if (input_is_connected(c))
         {
-            static uint32_t max_axis = sizeof(usb_axis[0]) / sizeof(usb_axis[0][0]);
-            input_get_buttons(c, &usb_buttons[c], usb_axis[c], max_axis,                       //Raw usb output (if wanted)
-                                 &n64_buttons[c], &n64_x_axis[c], &n64_y_axis[c], &n64_combo); //Mapped n64 output
-
             if (input_is_gamecontroller(c))
             {
-                /* Apply analog stick options */
-                if(n64_c[c].is_mouse == true)
+                n64_buttonmap *new_state = (n64_buttonmap *)n64_response[c];
+                input_get_state(c, new_state,  &n64_combo);
+
+                if(n64_c[c].is_mouse == true || n64_c[c].is_kb == true)
                 {
                     n64_c[c].is_mouse = false;
+                    n64_c[c].is_kb = false;
                     tft_flag_update();
                 }
                 n64_settings *settings = n64_settings_get();
                 float x, y, range;
-                astick_apply_deadzone(&x, &y, n64_x_axis[c] / 100.0f,
-                                              n64_y_axis[c] / 100.0f,
+                astick_apply_deadzone(&x, &y, new_state->x_axis / 100.0f,
+                                              new_state->y_axis / 100.0f,
                                               settings->deadzone[c] / 10.0f, 0.05f);
                 
                 if(input_is_dualstick_mode(c) && (c % 2) == 0 /*Controller 0 or 2 only*/)
@@ -187,27 +181,60 @@ void loop()
                     if (settings->octa_correct[c]) astick_apply_octa_correction(&x, &y);
                 }
 
-                n64_x_axis[c] = x * 100.0f;
-                n64_y_axis[c] = y * 100.0f;
+                new_state->x_axis = x * 100.0f;
+                new_state->y_axis = y * 100.0f;
+
+                //Apply digital buttons and axis to n64 controller if combo button isnt pressed
+                if (n64_combo == 0)
+                {
+                    n64_c[c].b_state.dButtons = new_state->dButtons;
+                    n64_c[c].b_state.x_axis = new_state->x_axis;
+                    n64_c[c].b_state.y_axis = new_state->y_axis;
+                }
             }
 #if (MAX_MICE >= 1)
-            else
+            else if (input_is_mouse(c))
             {
+                n64_buttonmap *new_state = (n64_buttonmap *)n64_response[c];
+                input_get_state(c, new_state,  &n64_combo);
+
                 if(n64_c[c].is_mouse == false)
                 {
+                    n64_c[c].is_kb = false;
                     n64_c[c].is_mouse = true;
                     tft_flag_update();
                 }
+                n64_c[c].b_state.dButtons = new_state->dButtons;
+                n64_c[c].b_state.x_axis = new_state->x_axis;
+                n64_c[c].b_state.y_axis = new_state->y_axis;
+            }
+#endif
+#if (MAX_KB >= 1)
+            else if (input_is_kb(c))
+            {
+                n64_randnet_kb *new_state = (n64_randnet_kb *)n64_response[c];
+                //Maintain the old led state
+                new_state->led_state = n64_c[c].kb_state.led_state;
+
+                input_get_state(c, new_state,  &n64_combo);
+
+                if (n64_c[c].is_kb == false)
+                {
+                    n64_c[c].is_mouse = false;
+                    n64_c[c].is_kb = true;
+                    tft_flag_update();
+                }
+                memcpy(&n64_c[c].kb_state, new_state, sizeof(n64_randnet_kb));
             }
 #endif
         }
 
-        //Apply digital buttons and axis to n64 controller if combo button isnt pressed
-        if (n64_combo == 0)
+        //Get a copy of the latest n64 button presses to handle the below combos
+        uint16_t n64_buttons = 0;
+        if (input_is_gamecontroller(c))
         {
-            n64_c[c].b_state.dButtons = n64_buttons[c];
-            n64_c[c].b_state.x_axis = n64_x_axis[c];
-            n64_c[c].b_state.y_axis = n64_y_axis[c];
+            n64_buttonmap *new_state = (n64_buttonmap *)n64_response[c];
+            n64_buttons = new_state->dButtons;
         }
 
         //Apply rumble if required
@@ -222,7 +249,7 @@ void loop()
 
         //Handle dual stick mode toggling
         static uint32_t dual_stick_toggle[MAX_CONTROLLERS] = {0};
-        if (n64_combo && (n64_buttons[c] & N64_B))
+        if (n64_combo && (n64_buttons & N64_B))
         {
             if (dual_stick_toggle[c] == 0)
             {
@@ -235,11 +262,11 @@ void loop()
         {
             dual_stick_toggle[c] = 0;
         }
- 
+
         //Handle ram flushing. Auto flushes when the N64 is turned off :)
         static uint32_t flushing_toggle[MAX_CONTROLLERS] = {0};
         n64_is_on = digitalRead(N64_CONSOLE_SENSE);
-        if ((n64_combo && (n64_buttons[c] & N64_A)) || (n64_is_on == 0))
+        if ((n64_combo && (n64_buttons & N64_A)) || (n64_is_on == 0))
         {
             if (flushing_toggle[c] == 0)
             {
@@ -258,7 +285,7 @@ void loop()
 #if (ENABLE_TFT_DISPLAY >= 1)
         //Cycle TFT display
         static uint32_t tft_toggle[MAX_CONTROLLERS] = {0};
-        if (n64_buttons[c] & N64_LB && n64_buttons[c] & N64_RB)
+        if (n64_buttons & N64_LB && n64_buttons & N64_RB)
         {
             static uint8_t tft_page = 0;
             if (tft_toggle[c] == 0)
@@ -284,13 +311,13 @@ void loop()
 
         //Handle peripheral change combinations
         static uint32_t timer_peri_change[MAX_CONTROLLERS] = {0};
-        if (n64_combo && (n64_buttons[c] & N64_DU ||
-                          n64_buttons[c] & N64_DD ||
-                          n64_buttons[c] & N64_DL ||
-                          n64_buttons[c] & N64_DR ||
-                          n64_buttons[c] & N64_ST ||
-                          n64_buttons[c] & N64_LB ||
-                          n64_buttons[c] & N64_RB))
+        if (n64_combo && (n64_buttons & N64_DU ||
+                          n64_buttons & N64_DD ||
+                          n64_buttons & N64_DL ||
+                          n64_buttons & N64_DR ||
+                          n64_buttons & N64_ST ||
+                          n64_buttons & N64_LB ||
+                          n64_buttons & N64_RB))
         {
             if (n64_c[c].current_peripheral == PERI_NONE)
                 break; //Already changing peripheral
@@ -332,14 +359,14 @@ void loop()
             tft_force_update();
 
             //Changing peripheral to RUMBLEPAK
-            if (n64_buttons[c] & N64_LB)
+            if (n64_buttons & N64_LB)
             {
                 n64_c[c].next_peripheral = PERI_RUMBLE;
                 debug_print_status("[MAIN] C%u to rpak\n", c);
             }
 
             //Changing peripheral to TPAK
-            if (n64_buttons[c] & N64_RB)
+            if (n64_buttons & N64_RB)
             {
                 n64_c[c].next_peripheral = PERI_TPAK;
                 debug_print_status("[MAIN] C%u to tpak\n", c);
@@ -391,15 +418,15 @@ void loop()
             }
 
             //Changing peripheral to MEMPAK
-            if ((n64_buttons[c] & N64_DU || n64_buttons[c] & N64_DD ||
-                 n64_buttons[c] & N64_DL || n64_buttons[c] & N64_DR ||
-                 n64_buttons[c] & N64_ST))
+            if ((n64_buttons & N64_DU || n64_buttons & N64_DD ||
+                 n64_buttons & N64_DL || n64_buttons & N64_DR ||
+                 n64_buttons & N64_ST))
             {
                 n64_c[c].next_peripheral = PERI_MEMPAK;
 
                 //Allocate mempack based on combo if available
                 uint32_t mempak_bank = 0;
-                uint16_t b = n64_buttons[c];
+                uint16_t b = n64_buttons;
                 (b & N64_DU) ? mempak_bank = 0 : (0);
                 (b & N64_DR) ? mempak_bank = 1 : (0);
                 (b & N64_DD) ? mempak_bank = 2 : (0);
@@ -486,6 +513,7 @@ void _putchar(char character)
     ring_buffer_pos++;
     if (ring_buffer_pos >= sizeof(ring_buffer))
         ring_buffer_pos = 0;
+    ring_buffer_flush();
 }
 
 static void ring_buffer_init()

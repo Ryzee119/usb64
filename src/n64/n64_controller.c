@@ -158,6 +158,7 @@ void n64_controller_hande_new_edge(n64_controller *cont)
 
     //Hardcoded controller responses for indentify requests
     static uint8_t n64_mouse[]          = {0x02, 0x00, 0x00};
+    static uint8_t n64_randnet[]        = {0x00, 0x02, 0x00};
     static uint8_t n64_cont_with_peri[] = {0x05, 0x00, 0x01};
     static uint8_t n64_cont_no_peri[]   = {0x05, 0x00, 0x02};
     static uint8_t n64_cont_crc_error[] = {0x05, 0x00, 0x04};
@@ -200,6 +201,9 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             if (cont->is_mouse)
                 memcpy(&cont->data_buffer[N64_DATA_POS], n64_mouse, 3);
 
+            else if (cont->is_kb)
+                memcpy(&cont->data_buffer[N64_DATA_POS], n64_randnet, 3);
+
             else if (cont->current_peripheral != PERI_NONE && !cont->crc_error)
                 memcpy(&cont->data_buffer[N64_DATA_POS], n64_cont_with_peri, 3);
 
@@ -216,12 +220,16 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             break;
 
         case N64_CONTROLLER_STATUS:
+            if (cont->is_kb) //Randnet does not response to this
+                break;
             n64hal_output_set(N64_FRAME, 1);
             n64_wait_micros(2);
             n64_send_stream((uint8_t *)&cont->b_state, 4, cont);
             n64_reset_stream(cont);
             cont->b_state.dButtons = 0x0000;
             n64hal_output_set(N64_FRAME, 0);
+            break;
+        case N64_RANDNET_REQ:
             break;
         case N64_PERI_READ:
         case N64_PERI_WRITE:
@@ -232,6 +240,20 @@ void n64_controller_hande_new_edge(n64_controller *cont)
             n64_reset_stream(cont);
             break;
         }
+    }
+
+    //If it's a RANDNET keyboard packet
+    if (cont->data_buffer[N64_COMMAND_POS] == N64_RANDNET_REQ && cont->current_byte == (N64_DATA_POS + 1))
+    {
+        //First received byte is the led state of the keyboard LEDs
+        cont->kb_state.led_state = cont->data_buffer[cont->current_byte];
+        n64_wait_micros(2);
+
+        //Response is 7 bytes. 3 x 16bit buttons + 1 x 8bit error status
+        n64_send_stream((uint8_t *)&cont->kb_state.buttons, 7, cont);
+
+        //We're done with this packet
+        n64_reset_stream(cont);
     }
 
     //If we are accessing the peripheral bus, let's handle that
