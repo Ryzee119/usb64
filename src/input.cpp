@@ -527,7 +527,7 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
         kb->capsLock((state->led_state & RANDNET_LED_CAPSLOCK) != 0);
         kb->numLock((state->led_state & RANDNET_LED_NUMLOCK)  != 0);
         kb->scrollLock((state->led_state & RANDNET_LED_POWER) != 0);
-
+        uint8_t home_key_flag = 0;
         //Map up to 3 keys to the randnet response packet
         for (int i = 0; i < RANDNET_MAX_BUTTONS; i++)
         {
@@ -535,11 +535,12 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
             if (kb_keys_pressed[i] == 0)
                 continue;
 
-            if (kb_keys_pressed[i] == KEY_HOME)
+            if (kb_keys_pressed[i] == (uint8_t)(KEY_HOME & 0xFF))
             {
-                state->flags = RANDNET_FLAG_HOME_KEY;
+                home_key_flag = 1;
                 continue;
             }
+
             //Keyboard is pressed, get the corressponding randnet code and put it in the response
             uint16_t randnet_code = 0;
             for (uint32_t j = 0; j < (sizeof(randnet_map) / sizeof(randnet_map_t)); j++)
@@ -551,6 +552,9 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
             }
             state->buttons[i] = randnet_code;
         }
+
+        (home_key_flag) ? state->flags |= RANDNET_FLAG_HOME_KEY :
+                          state->flags &= ~RANDNET_FLAG_HOME_KEY;
     }
 #endif
 
