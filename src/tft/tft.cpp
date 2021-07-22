@@ -49,6 +49,12 @@ static const char *n64_peri_to_string(n64_controller *c)
         return "N64 MOUSE";
     }
 
+    if (c->is_kb)
+    {
+        tft.setTextColor(ILI9341_GREEN);
+        return "N64 RANDNET";
+    }
+
     if (input_is_dualstick_mode(c->id))
     {
         tft.setTextColor(ILI9341_GREEN);

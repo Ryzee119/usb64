@@ -33,16 +33,118 @@ MouseController mouse1(usbh);
 MouseController mouse2(usbh);
 MouseController mouse3(usbh);
 MouseController mouse4(usbh);
+KeyboardController kb1(usbh);
+KeyboardController kb2(usbh);
+KeyboardController kb3(usbh);
+KeyboardController kb4(usbh);
 
 JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3, &joy4, &joy5, &joy6, &joy7, &joy8};
 MouseController *mousecontroller[] = {&mouse1, &mouse2, &mouse3, &mouse4};
+KeyboardController *kbcontroller[] = {&kb1, &kb2, &kb3, &kb4};
 
 uint32_t hardwired = 1;
 
-#define MOUSE 0
-#define USB_GAMECONTROLLER 1
-#define HW_GAMECONTROLLER 2
-#define I2C_GAMECONTROLLER 3
+typedef struct
+{
+    uint16_t keypad;
+    uint16_t randnet_matrix;
+} randnet_map_t;
+
+static const randnet_map_t randnet_map[] = {
+    {KEY_ESC, 0x0A08},         //Escape
+    {KEY_F1, 0x0B01},          // F1
+    {KEY_F2, 0x0A01},          // F2
+    {KEY_F3, 0x0B08},          // F3
+    {KEY_F4, 0x0A07},          // F4
+    {KEY_F5, 0x0B07},          // F5
+    {KEY_F6, 0x0A02},          // F6
+    {KEY_F7, 0x0B02},          // F7
+    {KEY_F8, 0x0A03},          // F8
+    {KEY_F9, 0x0B03},          // F9
+    {KEY_F10, 0x0A04},         // F10
+    {KEY_F11, 0x0203},         // F11
+    {KEY_F12, 0x0B06},         // F12
+    {KEY_NUM_LOCK, 0x0A05},    // Num Lock
+    {KEY_PRINTSCREEN, 0x0B05}, //Japanese Key below Numlock LED
+    {KEY_SCROLL_LOCK, 0x0208}, //Japanese Key below Caps Lock LED
+    {KEY_PAUSE, 0x0207},       // Japanese Key below Power LED
+    {KEY_TILDE, 0x0D05},       //~
+    {KEY_1, 0x0C05},           //Number 1
+    {KEY_2, 0x0505},           //Number 2
+    {KEY_3, 0x0605},           //Number 3
+    {KEY_4, 0x0705},           //Number 4
+    {KEY_5, 0x0805},           //Number 5
+    {KEY_6, 0x0905},           //Number 6
+    {KEY_7, 0x0906},           //Number 7
+    {KEY_8, 0x0806},           //Number 8
+    {KEY_9, 0x0706},           //Number 9
+    {KEY_0, 0x0606},           //Number 0
+    {KEYPAD_MINUS, 0x0506},    //-
+    {KEYPAD_PLUS, 0x0C06},     //^
+    {KEY_BACKSPACE, 0x0D06},   //Backspace
+    {KEY_TAB, 0x0D01},         //Tab
+    {KEY_Q, 0x0C01},           //Q
+    {KEY_W, 0x0501},           //W
+    {KEY_E, 0x0601},           //E
+    {KEY_R, 0x0701},           //R
+    {KEY_T, 0x0801},           //T
+    {KEY_Y, 0x0901},           //Y
+    {KEY_U, 0x0904},           //U
+    {KEY_I, 0x0804},           //I
+    {KEY_O, 0x0704},           //O
+    {KEY_P, 0x0604},           //P
+    {KEY_QUOTE, 0x0504},       //'
+    {KEY_LEFT_BRACE, 0x0C04},  //{
+    {KEY_RIGHT_BRACE, 0x0406}, //}
+    {KEY_CAPS_LOCK, 0x0F05},   //Caps Lock
+    {KEY_A, 0x0D07},           //A
+    {KEY_S, 0x0C07},           //S
+    {KEY_D, 0x0507},           //D
+    {KEY_F, 0x0607},           //F
+    {KEY_G, 0x0707},           //G
+    {KEY_H, 0x0807},           //H
+    {KEY_J, 0x0907},           //J
+    {KEY_K, 0x0903},           //K
+    {KEY_L, 0x0803},           //L
+    {KEYPAD_PLUS, 0x0703},     //+
+    {KEYPAD_ASTERIX, 0x0603},  //*
+    {KEY_ENTER, 0x0D04},       //Enter
+    {104, 0x0E01},             //Left Shift
+    {KEY_Z, 0x0D08},           //Z
+    {KEY_X, 0x0C08},           //X
+    {KEY_C, 0x0508},           //C
+    {KEY_V, 0x0608},           //V
+    {KEY_B, 0x0708},           //B
+    {KEY_N, 0x0808},           //N
+    {KEY_M, 0x0908},           //M
+    {KEY_COMMA, 0x0902},       //<
+    {KEY_PERIOD, 0x0802},      //>
+    {KEY_SLASH, 0x0702},       //?
+    {KEY_MINUS, 0x1004},       //- (Long dash)
+    {KEY_UP, 0x0204},          //Up Cursor
+    {104, 0x0E06},             //Right Shift
+    {103, 0x1107},             //Ctrl
+    {110, 0x0F07},             //Opt
+    {KEY_SEMICOLON, 0x1105},   //| (Pipes)
+    {105, 0x1008},             //Alt
+    {KEYPAD_1, 0x1002},        //Japanese 'alphanumeric key'
+    {KEY_SPACE, 0x0602},       //Space
+    {KEYPAD_2, 0x0E02},        //Japanese 'kana'
+    {KEYPAD_3, 0x1006},        //Japanese Character
+    {KEY_END, 0x0206},         //End 行末
+    {KEY_LEFT, 0x0205},        //Left Cursor
+    {KEY_DOWN, 0x0305},        //Down Cursor
+    {KEY_RIGHT, 0x0405},       //Right Cursor
+};
+
+enum
+{
+    MOUSE,
+    KB,
+    USB_GAMECONTROLLER,
+    HW_GAMECONTROLLER,
+    I2C_GAMECONTROLLER
+};
 
 typedef struct
 {
@@ -51,6 +153,39 @@ typedef struct
 } input;
 
 static input input_devices[MAX_CONTROLLERS];
+static uint8_t kb_keys_pressed[RANDNET_MAX_BUTTONS];
+
+static void kb_pressed_cb(uint8_t keycode)
+{
+    //Check if its already pressed
+    for (int i = 0; i < RANDNET_MAX_BUTTONS; i++)
+    {
+        if (kb_keys_pressed[i] == keycode)
+        {
+            return;
+        }
+    }
+    //Register the keypress
+    for (int i = 0; i < RANDNET_MAX_BUTTONS; i++)
+    {
+        if (kb_keys_pressed[i] == 0)
+        {
+            kb_keys_pressed[i] = keycode;
+            break;
+        }
+    }
+}
+
+static void kb_released_cb(uint8_t keycode)
+{
+    for (int i = 0; i < RANDNET_MAX_BUTTONS; i++)
+    {
+        if (kb_keys_pressed[i] == keycode)
+        {
+            kb_keys_pressed[i] = 0;
+        }
+    }
+}
 
 static int _check_id(uint8_t id)
 {
@@ -172,24 +307,71 @@ void input_update_input_devices()
         }
     }
 #endif
+#if (MAX_KB >= 1)
+    //Find new keyboard
+    for (int i = 0; i < MAX_KB; i++)
+    {
+        //Mouse is connected
+        USBHIDInput *kb = (USBHIDInput *)kbcontroller[i];
+        if (*kb == true)
+        {
+            //Is it already a registered input device
+            bool already_registered = false;
+            for (int j = 0; j < MAX_CONTROLLERS; j++)
+            {
+                if (kbcontroller[i] == input_devices[j].driver)
+                {
+                    already_registered = true;
+                    break;
+                }
+            }
+            //Its a new mouse, find empty slot and register it now
+            if (already_registered == false)
+            {
+                for (int j = 0; j < MAX_CONTROLLERS; j++)
+                {
+                    if (input_devices[j].driver == NULL)
+                    {
+                        input_devices[j].driver = kbcontroller[i];
+                        input_devices[j].type = KB;
+                        debug_print_status("[INPUT] Register keyboard to slot %u\n", j);
+                        tft_flag_update();
+                        kbcontroller[i]->attachRawPress(kb_pressed_cb);
+                        kbcontroller[i]->attachRawRelease(kb_released_cb);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+#endif
 }
 
-uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis, uint32_t max_axis,
-                                       uint16_t *n64_buttons, int8_t *n64_x_axis, int8_t *n64_y_axis, bool *combo_pressed)
+uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
 {
     uint32_t _buttons = 0;
-    int32_t _axis[max_axis] = {0};
+    int32_t _axis[JoystickController::STANDARD_AXIS_COUNT] = {0};
     int32_t right_axis[2] = {0};
+
+    *combo_pressed = 0;
 
     if (_check_id(id) == 0)
         return 0;
 
+    if (response == NULL)
+        return 0;
+
     if (input_is_gamecontroller(id))
     {
+        //Prep N64 response
+        n64_buttonmap *state = (n64_buttonmap *)response;
+        state->dButtons = 0;
+
+        //Get latest info from USB devices
         JoystickController *joy = (JoystickController *)input_devices[id].driver;
         _buttons = joy->getButtons();
 
-        for (uint8_t i = 0; i < max_axis; i++)
+        for (uint8_t i = 0; i < JoystickController::STANDARD_AXIS_COUNT; i++)
         {
             _axis[i] = joy->getAxis(i);
         }
@@ -201,41 +383,39 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
         case JoystickController::XBOX360_WIRED:
             //Digital usb_buttons
             //FIXME Modifier to make A,B,X,Y be C buttons
-            if (n64_buttons == NULL || n64_x_axis == NULL || n64_y_axis == NULL)
-                break;
-            if (_buttons & (1 << 0))  *n64_buttons |= N64_DU;  //DUP
-            if (_buttons & (1 << 1))  *n64_buttons |= N64_DD;  //DDOWN
-            if (_buttons & (1 << 2))  *n64_buttons |= N64_DL;  //DLEFT
-            if (_buttons & (1 << 3))  *n64_buttons |= N64_DR;  //DRIGHT
-            if (_buttons & (1 << 4))  *n64_buttons |= N64_ST;  //START
-            if (_buttons & (1 << 5))  *n64_buttons |= 0;       //BACK
-            if (_buttons & (1 << 6))  *n64_buttons |= 0;       //LS
-            if (_buttons & (1 << 7))  *n64_buttons |= 0;       //RS
-            if (_buttons & (1 << 8))  *n64_buttons |= N64_LB;  //LB
-            if (_buttons & (1 << 9))  *n64_buttons |= N64_RB;  //RB
-            if (_buttons & (1 << 10)) *n64_buttons |= 0;       //XBOX BUTTON
-            if (_buttons & (1 << 11)) *n64_buttons |= 0;       //XBOX SYNC
-            if (_buttons & (1 << 12)) *n64_buttons |= N64_A;   //A
-            if (_buttons & (1 << 13)) *n64_buttons |= N64_B;   //B
-            if (_buttons & (1 << 14)) *n64_buttons |= N64_B;   //X
-            if (_buttons & (1 << 15)) *n64_buttons |= 0;       //Y
-            if (_buttons & (1 << 7))  *n64_buttons |= N64_CU | //RS triggers
+            if (_buttons & (1 << 0))  state->dButtons |= N64_DU;  //DUP
+            if (_buttons & (1 << 1))  state->dButtons |= N64_DD;  //DDOWN
+            if (_buttons & (1 << 2))  state->dButtons |= N64_DL;  //DLEFT
+            if (_buttons & (1 << 3))  state->dButtons |= N64_DR;  //DRIGHT
+            if (_buttons & (1 << 4))  state->dButtons |= N64_ST;  //START
+            if (_buttons & (1 << 5))  state->dButtons |= 0;       //BACK
+            if (_buttons & (1 << 6))  state->dButtons |= 0;       //LS
+            if (_buttons & (1 << 7))  state->dButtons |= 0;       //RS
+            if (_buttons & (1 << 8))  state->dButtons |= N64_LB;  //LB
+            if (_buttons & (1 << 9))  state->dButtons |= N64_RB;  //RB
+            if (_buttons & (1 << 10)) state->dButtons |= 0;       //XBOX BUTTON
+            if (_buttons & (1 << 11)) state->dButtons |= 0;       //XBOX SYNC
+            if (_buttons & (1 << 12)) state->dButtons |= N64_A;   //A
+            if (_buttons & (1 << 13)) state->dButtons |= N64_B;   //B
+            if (_buttons & (1 << 14)) state->dButtons |= N64_B;   //X
+            if (_buttons & (1 << 15)) state->dButtons |= 0;       //Y
+            if (_buttons & (1 << 7))  state->dButtons |= N64_CU | //RS triggers
                                                       N64_CD | //all C usb_buttons
                                                       N64_CL |
                                                       N64_CR;
             //Analog stick (Normalise 0 to +/-100)
-            *n64_x_axis = _axis[0] * 100 / 32768;
-            *n64_y_axis = _axis[1] * 100 / 32768;
+            state->x_axis = _axis[0] * 100 / 32768;
+            state->y_axis = _axis[1] * 100 / 32768;
 
             //Z button
-            if (_axis[4] > 10) *n64_buttons |= N64_Z; //LT
-            if (_axis[5] > 10) *n64_buttons |= N64_Z; //RT
+            if (_axis[4] > 10) state->dButtons |= N64_Z; //LT
+            if (_axis[5] > 10) state->dButtons |= N64_Z; //RT
 
             //C usb_buttons
-            if (_axis[2] > 16000)  *n64_buttons |= N64_CR;
-            if (_axis[2] < -16000) *n64_buttons |= N64_CL;
-            if (_axis[3] > 16000)  *n64_buttons |= N64_CU;
-            if (_axis[3] < -16000) *n64_buttons |= N64_CD;
+            if (_axis[2] > 16000)  state->dButtons |= N64_CR;
+            if (_axis[2] < -16000) state->dButtons |= N64_CL;
+            if (_axis[3] > 16000)  state->dButtons |= N64_CU;
+            if (_axis[3] < -16000) state->dButtons |= N64_CD;
 
             //Button to hold for 'combos'
             if (combo_pressed)
@@ -247,39 +427,37 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
 
             break;
         case JoystickController::XBOXONE:
-            if (n64_buttons == NULL || n64_x_axis == NULL || n64_y_axis == NULL)
-                break;
-            if (_buttons & (1 << 8))   *n64_buttons |= N64_DU;   //DUP
-            if (_buttons & (1 << 9))   *n64_buttons |= N64_DD;   //DDOWN
-            if (_buttons & (1 << 10))  *n64_buttons |= N64_DL;   //DLEFT
-            if (_buttons & (1 << 11))  *n64_buttons |= N64_DR;   //DRIGHT
-            if (_buttons & (1 << 2))   *n64_buttons |= N64_ST;   //START
-            if (_buttons & (1 << 3))   *n64_buttons |= 0;        //BACK
-            if (_buttons & (1 << 14))  *n64_buttons |= 0;        //LS
-            if (_buttons & (1 << 15))  *n64_buttons |= 0;        //RS
-            if (_buttons & (1 << 12))  *n64_buttons |= N64_LB;   //LB
-            if (_buttons & (1 << 13))  *n64_buttons |= N64_RB;   //RB
-            if (_buttons & (1 << 4))   *n64_buttons |= N64_A;    //A
-            if (_buttons & (1 << 5))   *n64_buttons |= N64_B;    //B
-            if (_buttons & (1 << 6))   *n64_buttons |= N64_B;    //X
-            if (_buttons & (1 << 7))   *n64_buttons |= 0;        //Y
-            if (_buttons & (1 << 15))   *n64_buttons |= N64_CU | //RS triggers
+            if (_buttons & (1 << 8))   state->dButtons |= N64_DU;   //DUP
+            if (_buttons & (1 << 9))   state->dButtons |= N64_DD;   //DDOWN
+            if (_buttons & (1 << 10))  state->dButtons |= N64_DL;   //DLEFT
+            if (_buttons & (1 << 11))  state->dButtons |= N64_DR;   //DRIGHT
+            if (_buttons & (1 << 2))   state->dButtons |= N64_ST;   //START
+            if (_buttons & (1 << 3))   state->dButtons |= 0;        //BACK
+            if (_buttons & (1 << 14))  state->dButtons |= 0;        //LS
+            if (_buttons & (1 << 15))  state->dButtons |= 0;        //RS
+            if (_buttons & (1 << 12))  state->dButtons |= N64_LB;   //LB
+            if (_buttons & (1 << 13))  state->dButtons |= N64_RB;   //RB
+            if (_buttons & (1 << 4))   state->dButtons |= N64_A;    //A
+            if (_buttons & (1 << 5))   state->dButtons |= N64_B;    //B
+            if (_buttons & (1 << 6))   state->dButtons |= N64_B;    //X
+            if (_buttons & (1 << 7))   state->dButtons |= 0;        //Y
+            if (_buttons & (1 << 15))   state->dButtons |= N64_CU | //RS triggers
                                                         N64_CD | //all C usb_buttons
                                                         N64_CL |
                                                         N64_CR;
             //Analog stick (Normalise 0 to +/-100)
-            *n64_x_axis = _axis[0] * 100 / 32768;
-            *n64_y_axis = _axis[1] * 100 / 32768;
+            state->x_axis = _axis[0] * 100 / 32768;
+            state->y_axis = _axis[1] * 100 / 32768;
 
             //Z button
-            if (_axis[3] > 10) *n64_buttons |= N64_Z; //LT
-            if (_axis[4] > 10) *n64_buttons |= N64_Z; //RT
+            if (_axis[3] > 10) state->dButtons |= N64_Z; //LT
+            if (_axis[4] > 10) state->dButtons |= N64_Z; //RT
 
             //C usb_buttons
-            if (_axis[2] > 16000)  *n64_buttons |= N64_CR;
-            if (_axis[2] < -16000) *n64_buttons |= N64_CL;
-            if (_axis[5] > 16000)  *n64_buttons |= N64_CU;
-            if (_axis[5] < -16000) *n64_buttons |= N64_CD;
+            if (_axis[2] > 16000)  state->dButtons |= N64_CR;
+            if (_axis[2] < -16000) state->dButtons |= N64_CL;
+            if (_axis[5] > 16000)  state->dButtons |= N64_CU;
+            if (_axis[5] < -16000) state->dButtons |= N64_CD;
 
             //Button to hold for 'combos'
             if (combo_pressed)
@@ -289,42 +467,40 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
             right_axis[1] = _axis[5] * 100 / 32768;
             break;
         case JoystickController::PS4:
-            if (n64_buttons == NULL || n64_x_axis == NULL || n64_y_axis == NULL)
-                break;
-            if (_buttons & (1 << 9))  *n64_buttons |= N64_ST;  //START
-            if (_buttons & (1 << 4))  *n64_buttons |= N64_LB;  //L1
-            if (_buttons & (1 << 5))  *n64_buttons |= N64_RB;  //R1
-            if (_buttons & (1 << 6))  *n64_buttons |= N64_Z;   //L2
-            if (_buttons & (1 << 7))  *n64_buttons |= N64_Z;   //R2
-            if (_buttons & (1 << 1))  *n64_buttons |= N64_A;   //X
-            if (_buttons & (1 << 0))  *n64_buttons |= N64_B;   //SQUARE
-            if (_buttons & (1 << 2))  *n64_buttons |= N64_B;   //CIRCLE
-            if (_buttons & (1 << 11)) *n64_buttons |= N64_CU | //RS triggers
+            if (_buttons & (1 << 9))  state->dButtons |= N64_ST;  //START
+            if (_buttons & (1 << 4))  state->dButtons |= N64_LB;  //L1
+            if (_buttons & (1 << 5))  state->dButtons |= N64_RB;  //R1
+            if (_buttons & (1 << 6))  state->dButtons |= N64_Z;   //L2
+            if (_buttons & (1 << 7))  state->dButtons |= N64_Z;   //R2
+            if (_buttons & (1 << 1))  state->dButtons |= N64_A;   //X
+            if (_buttons & (1 << 0))  state->dButtons |= N64_B;   //SQUARE
+            if (_buttons & (1 << 2))  state->dButtons |= N64_B;   //CIRCLE
+            if (_buttons & (1 << 11)) state->dButtons |= N64_CU | //RS triggers
                                                       N64_CD | //all C usb_buttons
                                                       N64_CL |
                                                       N64_CR;
             //Analog stick (Normalise 0 to +/-100)
-            *n64_x_axis =  (_axis[0] - 127) * 100 / 127;
-            *n64_y_axis = -(_axis[1] - 127) * 100 / 127;
+            state->x_axis =  (_axis[0] - 127) * 100 / 127;
+            state->y_axis = -(_axis[1] - 127) * 100 / 127;
 
             //D Pad button
             switch(_axis[9])
             {
-                case 0: *n64_buttons |= N64_DU; break;
-                case 1: *n64_buttons |= N64_DU | N64_DR; break;
-                case 2: *n64_buttons |= N64_DR; break;
-                case 3: *n64_buttons |= N64_DR | N64_DD; break;
-                case 4: *n64_buttons |= N64_DD; break;
-                case 5: *n64_buttons |= N64_DD | N64_DL; break;
-                case 6: *n64_buttons |= N64_DL; break;
-                case 7: *n64_buttons |= N64_DL | N64_DU; break;
+                case 0: state->dButtons |= N64_DU; break;
+                case 1: state->dButtons |= N64_DU | N64_DR; break;
+                case 2: state->dButtons |= N64_DR; break;
+                case 3: state->dButtons |= N64_DR | N64_DD; break;
+                case 4: state->dButtons |= N64_DD; break;
+                case 5: state->dButtons |= N64_DD | N64_DL; break;
+                case 6: state->dButtons |= N64_DL; break;
+                case 7: state->dButtons |= N64_DL | N64_DU; break;
             }
 
             //C usb_buttons
-            if (_axis[2] > 256/2 + 64)  *n64_buttons |= N64_CR;
-            if (_axis[2] < 256/2 - 64)  *n64_buttons |= N64_CL;
-            if (_axis[5] > 256/2 + 64)  *n64_buttons |= N64_CD;
-            if (_axis[5] < 256/2 - 64)  *n64_buttons |= N64_CU;
+            if (_axis[2] > 256/2 + 64)  state->dButtons |= N64_CR;
+            if (_axis[2] < 256/2 - 64)  state->dButtons |= N64_CL;
+            if (_axis[5] > 256/2 + 64)  state->dButtons |= N64_CD;
+            if (_axis[5] < 256/2 - 64)  state->dButtons |= N64_CU;
 
             //Button to hold for 'combos'
             if (combo_pressed)
@@ -357,22 +533,20 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
             //NEXT SNES Controller
             if (joy->idVendor() == 0x0810 && joy->idProduct() == 0xE501)
             {
-                if (n64_buttons == NULL || n64_x_axis == NULL || n64_y_axis == NULL)
-                    break;
-                if (_buttons & (1 << 9))  *n64_buttons |= N64_ST;
-                if (_buttons & (1 << 4))  *n64_buttons |= N64_Z;
-                if (_buttons & (1 << 6))  *n64_buttons |= N64_RB;
-                if (_buttons & (1 << 2)) *n64_buttons |= N64_A;
-                if (_buttons & (1 << 1)) *n64_buttons |= N64_B;
-                if (_buttons & (1 << 3)) *n64_buttons |= N64_B;
+                if (_buttons & (1 << 9))  state->dButtons |= N64_ST;
+                if (_buttons & (1 << 4))  state->dButtons |= N64_Z;
+                if (_buttons & (1 << 6))  state->dButtons |= N64_RB;
+                if (_buttons & (1 << 2)) state->dButtons |= N64_A;
+                if (_buttons & (1 << 1)) state->dButtons |= N64_B;
+                if (_buttons & (1 << 3)) state->dButtons |= N64_B;
 
                 //Button to hold for 'combos'
                 if (combo_pressed)
                     *combo_pressed = (_buttons & (1 << 8)); //back
 
                 //Analog stick (Normalise 0 to +/-100)
-                *n64_x_axis = (_axis[0] - 127) * 100 / 127;
-                *n64_y_axis = - (_axis[1] - 127) * 100 / 127;
+                state->x_axis = (_axis[0] - 127) * 100 / 127;
+                state->y_axis = - (_axis[1] - 127) * 100 / 127;
             }
             break;
         //TODO: OTHER USB CONTROLLERS
@@ -386,25 +560,37 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
         if(input_is_dualstick_mode(id) && (id % 2 == 0))
         {
             //Main controller mapping overwritten for dualstick mode
-            *n64_buttons &= ~N64_Z;
-            if (*n64_buttons & N64_LB)
-                *n64_buttons |= N64_Z;
-            *n64_buttons &= ~N64_LB;
-            *n64_buttons &= ~N64_RB;
-            *n64_x_axis = right_axis[0];
-            *n64_y_axis = right_axis[1];
+            state->dButtons &= ~N64_Z;
+            if (state->dButtons & N64_LB)
+                state->dButtons |= N64_Z;
+            state->dButtons &= ~N64_LB;
+            state->dButtons &= ~N64_RB;
+            state->x_axis = right_axis[0];
+            state->y_axis = right_axis[1];
         }
         else if(input_is_dualstick_mode(id) && (id % 2 != 0))
         {
             //Mirror controller mapping overwritten for dualstick mode
-            if (*n64_buttons & N64_RB)
-                *n64_buttons |= N64_Z;
-            *n64_buttons &= N64_Z;
+            if (state->dButtons & N64_RB)
+                state->dButtons |= N64_Z;
+            state->dButtons &= N64_Z;
+        }
+
+        //Assert reset bit if L+R+START is pressed. Start bit is cleared.
+        if ((state->dButtons & N64_LB) && (state->dButtons & N64_RB) && (state->dButtons & N64_ST))
+        {
+            state->dButtons &= ~N64_ST;
+            state->dButtons |= N64_RES;
         }
     }
 #if (MAX_MICE >= 1)
     else if (input_is_mouse(id))
     {
+        //Prep N64 response
+        n64_buttonmap *state = (n64_buttonmap *)response;
+        state->dButtons = 0;
+
+        //Get latest info from USB devices
         MouseController *mouse = (MouseController *)input_devices[id].driver;
         _buttons = mouse->getButtons();
 
@@ -425,37 +611,77 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
         if (_axis[1] * MOUSE_SENSITIVITY > 127) _axis[1] = 127;
         if (_axis[0] * MOUSE_SENSITIVITY < -128) _axis[0] = -128;
         if (_axis[1] * MOUSE_SENSITIVITY < -128) _axis[1] = -128;
-        if (n64_x_axis) *n64_x_axis =  _axis[0] * MOUSE_SENSITIVITY;
-        if (n64_y_axis) *n64_y_axis = -_axis[1] * MOUSE_SENSITIVITY;
-        if (n64_buttons)
+        state->x_axis =  _axis[0] * MOUSE_SENSITIVITY;
+        state->y_axis = -_axis[1] * MOUSE_SENSITIVITY;
+        if (_buttons & (1 << 0)) state->dButtons |= N64_A;   //A
+        if (_buttons & (1 << 1)) state->dButtons |= N64_B;   //B
+        if (_buttons & (1 << 2)) state->dButtons |= N64_ST;  //ST
+    }
+#endif
+
+#if (MAX_KB >= 1)
+    else if (input_is_kb(id))
+    {
+        //Prep N64 response
+        n64_randnet_kb *state = (n64_randnet_kb *)response;
+
+        //Get latest info from USB devices
+        KeyboardController *kb = (KeyboardController *)input_devices[id].driver;
+
+        kb->capsLock(state->led_state & RANDNET_LED_CAPSLOCK);
+        kb->numLock(state->led_state & RANDNET_LED_NUMLOCK);
+        kb->scrollLock(state->led_state & RANDNET_LED_POWER);
+
+        //Map up to 3 keys to the randnet response packet
+        for (int i = 0; i < RANDNET_MAX_BUTTONS; i++)
         {
-            if (_buttons & (1 << 0)) *n64_buttons |= N64_A;   //A
-            if (_buttons & (1 << 1)) *n64_buttons |= N64_B;   //B
-            if (_buttons & (1 << 2)) *n64_buttons |= N64_ST;  //ST
+            state->buttons[i] = 0;
+            if (kb_keys_pressed[i] == 0)
+                continue;
+
+            if (kb_keys_pressed[i] == KEY_HOME)
+            {
+                state->error_flags = RANDNET_ERROR_HOME_KEY;
+                continue;
+            }
+            //Keyboard is pressed, get the corressponding randnet code and put it in the response
+            uint16_t randnet_code = 0;
+            for (uint32_t j = 0; j < (sizeof(randnet_map) / sizeof(randnet_map_t)); j++)
+            {
+                if (kb_keys_pressed[i] == (uint8_t)(randnet_map[j].keypad & 0xFF))
+                {
+                    randnet_code = randnet_map[j].randnet_matrix;
+                }
+            }
+            state->buttons[i] = randnet_code;
         }
     }
 #endif
+
 #if (ENABLE_HARDWIRED_CONTROLLER >=1)
     else if (input_is_hw_gamecontroller(id))
     {
-        if (!digitalRead(HW_A)) *n64_buttons |= N64_A;
-        if (!digitalRead(HW_B)) *n64_buttons |= N64_B;
-        if (!digitalRead(HW_CU)) *n64_buttons |= N64_CU;
-        if (!digitalRead(HW_CD)) *n64_buttons |= N64_CD;
-        if (!digitalRead(HW_CL)) *n64_buttons |= N64_CL;
-        if (!digitalRead(HW_CR)) *n64_buttons |= N64_CR;
-        if (!digitalRead(HW_DU)) *n64_buttons |= N64_DU;
-        if (!digitalRead(HW_DD)) *n64_buttons |= N64_DD;
-        if (!digitalRead(HW_DL)) *n64_buttons |= N64_DL;
-        if (!digitalRead(HW_DR)) *n64_buttons |= N64_DR;
-        if (!digitalRead(HW_START)) *n64_buttons |= N64_ST;
-        if (!digitalRead(HW_Z)) *n64_buttons |= N64_Z;
-        if (!digitalRead(HW_L)) *n64_buttons |= N64_LB;
-        if (!digitalRead(HW_R)) *n64_buttons |= N64_RB;
+        n64_buttonmap *state = (n64_buttonmap *)response;
+        state->dButtons = 0;
+
+        if (!digitalRead(HW_A)) state->dButtons |= N64_A;
+        if (!digitalRead(HW_B)) state->dButtons |= N64_B;
+        if (!digitalRead(HW_CU)) state->dButtons |= N64_CU;
+        if (!digitalRead(HW_CD)) state->dButtons |= N64_CD;
+        if (!digitalRead(HW_CL)) state->dButtons |= N64_CL;
+        if (!digitalRead(HW_CR)) state->dButtons |= N64_CR;
+        if (!digitalRead(HW_DU)) state->dButtons |= N64_DU;
+        if (!digitalRead(HW_DD)) state->dButtons |= N64_DD;
+        if (!digitalRead(HW_DL)) state->dButtons |= N64_DL;
+        if (!digitalRead(HW_DR)) state->dButtons |= N64_DR;
+        if (!digitalRead(HW_START)) state->dButtons |= N64_ST;
+        if (!digitalRead(HW_Z)) state->dButtons |= N64_Z;
+        if (!digitalRead(HW_L)) state->dButtons |= N64_LB;
+        if (!digitalRead(HW_R)) state->dButtons |= N64_RB;
         
         //10bit ADC
-        *n64_x_axis = analogRead(HW_X) * 200 / 1024 - 100; //+/-100
-        *n64_y_axis = analogRead(HW_Y) * 200 / 1024 - 100; //+/-100
+        state->x_axis = analogRead(HW_X) * 200 / 1024 - 100; //+/-100
+        state->y_axis = analogRead(HW_Y) * 200 / 1024 - 100; //+/-100
         
         if (combo_pressed)
             *combo_pressed = !digitalRead(HW_L) && !digitalRead(HW_R); //FIXME: ADD A COMBO INPUT?
@@ -464,20 +690,6 @@ uint16_t input_get_buttons(uint8_t id, uint32_t *raw_buttons, int32_t *raw_axis,
     else
     {
         return 0;
-    }
-
-    //Assert reset bit if L+R+START is pressed. Start bit is cleared.
-    if ((*n64_buttons & N64_LB) && (*n64_buttons & N64_RB) && (*n64_buttons & N64_ST))
-    {
-        *n64_buttons &= ~N64_ST;
-        *n64_buttons |= N64_RES;
-    }
-
-    //Output the raw data too
-    if (raw_buttons) *raw_buttons = _buttons;
-    for (uint32_t i = 0; i < max_axis; i ++)
-    {
-        if (raw_axis) raw_axis[i] = _axis[i];
     }
 
     return 1;
@@ -520,6 +732,15 @@ bool input_is_connected(int id)
             connected = true;
     }
 #endif
+
+#if (MAX_KB >=1)   
+    else if (input_is_kb(id))
+    {
+        USBHIDInput *kb = (USBHIDInput *)input_devices[id].driver;
+        if (*kb == true)
+            connected = true;
+    }
+#endif
     
 #if (ENABLE_HARDWIRED_CONTROLLER >=1)
     else if (input_is_hw_gamecontroller(id))
@@ -537,6 +758,15 @@ bool input_is_mouse(int id)
     if (_check_id(id) == 0)
         return false;
     if (input_devices[id].type == MOUSE)
+        return true;
+    return false;
+}
+
+bool input_is_kb(int id)
+{
+    if (_check_id(id) == 0)
+        return false;
+    if (input_devices[id].type == KB)
         return true;
     return false;
 }
@@ -574,6 +804,11 @@ uint16_t input_get_id_product(int id)
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         return mouse->idProduct();
     }
+    else if (input_is_kb(id))
+    {
+        USBHIDInput *kb = (USBHIDInput *)input_devices[id].driver;
+        return kb->idProduct();
+    }
     else if (input_is_hw_gamecontroller(id))
     {
         return 0xBEEF;
@@ -596,6 +831,11 @@ uint16_t input_get_id_vendor(int id)
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         return mouse->idVendor();
+    }
+    else if (input_is_kb(id))
+    {
+        USBHIDInput *kb = (USBHIDInput *)input_devices[id].driver;
+        return kb->idVendor();
     }
     else if (input_is_hw_gamecontroller(id))
     {
@@ -621,6 +861,11 @@ const char *input_get_manufacturer_string(int id)
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         return (const char *)mouse->manufacturer();
     }
+    else if (input_is_kb(id))
+    {
+        USBHIDInput *kb = (USBHIDInput *)input_devices[id].driver;
+        return (const char *)kb->manufacturer();
+    }
     else if (input_is_hw_gamecontroller(id))
     {
         return "USB64";
@@ -644,6 +889,11 @@ const char *input_get_product_string(int id)
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         return (const char *)mouse->product();
+    }
+    else if (input_is_kb(id))
+    {
+        USBHIDInput *kb = (USBHIDInput *)input_devices[id].driver;
+        return (const char *)kb->product();
     }
     else if (input_is_hw_gamecontroller(id))
     {

@@ -21,6 +21,7 @@
 /* N64 LIB */
 #define MAX_CONTROLLERS 4             //Max is 4
 #define MAX_MICE 4                    //0 to disable N64 mouse support. Must be <= MAX_CONTROLLERS
+#define MAX_KB 4                      //0 to disable N64 randnet keyboard support. Must be <= MAX_CONTROLLERS
 #define MAX_GBROMS 10                 //ROMS over this will just get ignored
 #define ENABLE_I2C_CONTROLLERS 0      //Received button presses over I2C, useful for integrating with a rasp pi etc.
 #define ENABLE_HARDWIRED_CONTROLLER 1 //Ability to hardware a N64 controller into the usb64.
