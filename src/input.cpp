@@ -14,6 +14,9 @@ USBHost usbh;
 
 #if (ENABLE_USB_HUB == 1)
 USBHub hub1(usbh);
+USBHub hub2(usbh);
+USBHub hub3(usbh);
+USBHub hub4(usbh);
 #endif
 
 JoystickController joy1(usbh);
@@ -42,7 +45,7 @@ JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3, &joy4, &joy5, &joy6
 MouseController *mousecontroller[] = {&mouse1, &mouse2, &mouse3, &mouse4};
 KeyboardController *kbcontroller[] = {&kb1, &kb2, &kb3, &kb4};
 
-uint32_t hardwired = 1;
+uint32_t hardwired1;
 
 static input input_devices[MAX_CONTROLLERS];
 static uint8_t kb_keys_pressed[RANDNET_MAX_BUTTONS];
@@ -120,9 +123,9 @@ void input_update_input_devices()
     if (digitalRead(HW_EN) == 0)
     {
         //Hardwired will always overwrite the first slot
-        if (input_devices[0].driver != &hardwired)
+        if (input_devices[0].driver != &hardwired1)
         {
-            input_devices[0].driver = &hardwired;
+            input_devices[0].driver = &hardwired1;
             input_devices[0].type = HW_GAMECONTROLLER;
             debug_print_status("[INPUT] Registered hardwired gamecontroller to slot %u\n", 0);
             tft_flag_update();
