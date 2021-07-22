@@ -47,6 +47,7 @@ KeyboardController *kbcontroller[] = {&kb1, &kb2, &kb3, &kb4};
 
 uint32_t hardwired1;
 
+#define MAX_USB_CONTROLLERS (8)
 static input input_devices[MAX_CONTROLLERS];
 static uint8_t kb_keys_pressed[RANDNET_MAX_BUTTONS];
 
@@ -134,7 +135,7 @@ void input_update_input_devices()
 #endif
 
     //Find new game controllers
-    for (int i = 0; i < MAX_CONTROLLERS; i++)
+    for (uint32_t i = 0; i < MAX_USB_CONTROLLERS; i++)
     {
         //Game controller is connected
         if (*(gamecontroller[i]) == true)
