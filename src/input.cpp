@@ -524,9 +524,9 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
         //Get latest info from USB devices
         KeyboardController *kb = (KeyboardController *)input_devices[id].driver;
 
-        kb->capsLock(state->led_state & RANDNET_LED_CAPSLOCK);
-        kb->numLock(state->led_state & RANDNET_LED_NUMLOCK);
-        kb->scrollLock(state->led_state & RANDNET_LED_POWER);
+        kb->capsLock((state->led_state & RANDNET_LED_CAPSLOCK) != 0);
+        kb->numLock((state->led_state & RANDNET_LED_NUMLOCK)  != 0);
+        kb->scrollLock((state->led_state & RANDNET_LED_POWER) != 0);
 
         //Map up to 3 keys to the randnet response packet
         for (int i = 0; i < RANDNET_MAX_BUTTONS; i++)

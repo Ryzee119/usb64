@@ -8,7 +8,7 @@
    USE ONLY FOR DEBUGGING */
 #define serial_port Serial
 #define DEBUG_STATUS 1  //General information
-#define DEBUG_N64 1     //For debugging N64 low level info
+#define DEBUG_N64 0     //For debugging N64 low level info
 #define DEBUG_TPAK 0    //For debugging N64 TPAK low level info. It's complex so has its own flag
 #define DEBUG_USBHOST 0 //For debugging the USB Host Stack
 #define DEBUG_FATFS 0   //For debugging the FATFS io
