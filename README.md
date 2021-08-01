@@ -10,6 +10,7 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - [x] Mempak emulation with four selectable banks. Technically unlimited.
 - [x] Transferpak emulation. Put Gameboy ROMS on an SD Card!
 - [x] N64 mouse emulation. Use a USB Mouse!
+- [x] N64 Randnet emulation. Use a USB keyboard!
 - [x] Configurable deadzones and sensitivity from the N64 Console.
 - [x] True dual analog sticks with GoldenEye and Perfect Dark.
 - [x] SD card driver with FATFS support for storage/backup of Gameboy ROMS, mempaks etc.
@@ -20,7 +21,6 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - [ ] Raspberry Pi interface or equivalent for all other USB controllers.
 - [ ] More inbuilt USB controller drivers. (PS3, Aftermarket Xbox One, OG Xbox, improved Generic HID).
 - [ ] USB Bluetooth stack.
-- [ ] Randnet keyboard emulation.
 - [ ] Mouse/Keyboard input for controllers.
 - [ ] Gamecube controller support.
 - [ ] Better debug output (Flashing LED, SD card logging)
