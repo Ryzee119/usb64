@@ -17,6 +17,7 @@ typedef struct
     uint8_t sensitivity[MAX_CONTROLLERS];        //0 to 4
     uint8_t deadzone[MAX_CONTROLLERS];           //0 to 4
     uint8_t snap_axis[MAX_CONTROLLERS];          //0 or 1
+    uint8_t swap_thumb_sticks[MAX_CONTROLLERS];  //0 or 1
     uint8_t octa_correct[MAX_CONTROLLERS];       //0 or 1
     uint8_t checksum;
 } n64_settings;
