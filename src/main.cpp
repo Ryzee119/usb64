@@ -154,7 +154,7 @@ void loop()
             if (input_is_gamecontroller(c))
             {
                 n64_buttonmap *new_state = (n64_buttonmap *)n64_response[c];
-                input_get_state(c, new_state,  &n64_combo);
+                input_get_state(c, new_state,  &n64_combo, settings->swap_thumb_sticks[c]);
 
                 if(n64_in_dev[c].is_mouse == true || n64_in_dev[c].is_kb == true)
                 {
@@ -162,7 +162,6 @@ void loop()
                     n64_in_dev[c].is_kb = false;
                     tft_flag_update();
                 }
-                n64_settings *settings = n64_settings_get();
                 float x, y, range;
                 astick_apply_deadzone(&x, &y, new_state->x_axis / 100.0f,
                                               new_state->y_axis / 100.0f,
@@ -195,7 +194,7 @@ void loop()
             else if (input_is_mouse(c))
             {
                 n64_buttonmap *new_state = (n64_buttonmap *)n64_response[c];
-                input_get_state(c, new_state,  &n64_combo);
+                input_get_state(c, new_state,  &n64_combo, settings->swap_thumb_sticks[c]);
 
                 if(n64_in_dev[c].is_mouse == false)
                 {
@@ -215,7 +214,7 @@ void loop()
                 //Maintain the old led state
                 new_state->led_state = n64_in_dev[c].kb_state.led_state;
 
-                input_get_state(c, new_state,  &n64_combo);
+                input_get_state(c, new_state,  &n64_combo, settings->swap_thumb_sticks[c]);
 
                 if (n64_in_dev[c].is_kb == false)
                 {
