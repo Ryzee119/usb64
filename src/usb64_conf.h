@@ -63,10 +63,11 @@
 #define MEMPAK_SAVE_EXT ".MPK" //MEMPAKXX.MPK
 
 /* FIRMWARE DEFAULTS (CONFIGURABLE DURING USE) */
-#define DEFAULT_SENSITIVITY 2  //0 to 4 (0 = low sensitivity, 4 = max)
-#define DEFAULT_DEADZONE 2     //0 to 4 (0 = no deadzone correction, 4 = max (40%))
-#define DEFAULT_SNAP 1         //0 or 1 (0 = will output raw analog stick angle, 1 will snap to 45deg angles)
-#define DEFAULT_OCTA_CORRECT 1 //0 or 1 (Will correct the circular analog stuck shape to N64 octagonal)
+#define DEFAULT_SENSITIVITY 2          //0 to 4 (0 = low sensitivity, 4 = max)
+#define DEFAULT_DEADZONE 2             //0 to 4 (0 = no deadzone correction, 4 = max (40%))
+#define DEFAULT_SNAP 1                 //0 or 1 (0 = will output raw analog stick angle, 1 will snap to 45deg angles)
+#define DEFAULT_OCTA_CORRECT 1         //0 or 1 (Will correct the circular analog stuck shape to N64 octagonal)
+#define DEFAULT_SWAP_THUMB_STICKS 0    //0 or 1 (0 = will disable C-Button mapping to left-hand stick, 1 will enable C-Button mapping to left-hand stick)
 
 /* FIRMWARE DEFAULTS (NOT CONFIGURABLE DURING USE) */
 #define SNAP_RANGE 5           //+/- what angle range will snap. 5 will snap to 45 degree if between 40 and 50 degrees.
