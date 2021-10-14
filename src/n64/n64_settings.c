@@ -34,6 +34,7 @@ void n64_settings_init(n64_settings *settings)
             settings->deadzone[i]     = DEFAULT_DEADZONE;
             settings->sensitivity[i]  = DEFAULT_SENSITIVITY;
             settings->snap_axis[i]    = DEFAULT_SNAP;
+            settings->swap_thumb_sticks[i]  = DEFAULT_SWAP_THUMB_STICKS;
             settings->octa_correct[i] = DEFAULT_OCTA_CORRECT;
         }
         n64_settings_update_checksum(settings);

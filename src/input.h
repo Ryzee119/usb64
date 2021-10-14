@@ -129,7 +129,7 @@ uint16_t input_get_id_product(int id);
 uint16_t input_get_id_vendor(int id);
 const char *input_get_manufacturer_string(int id);
 const char *input_get_product_string(int id);
-uint16_t input_get_state(uint8_t id, void *n64_response, bool *combo_pressed);
+uint16_t input_get_state(uint8_t id, void *n64_response, bool *combo_pressed, uint8_t swap_thumb_sticks);
 void input_apply_rumble(int id, uint8_t strength);
 void input_enable_dualstick_mode(int id);
 void input_disable_dualstick_mode(int id);

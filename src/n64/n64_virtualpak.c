@@ -366,6 +366,7 @@ void n64_virtualpak_update(n64_mempack *vpak)
         n64_virtualpak_write_string("DEADZONE+", SUBHEADING + 7, MENU_NAME_FIELD);
         n64_virtualpak_write_string("DEADZONE-", SUBHEADING + 8, MENU_NAME_FIELD);
 
+        n64_virtualpak_write_string("SWAP THUMB STICKS TOGGLE", SUBHEADING + 9, MENU_NAME_FIELD);
         n64_virtualpak_write_string("SNAP TOGGLE", SUBHEADING + 10, MENU_NAME_FIELD);
         n64_virtualpak_write_string("OCTA TOGGLE", SUBHEADING + 11, MENU_NAME_FIELD);
 
@@ -383,6 +384,8 @@ void n64_virtualpak_update(n64_mempack *vpak)
                 settings->deadzone[controller_page]++;        //Deadzone increase
             else if (selected_row == SUBHEADING + 8 && settings->deadzone[controller_page] > 0)
                 settings->deadzone[controller_page]--;        //Deadzone decrease
+            else if (selected_row == SUBHEADING + 9)
+                settings->swap_thumb_sticks[controller_page] ^= 1;    //Toggle control thumb stick swap for FPS games
             else if (selected_row == SUBHEADING + 10)
                 settings->snap_axis[controller_page] ^= 1;    //Toggle axis 45 degree snapping
             else if (selected_row == SUBHEADING + 11)
@@ -391,6 +394,7 @@ void n64_virtualpak_update(n64_mempack *vpak)
             {
                 settings->deadzone[controller_page] = DEFAULT_DEADZONE;
                 settings->sensitivity[controller_page] = DEFAULT_SENSITIVITY;
+                settings->swap_thumb_sticks[controller_page] = DEFAULT_SWAP_THUMB_STICKS;
                 settings->snap_axis[controller_page] = DEFAULT_SNAP;
                 settings->octa_correct[controller_page] = DEFAULT_OCTA_CORRECT;
             }
@@ -403,6 +407,9 @@ void n64_virtualpak_update(n64_mempack *vpak)
 
         sprintf(buff, "%u\0", settings->deadzone[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 7, MENU_EXT_FIELD);
+
+        sprintf(buff, "%u\0", settings->swap_thumb_sticks[controller_page]);
+        n64_virtualpak_write_string(buff, SUBHEADING + 9, MENU_EXT_FIELD);
 
         sprintf(buff, "%u\0", settings->snap_axis[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 10, MENU_EXT_FIELD);

@@ -243,7 +243,7 @@ void input_update_input_devices()
 #endif
 }
 
-uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
+uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed, uint8_t swap_thumb_sticks)
 {
     uint32_t _buttons = 0;
     int32_t _axis[JoystickController::STANDARD_AXIS_COUNT] = {0};
@@ -300,18 +300,31 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
                                                       N64_CL |
                                                       N64_CR;
             //Analog stick (Normalise 0 to +/-100)
-            state->x_axis = _axis[0] * 100 / 32768;
-            state->y_axis = _axis[1] * 100 / 32768;
+            if (swap_thumb_sticks == 1) {
+                state->x_axis = _axis[2] * 100 / 32768;
+                state->y_axis = _axis[3] * 100 / 32768;
+             } else {
+                state->x_axis = _axis[0] * 100 / 32768;
+                state->y_axis = _axis[1] * 100 / 32768;
+             }
+            
 
             //Z button
             if (_axis[4] > 10) state->dButtons |= N64_Z; //LT
             if (_axis[5] > 10) state->dButtons |= N64_Z; //RT
 
             //C usb_buttons
-            if (_axis[2] > 16000)  state->dButtons |= N64_CR;
-            if (_axis[2] < -16000) state->dButtons |= N64_CL;
-            if (_axis[3] > 16000)  state->dButtons |= N64_CU;
-            if (_axis[3] < -16000) state->dButtons |= N64_CD;
+            if (swap_thumb_sticks == 1) {
+                if (_axis[0] > 16000)  state->dButtons |= N64_CR;
+                if (_axis[0] < -16000) state->dButtons |= N64_CL;
+                if (_axis[1] > 16000)  state->dButtons |= N64_CU;
+                if (_axis[1] < -16000) state->dButtons |= N64_CD;
+            } else {
+                if (_axis[2] > 16000)  state->dButtons |= N64_CR;
+                if (_axis[2] < -16000) state->dButtons |= N64_CL;
+                if (_axis[3] > 16000)  state->dButtons |= N64_CU;
+                if (_axis[3] < -16000) state->dButtons |= N64_CD;
+            }
 
             //Button to hold for 'combos'
             if (combo_pressed)
@@ -337,7 +350,7 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
             if (_buttons & (1 << 5))   state->dButtons |= N64_B;    //B
             if (_buttons & (1 << 6))   state->dButtons |= N64_B;    //X
             if (_buttons & (1 << 7))   state->dButtons |= 0;        //Y
-            if (_buttons & (1 << 15))   state->dButtons |= N64_CU | //RS triggers
+            if (_buttons & (1 << 15))  state->dButtons |= N64_CU | //RS triggers
                                                         N64_CD | //all C usb_buttons
                                                         N64_CL |
                                                         N64_CR;
