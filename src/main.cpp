@@ -76,7 +76,7 @@ void setup()
     n64_subsystem_init(n64_in_dev);
 
     //Read in settings from flash
-    settings = (n64_settings *)memory_alloc_ram(SETTINGS_FILENAME, sizeof(n64_settings), READ_WRITE);
+    settings = (n64_settings *)memory_alloc_ram(SETTINGS_FILENAME, sizeof(n64_settings), MEMORY_READ_WRITE);
     n64_settings_init(settings);
 
     //Set up N64 sense pin. To determine is the N64 is turned on or off
@@ -380,7 +380,7 @@ void loop()
 
                     if (gb_cart->romsize > 0)
                     {
-                        gb_cart->rom = memory_alloc_ram(n64_in_dev[c].tpak->gbcart->filename, gb_cart->romsize, READ_ONLY);
+                        gb_cart->rom = memory_alloc_ram(n64_in_dev[c].tpak->gbcart->filename, gb_cart->romsize, MEMORY_READ_ONLY);
                     }
 
                     if (gb_cart->ramsize > 0)
@@ -449,7 +449,7 @@ void loop()
                 //Mempack wasn't in use, so allocate it in ram
                 if (n64_in_dev[c].next_peripheral != PERI_RUMBLE && mempak_bank != VIRTUAL_PAK)
                 {
-                    n64_in_dev[c].mempack->data = memory_alloc_ram(filename, MEMPAK_SIZE, READ_WRITE);
+                    n64_in_dev[c].mempack->data = memory_alloc_ram(filename, MEMPAK_SIZE, MEMORY_READ_WRITE);
                 }
 
                 if (n64_in_dev[c].mempack->data != NULL)

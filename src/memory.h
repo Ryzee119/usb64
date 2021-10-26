@@ -7,8 +7,8 @@
 #include <Arduino.h>
 #include "usb64_conf.h"
 
-#define READ_WRITE 0
-#define READ_ONLY 1
+#define MEMORY_READ_WRITE 0
+#define MEMORY_READ_ONLY 1
 
 typedef struct
 {
