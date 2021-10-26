@@ -156,7 +156,7 @@ void n64hal_output_set(uint8_t pin, uint8_t level)
  */
 void n64hal_buffered_read(void *rx_buff, void *src, uint32_t offset, uint32_t len)
 {
-    memcpy(rx_buff, src + offset, len);
+    memcpy(rx_buff, (void *)((uint32_t)src + offset), len);
 }
 
 /*
@@ -171,7 +171,7 @@ void n64hal_buffered_read(void *rx_buff, void *src, uint32_t offset, uint32_t le
  */
 void n64hal_buffered_write(void *tx_buff, void *dst, uint32_t offset, uint32_t len)
 {
-    memcpy(dst + offset, tx_buff, len);
+    memcpy((void *)((uint32_t)dst + offset), tx_buff, len);
     memory_mark_dirty(dst);
 }
 
