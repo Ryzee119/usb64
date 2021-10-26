@@ -14,12 +14,11 @@
 #include <Arduino.h>
 #include "memory.h"
 #include "usb64_conf.h"
-#include "tinyalloc.h"
 #include "fileio.h"
 #include "printf.h"
 
 extern uint8_t external_psram_size; //in MB. Set in startup.c
-EXTMEM uint8_t ext_ram[1024 * 1024 * 16];
+EXTMEM uint8_t ext_ram[1]; //Just to get the start of EXTMEM
 static uint32_t internal_size = 32768; //Smaller than this will malloc to internal RAM instead
 static sram_storage sram[32] = {0};
 
@@ -28,19 +27,10 @@ void memory_init()
     if (external_psram_size == 0)
         return;
 
-    //Init external RAM and memory heap
-    uint32_t psram_bytes = 1024 * 1024 * external_psram_size;
-    ta_init((void *)(ext_ram),               //Base of heap
-            (void *)(ext_ram + psram_bytes), //End of heap
-            psram_bytes / 32768,             //Number of memory chunks (32k/per chunk)
-            16,                              //Smaller chunks than this won't split
-            32);                             //32 word size alignment
-
     debug_print_memory("[MEMORY] External memory initialised\n");
     debug_print_memory("[MEMORY] Detected %uMB\n", external_psram_size);
-    debug_print_memory("[MEMORY] Heap start: %08x\n", (void *)(ext_ram));
-    debug_print_memory("[MEMORY] Heap end: %08x\n", (void *)(ext_ram + psram_bytes));
-    debug_print_memory("[MEMORY] Number of memory chunks: %u\n", psram_bytes / 32768);
+    debug_print_memory("[MEMORY] Heap start: %08x\n", (uint32_t)ext_ram);
+    debug_print_memory("[MEMORY] Heap end: %08x\n", (uint32_t)ext_ram + external_psram_size * 1024 * 1024);
 }
 
 //This function allocates and manages SRAM for mempak and gameboy roms (tpak) for the system.
@@ -72,7 +62,7 @@ uint8_t *memory_alloc_ram(const char *name, uint32_t alloc_len, uint32_t read_on
             if(sram[i].data != NULL)
             {
                 if (sram[i].data >= ext_ram)
-                    ta_free(sram[i].data);
+                    extmem_free(sram[i].data);
                 else
                     free(sram[i].data);
             }
@@ -88,11 +78,11 @@ uint8_t *memory_alloc_ram(const char *name, uint32_t alloc_len, uint32_t read_on
             //Smaller blocks are RAM are mallocs internally for better performance. Teensy has a reasonable
             //amount of internal RAM :)
             (alloc_len <= internal_size || external_psram_size == 0) ? (sram[i].data = (uint8_t *)malloc(alloc_len)) :
-                                                                       (sram[i].data = (uint8_t *)ta_alloc(alloc_len));
+                                                                       (sram[i].data = (uint8_t *)extmem_malloc(alloc_len));
 
             //If failed to malloc to internal RAM, try external RAM
             if (sram[i].data == NULL && alloc_len <= internal_size && external_psram_size > 0)
-                sram[i].data = (uint8_t *)ta_alloc(alloc_len);
+                sram[i].data = (uint8_t *)extmem_malloc(alloc_len);
 
             //If it still failed, no RAM left?
             if (sram[i].data == NULL)
@@ -128,7 +118,7 @@ void memory_free_item(void *ptr)
         {
             debug_print_memory("[MEMORY] Freeing %s at 0x%08x\n", sram[i].name, sram[i].data);
             if (sram[i].data >= ext_ram)
-                ta_free(sram[i].data);
+                extmem_free(sram[i].data);
             else
                 free(sram[i].data);
             sram[i].name[0] = '\0';
