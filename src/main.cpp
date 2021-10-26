@@ -26,43 +26,27 @@ int n64_is_on = 0;
 #if (MAX_CONTROLLERS >= 1)
 void n64_controller1_clock_edge()
 {
-    if(input_is_connected(0) && n64_is_on)
-        n64_controller_hande_new_edge(&n64_in_dev[0]);
+    n64_controller_hande_new_edge(&n64_in_dev[0]);
 }
 #endif
 #if (MAX_CONTROLLERS >= 2)
 void n64_controller2_clock_edge()
 {
-    if(input_is_connected(1) && n64_is_on)
-        n64_controller_hande_new_edge(&n64_in_dev[1]);
+    n64_controller_hande_new_edge(&n64_in_dev[1]);
 }
 #endif
 #if (MAX_CONTROLLERS >= 3)
 void n64_controller3_clock_edge()
 {
-    if(input_is_connected(2) && n64_is_on)
-        n64_controller_hande_new_edge(&n64_in_dev[2]);
+    n64_controller_hande_new_edge(&n64_in_dev[2]);
 }
 #endif
 #if (MAX_CONTROLLERS >= 4)
 void n64_controller4_clock_edge()
 {
-    if(input_is_connected(3) && n64_is_on)
-        n64_controller_hande_new_edge(&n64_in_dev[3]);
+    n64_controller_hande_new_edge(&n64_in_dev[3]);
 }
 #endif
-
-extern "C" {
-extern void startup_early_hook(void)
-{
-    //Get these up as early as possible.
-    pinMode(N64_CONTROLLER_1_PIN, INPUT_PULLUP);
-    pinMode(N64_CONTROLLER_2_PIN, INPUT_PULLUP);
-    pinMode(N64_CONTROLLER_3_PIN, INPUT_PULLUP);
-    pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP);
-    pinMode(N64_CONSOLE_SENSE, INPUT_PULLDOWN);
-}
-}
 
 void setup()
 {
@@ -109,29 +93,23 @@ void setup()
 #if (MAX_CONTROLLERS >= 1)
     n64_in_dev[0].gpio_pin = N64_CONTROLLER_1_PIN;
     pinMode(N64_CONTROLLER_1_PIN, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_1_PIN), n64_controller1_clock_edge, FALLING);
 #endif
 
 #if (MAX_CONTROLLERS >= 2)
     n64_in_dev[1].gpio_pin = N64_CONTROLLER_2_PIN;
     pinMode(N64_CONTROLLER_2_PIN, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_2_PIN), n64_controller2_clock_edge, FALLING);
 #endif
 
 #if (MAX_CONTROLLERS >= 3)
     n64_in_dev[2].gpio_pin = N64_CONTROLLER_3_PIN;
     pinMode(N64_CONTROLLER_3_PIN, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_3_PIN), n64_controller3_clock_edge, FALLING);
 #endif
 
 #if (MAX_CONTROLLERS >= 4)
     n64_in_dev[3].gpio_pin = N64_CONTROLLER_4_PIN;
     pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(N64_CONTROLLER_4_PIN), n64_controller4_clock_edge, FALLING);
 #endif
-
     NVIC_SET_PRIORITY(IRQ_GPIO6789, 1);
-
     digitalWrite(USER_LED_PIN, HIGH);
 }
 
@@ -150,6 +128,17 @@ void loop()
     {
         if (input_is_connected(c))
         {
+            if (n64_is_on && !n64_in_dev[c].interrupt_attached)
+            {
+                switch (c)
+                {
+                    case 0: attachInterrupt(digitalPinToInterrupt(n64_in_dev[c].gpio_pin), n64_controller1_clock_edge, FALLING); break;
+                    case 1: attachInterrupt(digitalPinToInterrupt(n64_in_dev[c].gpio_pin), n64_controller2_clock_edge, FALLING); break;
+                    case 2: attachInterrupt(digitalPinToInterrupt(n64_in_dev[c].gpio_pin), n64_controller3_clock_edge, FALLING); break;
+                    case 3: attachInterrupt(digitalPinToInterrupt(n64_in_dev[c].gpio_pin), n64_controller4_clock_edge, FALLING); break;
+                }
+                n64_in_dev[c].interrupt_attached = true;
+            }
             if (input_is_gamecontroller(c))
             {
                 n64_buttonmap *new_state = (n64_buttonmap *)n64_response[c];
@@ -225,6 +214,12 @@ void loop()
                 memcpy(&n64_in_dev[c].kb_state, new_state, sizeof(n64_randnet_kb));
             }
 #endif
+        }
+
+        if ((!input_is_connected(c) || !n64_is_on) && n64_in_dev[c].interrupt_attached)
+        {
+            n64_in_dev[c].interrupt_attached = false;
+            detachInterrupt(digitalPinToInterrupt(n64_in_dev[c].gpio_pin));
         }
 
         //Get a copy of the latest n64 button presses to handle the below combos
