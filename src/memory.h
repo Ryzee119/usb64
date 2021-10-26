@@ -4,10 +4,6 @@
 #ifndef _MEMORY_H
 #define _MEMORY_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <Arduino.h>
 #include "usb64_conf.h"
 
@@ -29,9 +25,5 @@ void memory_flush_all(void);
 void memory_free_item(void *ptr);
 void memory_mark_dirty(void *ptr);
 uint8_t memory_get_ext_ram_size();
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
