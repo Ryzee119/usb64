@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #include <Arduino.h>
+#include <SD.h>
 #include "USBHost_t36.h"
 #include "usb64_conf.h"
 #include "n64_controller.h"
@@ -10,7 +11,6 @@
 #include "printf.h"
 #include "ILI9341_t3n.h"
 #include "tft.h"
-#include "diskio_wrapper.h"
 #include "fileio.h"
 
 #if (ENABLE_TFT_DISPLAY >= 1)
@@ -190,7 +190,7 @@ void tft_force_update()
         tft.print(text_buff);
 
         //Write the detected SD card size
-        uint32_t sd_size = (_disk_volume_num_blocks() / 1024) * _disk_volume_get_block_size() / 1024;
+        uint32_t sd_size = SD.totalSize() / 1024 / 1024;
         if (sd_size == 0)
             tft.setTextColor(ILI9341_RED);
         snprintf(text_buff, sizeof(text_buff), "SD: %uMiB", sd_size);

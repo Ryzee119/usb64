@@ -2,27 +2,25 @@
 // SPDX-License-Identifier: MIT
 
 #include <Arduino.h>
+#include <SD.h>
 #include "usb64_conf.h"
-#include "ff.h"
 #include "printf.h"
-FATFS fs;
+
+Sd2Card card;
+SdVolume volume;
 
 void fileio_init()
 {
-    if (fs.fs_type == 0)
+    if (!SD.sdfs.begin(SdioConfig(FIFO_SDIO)))
     {
-        debug_print_status("[FILEIO] Mounting fs\n");
-        if (f_mount(&fs, "", 1) != FR_OK)
-        {
-            debug_print_error("[MAIN] ERROR: Could not mount FATFS, probably not formatted correctly. Formatting flash...\n");
-            MKFS_PARM defopt = {FM_FAT, 1, 0, 0, 4096};
-            BYTE *work = (BYTE *)malloc(4096);
-            f_mkfs("", &defopt, work, 4096);
-            free(work);
-            f_mount(&fs, "", 1);
-        }
+        debug_print_error("[FILEIO] ERROR: Could not open SD Card\n");
+    }
+    else
+    {
+        debug_print_fatfs("[FILEIO] Opened SD card OK! Size: %lld MB\n", SD.totalSize()/1024/1024);
     }
 }
+
 /*
  * Function: Returns are array of strings for file the root directory up to max.
  * WARNING: This allocates heap memory, and must be free'd by user.
@@ -35,29 +33,31 @@ void fileio_init()
  */
 uint32_t fileio_list_directory(char **list, uint32_t max)
 {
-    FRESULT res;
-    DIR dir;
-    UINT file_count = 0;
-    static FILINFO fno;
+    int file_count = 0;
+    File root = SD.open("/");
 
-    if (fs.fs_type == 0)
-        return 0;
-
-    res = f_opendir(&dir, "");
-    if (res == FR_OK)
+    if (root == false)
     {
-        for (;;)
-        {
-            res = f_readdir(&dir, &fno);
-            if (res != FR_OK || fno.fname[0] == 0 || file_count >= max)
-                break;
+        debug_print_error("[FILEIO] ERROR: Could not read SD Card\n");
+        return 0;
+    }
 
-            list[file_count] = (char *)malloc(strlen(fno.fname) + 1);
-            strcpy(list[file_count], fno.fname);
+    while (true)
+    {
+        File entry = root.openNextFile();
+        if (entry == false)
+            break;
+
+        if (!entry.isDirectory())
+        {
+            debug_print_fatfs("Found file: %s\n", entry.name());
+            list[file_count] = (char *)malloc(strlen(entry.name()) + 1);
+            strcpy(list[file_count], entry.name());
             file_count++;
         }
-        f_closedir(&dir);
+        entry.close();
     }
+    root.close();
     return file_count;
 }
 
@@ -72,44 +72,21 @@ uint32_t fileio_list_directory(char **list, uint32_t max)
  */
 void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
 {
-    //Trying open the file
-    FRESULT res; UINT br; FIL fil;
-
-    if (fs.fs_type == 0)
-        return;
-
-    res = f_open(&fil, (const TCHAR *)filename, FA_WRITE | FA_CREATE_ALWAYS);
-    if (res != FR_OK)
+    FsFile fil = SD.sdfs.open(filename, O_WRITE | O_CREAT);
+    if (fil == false)
     {
         debug_print_error("[FILEIO] ERROR: Could not open %s for WRITE\n", filename);
         return;
     }
-    //File opened ok. Write to it.
-    //As the data might coming from memory mapped IO external RAM,
-    //I first buffer to internal RAM.
-    uint8_t buffer[512];
-    uint32_t bytes_written = 0;
-    while (len > 0)
+    if (fil.write(data, len) != len)
     {
-        uint32_t b = (len > sizeof(buffer)) ? sizeof(buffer) : len;
-        memcpy(buffer, data, b);
-        res = f_write(&fil, buffer, b, &br);
-        if (res != FR_OK)
-            break;
-        data += b;
-        len -= b;
-        bytes_written += b;
-    }
-
-    f_close(&fil);
-    if (res != FR_OK)
-    {
-        debug_print_error("[FILEIO] ERROR: Could not write %s with error %i\n", filename, res);
+        debug_print_error("[FILEIO] ERROR: Could not write %s\n", filename);
     }
     else
     {
-        debug_print_status("[FILEIO] Writing %s for %u bytes ok!\n", filename, bytes_written);
+        debug_print_status("[FILEIO] Writing %s for %u bytes ok!\n", filename, len);
     }
+    fil.close();
 }
 
 /*
@@ -125,88 +102,22 @@ void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
  */
 void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, uint32_t len)
 {
-    //Trying open the file
-    FRESULT res; UINT br; FIL fil;
-
-    if (fs.fs_type == 0)
-        return;
-
-    res = f_open(&fil, (const TCHAR *)filename, FA_READ);
-    if (res != FR_OK)
+    FsFile fil = SD.sdfs.open(filename, O_READ);
+    if (fil == false)
     {
-        debug_print_status("[FILEIO] WARNING: Could not open %s for READ\n", filename);
-        memset(data, 0x00, len);
+        debug_print_error("[FILEIO] ERROR: Could not open %s for READ\n", filename);
         return;
     }
-    if (file_offset > 0)
-        f_lseek(&fil, file_offset);
 
-    //File opened ok. Read from it.
-    //As the data might going to memory mapped IO external RAM,
-    //I first buffer to internal RAM.
-    uint8_t buffer[512];
-    uint32_t bytes_read = 0;
-    while (len > 0)
-    {
-        uint32_t b = (len > sizeof(buffer)) ? sizeof(buffer) : len;
-        res = f_read(&fil, buffer, b, &br);
-        if (res != FR_OK)
-            break;
-        memcpy(data, buffer, b);
-        data += b;
-        len -= b;
-        bytes_read += b;
-    }
+    fil.seekSet(file_offset);
 
-    if (res != FR_OK)
+    if (fil.read(data, len) != (int)len)
     {
-        debug_print_error("[FILEIO] ERROR: Could not read %s with error %i\n", filename, res);
+        debug_print_error("[FILEIO] ERROR: Could not read %s\n", filename);
     }
     else
     {
-        debug_print_status("[FILEIO] Reading %s for %u bytes ok!\n", filename, bytes_read);
+        debug_print_status("[FILEIO] Reading %s for %u bytes ok!\n", filename, len);
     }
-}
-
-static FIL fp;
-int fileio_open_file_readonly(const char *filename)
-{
-    FRESULT res;
-    f_close(&fp);
-
-    res = f_open(&fp, filename, FA_READ);
-
-    if (res != FR_OK)
-    {
-        debug_print_status("Could not open %s for read1\n", filename);
-        return 0;
-    }
-    return 1;
-}
-
-void fileio_close_file()
-{
-    f_close(&fp);
-}
-
-int fileio_get_line(char *buffer, int max_len)
-{
-    FRESULT res;
-    UINT br;
-    int i = 0;
-    char c = 0;
-
-    if (f_eof(&fp))
-        return 0;
-
-    while (!f_eof(&fp) && c != '\n')
-    {
-        res = f_read(&fp, &c, 1, &br);
-        buffer[i++] = c;
-        if (c == '\n')
-            buffer[i++] = '\0';
-        if (res != FR_OK || i > (max_len - 1))
-            return 0;
-    }
-    return 1;
+    fil.close();
 }
