@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 #include "input.h"
-#include "ff.h"
 #include "printf.h"
 #include "n64_wrapper.h"
 #include "usb64_conf.h"
