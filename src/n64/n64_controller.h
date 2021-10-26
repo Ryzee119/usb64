@@ -43,6 +43,7 @@ typedef struct
     uint32_t is_kb;             //Set to emulate a n64 randnet keyboard
     n64_randnet_kb kb_state;    //Randnet keyboard object
 
+    uint32_t interrupt_attached; //Flag is set when this controller is connected to an ext int.
     uint32_t bus_idle_timer_clks; //Timer counter for bus idle timing
     uint32_t gpio_pin;          //What pin is this controller connected to
 } n64_input_dev_t;
