@@ -127,7 +127,7 @@ void n64hal_input_swap(n64_input_dev_t *controller, uint8_t val)
  */
 uint8_t n64hal_input_read(n64_input_dev_t *controller)
 {
-    return digitalRead(controller->gpio_pin);
+    return digitalReadFast(controller->gpio_pin);
 }
 
 /*
@@ -210,7 +210,6 @@ uint32_t n64hal_list_gb_roms(char **gb_list, uint32_t max)
         //Free file list as we go
         free(file_list[i]);
     }
-
     return rom_count;
 }
 
