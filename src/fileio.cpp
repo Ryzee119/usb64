@@ -6,9 +6,6 @@
 #include "usb64_conf.h"
 #include "printf.h"
 
-Sd2Card card;
-SdVolume volume;
-
 void fileio_init()
 {
     if (!SD.sdfs.begin(SdioConfig(FIFO_SDIO)))
