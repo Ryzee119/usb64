@@ -160,6 +160,7 @@ void input_update_input_devices()
                         input_devices[j].driver = gamecontroller[i];
                         input_devices[j].type = USB_GAMECONTROLLER;
                         debug_print_status("[INPUT] Registered gamecontroller to slot %u\n", j);
+                        gamecontroller[i]->setLEDs(j + 2);
                         tft_flag_update();
                         break;
                     }
