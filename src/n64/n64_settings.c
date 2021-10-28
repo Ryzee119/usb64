@@ -48,7 +48,7 @@ void n64_settings_update_checksum(n64_settings *settings)
     
     //Mark the memory as dirty.
     uint8_t start = 0x64; 
-    n64hal_buffered_write(&start, settings, 0, 1);
+    n64hal_write_extram(&start, settings, 0, 1);
 }
 
 n64_settings *n64_settings_get()
