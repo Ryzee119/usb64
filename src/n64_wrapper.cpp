@@ -154,7 +154,7 @@ void n64hal_output_set(uint8_t pin, uint8_t level)
  *   offset: Bytes from the base address the actual data is we need.
  *   len: How many bytes to read.
  */
-void n64hal_buffered_read(void *rx_buff, void *src, uint32_t offset, uint32_t len)
+void n64hal_read_extram(void *rx_buff, void *src, uint32_t offset, uint32_t len)
 {
     memcpy(rx_buff, (void *)((uint32_t)src + offset), len);
 }
@@ -165,11 +165,11 @@ void n64hal_buffered_read(void *rx_buff, void *src, uint32_t offset, uint32_t le
  *   Returns: void
  *
  *   tx_buff: The buffer of data to write
- *   src: Pointer to the base address of the destination data.
+ *   dst: Pointer to the base address of the destination data.
  *   offset: Bytes from the base address where we need to write.
  *   len: How many bytes to write.
  */
-void n64hal_buffered_write(void *tx_buff, void *dst, uint32_t offset, uint32_t len)
+void n64hal_write_extram(void *tx_buff, void *dst, uint32_t offset, uint32_t len)
 {
     memcpy((void *)((uint32_t)dst + offset), tx_buff, len);
     memory_mark_dirty(dst);
@@ -223,7 +223,7 @@ uint32_t n64hal_list_gb_roms(char **gb_list, uint32_t max)
  *   data: buffer to put data in
  *   len: number of bytes t0 read.
  */
-void n64hal_unbuffered_read(char *name, uint32_t file_offset, uint8_t *data, uint32_t len)
+void n64hal_read_storage(char *name, uint32_t file_offset, uint8_t *data, uint32_t len)
 {
     fileio_read_from_file(name, file_offset, data, len);
 }

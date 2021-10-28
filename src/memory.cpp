@@ -52,10 +52,9 @@ uint8_t *memory_alloc_ram(const char *name, uint32_t alloc_len, uint32_t read_on
             //Already malloced, check len is ok
             if (sram[i].len <= alloc_len)
             {
-                debug_print_memory("[MEMORY] Memory already malloced for %s, returning pointer to it\n", name);
+                debug_print_memory("[MEMORY] Memory already malloced for %s at 0x%08x, returning pointer to it\n", name, sram[i].data);
                 return sram[i].data;
             }
-                
 
             debug_print_error("[MEMORY] ERROR: SRAM malloced memory isnt right, resetting memory\n");
             //Allocated length isnt long enough. Reset it to be memory safe

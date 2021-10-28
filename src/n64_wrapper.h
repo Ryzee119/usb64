@@ -25,8 +25,8 @@ void n64hal_hs_tick_reset();
 uint32_t n64hal_hs_tick_get();
   
 //RAM access wrappers
-void n64hal_buffered_read(void *rx_buff, void *src, uint32_t offset, uint32_t len);
-void n64hal_buffered_write(void *tx_buff, void *dst, uint32_t offset, uint32_t len);
+void n64hal_read_extram(void *rx_buff, void *src, uint32_t offset, uint32_t len);
+void n64hal_write_extram(void *tx_buff, void *dst, uint32_t offset, uint32_t len);
 
 //GPIO wrappers
 void n64hal_output_set(uint8_t pin, uint8_t level);
@@ -35,7 +35,7 @@ uint8_t n64hal_input_read(n64_input_dev_t *controller);
   
 //FileIO wrappers
 uint32_t n64hal_list_gb_roms(char **list, uint32_t max);
-void n64hal_unbuffered_read(char *name, uint32_t file_offset, uint8_t *data, uint32_t len);
+void n64hal_read_storage(char *name, uint32_t file_offset, uint8_t *data, uint32_t len);
 
 #ifdef __cplusplus
 }

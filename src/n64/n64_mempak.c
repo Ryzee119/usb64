@@ -17,7 +17,7 @@ void n64_mempack_read32(n64_mempack *mempack, uint16_t address, uint8_t *rx_buff
     }
     else
     {
-        n64hal_buffered_read(rx_buff, mempack->data, address, 32);
+        n64hal_read_extram(rx_buff, mempack->data, address, 32);
     }
 }
 
@@ -29,6 +29,6 @@ void n64_mempack_write32(n64_mempack *mempack, uint16_t address, uint8_t *tx_buf
     }
     else
     {
-        n64hal_buffered_write(tx_buff, mempack->data, address, 32);
+        n64hal_write_extram(tx_buff, mempack->data, address, 32);
     }
 }
