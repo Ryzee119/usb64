@@ -32,7 +32,6 @@ typedef struct
     int32_t current_bit;        //The current bit to being received in
     uint32_t current_byte;      //The current byte being received in
     uint8_t data_buffer[50];    //Controller main tx and rx buffer
-    uint16_t peri_address;      //The currently set peripheral address to access
     uint32_t peri_access;       //Peripheral flag is set when a peripheral is being accessed
     uint32_t current_peripheral;//Peripheral flag, PERI_NONE, PERI_RUMBLE, PERI_MEMPAK, PERI_TPAK
     uint32_t next_peripheral;   //What Peripheral to change to next after timer
