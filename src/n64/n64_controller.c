@@ -111,18 +111,18 @@ static uint8_t n64_compare_addr_crc(uint16_t encoded_add_console)
 static void n64_send_stream(uint8_t *txbuff, uint32_t len, n64_input_dev_t *c)
 {
     uint32_t cycle_cnt = 0;
+    uint32_t cycle_start = 0;
     uint32_t current_byte = 0;
     uint32_t current_bit = 8;
-    uint32_t hs_clock = n64hal_hs_tick_get_speed();
-    uint32_t U_SEC = hs_clock / 1000000; //clocks per microsecond
-    n64hal_hs_tick_reset();
-    cycle_cnt = n64hal_hs_tick_get();
+    uint32_t U_SEC = n64hal_hs_tick_get_speed() / 1000000; //clocks per microsecond
+
+    cycle_start = n64hal_hs_tick_get();
     while (len > 0)
     {
-        while (n64hal_hs_tick_get() < cycle_cnt);
+        while ((n64hal_hs_tick_get() - cycle_start) < cycle_cnt);
         n64hal_input_swap(c, N64_OUTPUT); //OUTPUT_PP will pull low
         (txbuff[current_byte] & 0x80) ? (cycle_cnt += 1 * U_SEC) : (cycle_cnt += 3 * U_SEC);
-        while (n64hal_hs_tick_get() < cycle_cnt);
+        while ((n64hal_hs_tick_get() - cycle_start) < cycle_cnt);
         n64hal_input_swap(c, N64_INPUT);
         (txbuff[current_byte] & 0x80) ? (cycle_cnt += 3 * U_SEC) : (cycle_cnt += 1 * U_SEC);
         txbuff[current_byte] = txbuff[current_byte] << 1;
@@ -138,10 +138,10 @@ static void n64_send_stream(uint8_t *txbuff, uint32_t len, n64_input_dev_t *c)
     }
 
     //Send stop bit. Pull low for 2us, then release.
-    while (n64hal_hs_tick_get() < cycle_cnt);
+    while ((n64hal_hs_tick_get() - cycle_start) < cycle_cnt);
     n64hal_input_swap(c, N64_OUTPUT);
     cycle_cnt += 2 * U_SEC;
-    while (n64hal_hs_tick_get() < cycle_cnt);
+    while ((n64hal_hs_tick_get() - cycle_start) < cycle_cnt);
     n64hal_input_swap(c, N64_INPUT); //Release bus. We're done
 }
 
@@ -153,8 +153,8 @@ static void n64_reset_stream(n64_input_dev_t *cont)
 }
 
 static void inline n64_wait_micros(uint32_t micros){
-    uint32_t clocks = micros * (n64hal_hs_tick_get_speed() / 1000000);
-    while (n64hal_hs_tick_get() < clocks);
+    uint32_t end_clock = n64hal_hs_tick_get() + micros * (n64hal_hs_tick_get_speed() / 1000000);
+    while (n64hal_hs_tick_get() < end_clock);
 }
 
 //This function is called in the falling edge of the n64 data bus.
@@ -179,15 +179,14 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
     }
 
     //Wait for ~1.05us to pass since falling edge before reading bit
-    uint32_t end_clock = start_clock + (n64hal_hs_tick_get_speed() / 950000);
-    while (n64hal_hs_tick_get() < end_clock);
+    uint32_t sample_clock = start_clock + (n64hal_hs_tick_get_speed() / 950000);
+    while (n64hal_hs_tick_get() < sample_clock);
 
     //Read bit
     cont->data_buffer[cont->current_byte] |= n64hal_input_read(cont) << cont->current_bit;
     cont->current_bit -= 1;
 
     //Reset idle timer
-    n64hal_hs_tick_reset();
     cont->bus_idle_timer_clks = n64hal_hs_tick_get();
 
     //If byte 0 has been completed, we need to identify what the command is

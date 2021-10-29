@@ -21,7 +21,6 @@ void n64hal_rtc_write(uint8_t *day_high, uint8_t *day_low, uint8_t *h, uint8_t *
 //Timer wrappers
 uint32_t n64hal_hs_tick_get_speed();
 void n64hal_hs_tick_init();
-void n64hal_hs_tick_reset();
 uint32_t n64hal_hs_tick_get();
   
 //RAM access wrappers
