@@ -70,27 +70,14 @@ uint32_t n64hal_hs_tick_get_speed()
 }
 
 /*
- * Function: Resets the value of the high speed clock.
- * Calling n64hal_hs_tick_get() instantanously (hypothetically) after this would return 0.
- * Speed critical!
- * ----------------------------
- *   Returns: Void
- */
-static uint32_t clock_count = 0;
-void n64hal_hs_tick_reset()
-{
-    clock_count = ARM_DWT_CYCCNT;
-}
-
-/*
  * Function: Get the current value of the high speed clock.
  * Speed critical!
  * ----------------------------
- *   Returns: Number of clock ticks since n64hal_hs_tick_reset()
+ *   Returns: A timer count that should run fairly fast (>20Mhz or so)
  */
 uint32_t n64hal_hs_tick_get()
 {
-    return ARM_DWT_CYCCNT - clock_count;
+    return ARM_DWT_CYCCNT;
 }
 
 /*
