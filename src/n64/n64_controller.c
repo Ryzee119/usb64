@@ -47,6 +47,7 @@ void n64_subsystem_init(n64_input_dev_t *in_dev)
         in_dev[i].tpak->gbcart = &gb_cart[i];
         in_dev[i].interrupt_attached = false;
         in_dev[i].peri_access = 0;
+        in_dev[i].type = N64_CONTROLLER;
     }
 
     //Setup the Controller pin IO mapping and interrupts
@@ -195,10 +196,10 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
         {
         case N64_IDENTIFY:
         case N64_CONTROLLER_RESET:
-            if (cont->is_mouse)
+            if (cont->type == N64_MOUSE)
                 memcpy(&cont->data_buffer[N64_DATA_POS], n64_mouse, sizeof(n64_mouse));
 
-            else if (cont->is_kb)
+            else if (cont->type == N64_RANDNET)
                 memcpy(&cont->data_buffer[N64_DATA_POS], n64_randnet, sizeof(n64_randnet));
 
             else if (cont->current_peripheral != PERI_NONE && !cont->crc_error)
@@ -217,7 +218,7 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
             break;
 
         case N64_CONTROLLER_STATUS:
-            if (cont->is_kb) //Randnet does not response to this
+            if (cont->type == N64_RANDNET) //Randnet does not response to this
                 break;
             n64hal_output_set(N64_FRAME, 1);
             n64_wait_micros(2);
@@ -240,7 +241,7 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
     }
 
     //If it's a RANDNET keyboard packet
-    if (cont->is_kb && cont->data_buffer[N64_COMMAND_POS] == N64_RANDNET_REQ && cont->current_byte == RANDNET_BTN_POS)
+    if (cont->type == N64_RANDNET && cont->data_buffer[N64_COMMAND_POS] == N64_RANDNET_REQ && cont->current_byte == RANDNET_BTN_POS)
     {
         //First received byte is the led state of the keyboard LEDs
         cont->kb_state.led_state = cont->data_buffer[RANDNET_LED_POS];

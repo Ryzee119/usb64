@@ -156,10 +156,9 @@ void loop()
                 n64_buttonmap *new_state = (n64_buttonmap *)n64_response[c];
                 input_get_state(c, new_state,  &n64_combo);
 
-                if(n64_in_dev[c].is_mouse == true || n64_in_dev[c].is_kb == true)
+                if(n64_in_dev[c].type != N64_CONTROLLER)
                 {
-                    n64_in_dev[c].is_mouse = false;
-                    n64_in_dev[c].is_kb = false;
+                    n64_in_dev[c].type = N64_CONTROLLER;
                     tft_flag_update();
                 }
                 n64_settings *settings = n64_settings_get();
@@ -197,10 +196,9 @@ void loop()
                 n64_buttonmap *new_state = (n64_buttonmap *)n64_response[c];
                 input_get_state(c, new_state,  &n64_combo);
 
-                if(n64_in_dev[c].is_mouse == false)
+                if(n64_in_dev[c].type != N64_MOUSE)
                 {
-                    n64_in_dev[c].is_kb = false;
-                    n64_in_dev[c].is_mouse = true;
+                    n64_in_dev[c].type = N64_MOUSE;
                     tft_flag_update();
                 }
                 n64_in_dev[c].b_state.dButtons = new_state->dButtons;
@@ -217,10 +215,9 @@ void loop()
 
                 input_get_state(c, new_state,  &n64_combo);
 
-                if (n64_in_dev[c].is_kb == false)
+                if(n64_in_dev[c].type != N64_RANDNET)
                 {
-                    n64_in_dev[c].is_mouse = false;
-                    n64_in_dev[c].is_kb = true;
+                    n64_in_dev[c].type = N64_RANDNET;
                     tft_flag_update();
                 }
                 memcpy(&n64_in_dev[c].kb_state, new_state, sizeof(n64_randnet_kb));

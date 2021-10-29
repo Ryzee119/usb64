@@ -43,13 +43,13 @@ static const char *n64_peri_to_string(n64_input_dev_t *c)
         return "NOT CONNECTED";
     }
 
-    if (c->is_mouse)
+    if (c->type == N64_MOUSE)
     {
         tft.setTextColor(ILI9341_GREEN);
         return "N64 MOUSE";
     }
 
-    if (c->is_kb)
+    if (c->type == N64_RANDNET)
     {
         tft.setTextColor(ILI9341_GREEN);
         return "N64 RANDNET";
