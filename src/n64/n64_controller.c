@@ -287,6 +287,7 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
                 cont->data_buffer[N64_CRC_POS] = ~cont->data_buffer[N64_CRC_POS];
 
             //Send the data CRC out straight away. N64 expects this very quickly
+            n64_wait_micros(2);
             n64_send_stream(&cont->data_buffer[N64_CRC_POS], 1, cont);
 
             //Now handle the write command
