@@ -26,32 +26,41 @@ typedef struct __attribute__((packed))
     uint8_t flags;
 } n64_randnet_kb;
 
-typedef enum{
+typedef enum
+{
     N64_CONTROLLER,
     N64_MOUSE,
     N64_RANDNET
 } n64_input_type;
 
+typedef enum
+{
+    PERI_NONE,
+    PERI_RUMBLE,
+    PERI_MEMPAK,
+    PERI_TPAK
+} n64_peri_type;
+
 typedef struct
 {
-    uint32_t id;                //Controller ID
-    int32_t current_bit;        //The current bit to being received in
-    uint32_t current_byte;      //The current byte being received in
-    uint8_t data_buffer[50];    //Controller main tx and rx buffer
-    uint32_t peri_access;       //Peripheral flag is set when a peripheral is being accessed
-    uint32_t current_peripheral;//Peripheral flag, PERI_NONE, PERI_RUMBLE, PERI_MEMPAK, PERI_TPAK
-    uint32_t next_peripheral;   //What Peripheral to change to next after timer
-    n64_buttonmap b_state;      //N64 controller button and analog stick map
-    uint32_t crc_error;         //Set if the 2 byte address has a CRC error.
-    n64_transferpak *tpak;      //Pointer to installed transferpak
-    n64_rumblepak *rpak;        //Pointer to installed rumblepak
-    n64_mempack *mempack;       //Pointer to installed mempack
-    n64_input_type type;
-    n64_randnet_kb kb_state;    //Randnet keyboard object
-
-    uint32_t interrupt_attached; //Flag is set when this controller is connected to an ext int.
-    uint32_t bus_idle_timer_clks; //Timer counter for bus idle timing
-    uint32_t gpio_pin;          //What pin is this controller connected to
+    uint32_t id;                      //Controller ID
+    int32_t current_bit;              //The current bit to being received in
+    uint32_t current_byte;            //The current byte being received in
+    uint8_t data_buffer[50];          //Controller main tx and rx buffer
+    uint32_t peri_access;             //Peripheral flag is set when a peripheral is being accessed
+    uint32_t crc_error;               //Set if the 2 byte address has a CRC error.
+    n64_input_type type;              //Store the type of input device. Controller, Mouse. Randnet etc.
+    n64_buttonmap b_state;            //N64 controller button and analog stick map
+    n64_randnet_kb kb_state;          //Randnet keyboard object
+    n64_peri_type current_peripheral; //Peripheral flag, PERI_NONE, PERI_RUMBLE, PERI_MEMPAK, PERI_TPAK
+    n64_peri_type next_peripheral;    //What Peripheral to change to next after timer
+    n64_transferpak *tpak;            //Pointer to installed transferpak
+    n64_rumblepak *rpak;              //Pointer to installed rumblepak
+    n64_mempack *mempack;             //Pointer to installed mempack
+                                      //
+    uint32_t interrupt_attached;      //Flag is set when this controller is connected to an ext int.
+    uint32_t bus_idle_timer_clks;     //Timer counter for bus idle timing
+    uint32_t gpio_pin;                //What pin is this controller connected to
 } n64_input_dev_t;
 
 //N64 JOYBUS
@@ -100,14 +109,6 @@ typedef struct
 #define MEMPAK_SIZE 32768
 #define MAX_MEMPAKS MAX_CONTROLLERS
 #define VIRTUAL_PAK MAX_MEMPAKS
-
-enum
-{
-    PERI_RUMBLE,
-    PERI_MEMPAK,
-    PERI_NONE,
-    PERI_TPAK,
-};
 
 void n64_subsystem_init(n64_input_dev_t *in_dev);
 void n64_controller_hande_new_edge(n64_input_dev_t *cont);
