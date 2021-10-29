@@ -47,7 +47,6 @@ void n64_subsystem_init(n64_input_dev_t *in_dev)
         in_dev[i].tpak->gbcart = &gb_cart[i];
         in_dev[i].interrupt_attached = false;
         in_dev[i].peri_access = 0;
-        in_dev[i].peri_address = 0;
     }
 
     //Setup the Controller pin IO mapping and interrupts
@@ -267,21 +266,20 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
     //If we are accessing the peripheral bus, let's handle that
     if (cont->peri_access == 1)
     {
+        uint16_t peri_address = (cont->data_buffer[N64_ADDRESS_MSB_POS] << 8 |
+                                 cont->data_buffer[N64_ADDRESS_LSB_POS]);
+
         /*WRITE ACCESS*/
         //If there was a 'write' command to the peripheral bus, check if all 32 bytes of data have been received
         if (cont->data_buffer[N64_COMMAND_POS] == N64_PERI_WRITE && cont->current_byte == (N64_DATA_POS + 32))
         {
-
-            cont->peri_address = (cont->data_buffer[N64_ADDRESS_MSB_POS] << 8 |
-                                  cont->data_buffer[N64_ADDRESS_LSB_POS]);
-
-            if (!n64_compare_addr_crc(cont->peri_address))
+            if (!n64_compare_addr_crc(peri_address))
             {
                 cont->crc_error = 1;
-                debug_print_error("[N64] ERROR: Address CRC Error %04x\n", cont->peri_address);
+                debug_print_error("[N64] ERROR: Address CRC Error %04x\n", peri_address);
             }
 
-            cont->peri_address &= 0xFFE0;
+            peri_address &= 0xFFE0;
             cont->data_buffer[N64_CRC_POS] = n64_get_crc(&cont->data_buffer[N64_DATA_POS]);
             //If no peripheral, the CRC is inverted
             if (cont->current_peripheral == PERI_NONE)
@@ -291,12 +289,12 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
             n64_send_stream(&cont->data_buffer[N64_CRC_POS], 1, cont);
 
             //Now handle the write command
-            switch (cont->peri_address >> 12)
+            switch (peri_address >> 12)
             {
                 case 0x0:
                     //VIRTUAL MEMPAK NOTE TABLE HOOK
                     if (cont->mempack->virtual_is_active && cont->current_peripheral == PERI_MEMPAK &&
-                        cont->peri_address >= 0x300 && cont->peri_address < 0x500)
+                        peri_address >= 0x300 && peri_address < 0x500)
                     {
                         /*
                          * When you 'delete' a note from the mempak manager, I can hook the
@@ -305,7 +303,7 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
                          * and has 32bytes (0x20) per note.
                          * I use this as a hacky menu for the N64
                          */
-                        uint32_t row = (cont->peri_address - 0x300) / 0x20; //What row you have 'selected' 0-15
+                        uint32_t row = (peri_address - 0x300) / 0x20; //What row you have 'selected' 0-15
                         cont->mempack->virtual_update_req = 1;
                         cont->mempack->virtual_selected_row = row;
                         debug_print_n64("[N64] Virtualpak write at row %u\n", row);
@@ -320,7 +318,7 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
                 case 0x6:
                 case 0x7:
                     if (cont->current_peripheral == PERI_MEMPAK && !cont->crc_error)
-                        n64_mempack_write32(cont->mempack, cont->peri_address, &cont->data_buffer[N64_DATA_POS]);
+                        n64_mempack_write32(cont->mempack, peri_address, &cont->data_buffer[N64_DATA_POS]);
                     break;
                 case 0x8:
                     if (cont->current_peripheral == PERI_TPAK)
@@ -367,7 +365,7 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
                 case 0xF:
                     if (cont->current_peripheral == PERI_TPAK)
                     {
-                        tpak_write(cont->tpak, cont->peri_address, &cont->data_buffer[N64_DATA_POS]);
+                        tpak_write(cont->tpak, peri_address, &cont->data_buffer[N64_DATA_POS]);
                     }
                     break;
             }
@@ -392,20 +390,18 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
         )
         {
             memset(&cont->data_buffer[N64_DATA_POS], 0x00, 32); //N64 responds with 0x00s unless otherwise set
-            cont->peri_address = (cont->data_buffer[N64_ADDRESS_MSB_POS] << 8 |
-                                  cont->data_buffer[N64_ADDRESS_LSB_POS]);
 
 #ifdef USE_N64_ADDRESS_CRC
-            if (!n64_compare_addr_crc(cont->peri_address))
+            if (!n64_compare_addr_crc(peri_address))
             {
                 cont->crc_error = 1;
-                debug_print_error("[N64] ERROR: Address CRC Error %04x\n", cont->peri_address);
+                debug_print_error("[N64] ERROR: Address CRC Error %04x\n", peri_address);
             }
 #endif
 
             //Clear the address CRC bits
-            cont->peri_address &= 0xFFE0;
-            switch(cont->peri_address >> 12)
+            peri_address &= 0xFFE0;
+            switch(peri_address >> 12)
             {
                 case 0x0: //0x0000 - 0x0FFFF
                 case 0x1: //0x1000 = 0x1FFFF
@@ -441,7 +437,7 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
                 case 0x7:
                     if (cont->current_peripheral == PERI_MEMPAK)
                     {
-                        n64_mempack_read32(cont->mempack, cont->peri_address, &cont->data_buffer[N64_DATA_POS]);
+                        n64_mempack_read32(cont->mempack, peri_address, &cont->data_buffer[N64_DATA_POS]);
                     }
                     break;
                 case 0x8:
@@ -466,7 +462,7 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
                     if(cont->current_peripheral == PERI_TPAK && cont->tpak->gbcart)
                     {
                         if (cont->tpak->power_state != 1) break;
-                        tpak_read(cont->tpak, cont->peri_address, &cont->data_buffer[N64_DATA_POS]);
+                        tpak_read(cont->tpak, peri_address, &cont->data_buffer[N64_DATA_POS]);
                     }
                     break;
             }
