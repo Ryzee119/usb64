@@ -26,6 +26,12 @@ typedef struct __attribute__((packed))
     uint8_t flags;
 } n64_randnet_kb;
 
+typedef enum{
+    N64_CONTROLLER,
+    N64_MOUSE,
+    N64_RANDNET
+} n64_input_type;
+
 typedef struct
 {
     uint32_t id;                //Controller ID
@@ -40,8 +46,7 @@ typedef struct
     n64_transferpak *tpak;      //Pointer to installed transferpak
     n64_rumblepak *rpak;        //Pointer to installed rumblepak
     n64_mempack *mempack;       //Pointer to installed mempack
-    uint32_t is_mouse;          //Set to emulate a n64 mouse
-    uint32_t is_kb;             //Set to emulate a n64 randnet keyboard
+    n64_input_type type;
     n64_randnet_kb kb_state;    //Randnet keyboard object
 
     uint32_t interrupt_attached; //Flag is set when this controller is connected to an ext int.
