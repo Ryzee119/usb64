@@ -258,7 +258,7 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
     if (response == NULL)
         return 0;
 
-    if (input_is_gamecontroller(id))
+    if (input_is(id, USB_GAMECONTROLLER))
     {
         //Prep N64 response
         n64_buttonmap *state = (n64_buttonmap *)response;
@@ -481,7 +481,7 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
         }
     }
 #if (MAX_MICE >= 1)
-    else if (input_is_mouse(id))
+    else if (input_is(id, USB_MOUSE))
     {
         //Prep N64 response
         n64_buttonmap *state = (n64_buttonmap *)response;
@@ -517,7 +517,7 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
 #endif
 
 #if (MAX_KB >= 1)
-    else if (input_is_kb(id))
+    else if (input_is(id, USB_KB))
     {
         //Prep N64 response
         n64_randnet_kb *state = (n64_randnet_kb *)response;
@@ -560,7 +560,7 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
 #endif
 
 #if (ENABLE_HARDWIRED_CONTROLLER >=1)
-    else if (input_is_hw_gamecontroller(id))
+    else if (input_is(id, HW_GAMECONTROLLER))
     {
         n64_buttonmap *state = (n64_buttonmap *)response;
         state->dButtons = 0;
@@ -599,13 +599,13 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
 void input_apply_rumble(int id, uint8_t strength)
 {
     JoystickController *joy;
-    if (input_is_gamecontroller(id))
+    if (input_is(id, USB_GAMECONTROLLER))
     {
         joy = (JoystickController *)input_devices[id].driver;
         joy->setRumble(strength, strength, 20);
     }
 #if (ENABLE_HARDWIRED_CONTROLLER >=1)
-    else if (input_is_hw_gamecontroller(id))
+    else if (input_is(id, HW_GAMECONTROLLER))
     {
         (strength > 0) ? digitalWrite(HW_RUMBLE, HIGH) : digitalWrite(HW_RUMBLE, LOW);
     }
@@ -618,7 +618,7 @@ bool input_is_connected(int id)
     if (_check_id(id) == 0)
         return false;
 
-    if (input_is_gamecontroller(id))
+    if (input_is(id, USB_GAMECONTROLLER))
     {
         JoystickController *joy = (JoystickController *)input_devices[id].driver;
         if (*joy == true)
@@ -626,7 +626,7 @@ bool input_is_connected(int id)
     }
 
 #if (MAX_MICE >=1)   
-    else if (input_is_mouse(id))
+    else if (input_is(id, USB_MOUSE))
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         if (*mouse == true)
@@ -635,7 +635,7 @@ bool input_is_connected(int id)
 #endif
 
 #if (MAX_KB >=1)   
-    else if (input_is_kb(id))
+    else if (input_is(id, USB_KB))
     {
         USBHIDInput *kb = (USBHIDInput *)input_devices[id].driver;
         if (*kb == true)
@@ -644,7 +644,7 @@ bool input_is_connected(int id)
 #endif
     
 #if (ENABLE_HARDWIRED_CONTROLLER >=1)
-    else if (input_is_hw_gamecontroller(id))
+    else if (input_is(id, HW_GAMECONTROLLER))
     {
         if (digitalRead(HW_EN) == 0)
             connected = true;
@@ -654,38 +654,11 @@ bool input_is_connected(int id)
     return connected;
 }
 
-bool input_is_mouse(int id)
+bool input_is(int id, input_type_t type)
 {
     if (_check_id(id) == 0)
         return false;
-    if (input_devices[id].type == USB_MOUSE)
-        return true;
-    return false;
-}
-
-bool input_is_kb(int id)
-{
-    if (_check_id(id) == 0)
-        return false;
-    if (input_devices[id].type == USB_KB)
-        return true;
-    return false;
-}
-
-bool input_is_gamecontroller(int id)
-{
-    if (_check_id(id) == 0)
-        return false;
-    if (input_devices[id].type == USB_GAMECONTROLLER)
-        return true;
-    return false;
-}
-
-bool input_is_hw_gamecontroller(int id)
-{
-    if (_check_id(id) == 0)
-        return false;
-    if (input_devices[id].type == HW_GAMECONTROLLER)
+    if (input_devices[id].type == type)
         return true;
     return false;
 }
@@ -695,22 +668,22 @@ uint16_t input_get_id_product(int id)
     if (_check_id(id) == 0 || input_is_connected(id) == 0)
         return 0;
 
-    if (input_is_gamecontroller(id))
+    if (input_is(id, USB_GAMECONTROLLER))
     {
         JoystickController *joy = (JoystickController *)input_devices[id].driver;
         return joy->idProduct();
     }
-    else if (input_is_mouse(id))
+    else if (input_is(id, USB_MOUSE))
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         return mouse->idProduct();
     }
-    else if (input_is_kb(id))
+    else if (input_is(id, USB_KB))
     {
         USBHIDInput *kb = (USBHIDInput *)input_devices[id].driver;
         return kb->idProduct();
     }
-    else if (input_is_hw_gamecontroller(id))
+    else if (input_is(id, HW_GAMECONTROLLER))
     {
         return 0xBEEF;
     }
@@ -723,22 +696,22 @@ uint16_t input_get_id_vendor(int id)
     if (_check_id(id) == 0 || input_is_connected(id) == 0)
         return 0;
 
-    if (input_is_gamecontroller(id))
+    if (input_is(id, USB_GAMECONTROLLER))
     {
         JoystickController *joy = (JoystickController *)input_devices[id].driver;
         return joy->idVendor();
     }
-    else if (input_is_mouse(id))
+    else if (input_is(id, USB_MOUSE))
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         return mouse->idVendor();
     }
-    else if (input_is_kb(id))
+    else if (input_is(id, USB_KB))
     {
         USBHIDInput *kb = (USBHIDInput *)input_devices[id].driver;
         return kb->idVendor();
     }
-    else if (input_is_hw_gamecontroller(id))
+    else if (input_is(id, HW_GAMECONTROLLER))
     {
         return 0xDEAD;
     }
@@ -752,22 +725,22 @@ const char *input_get_manufacturer_string(int id)
     if (_check_id(id) == 0 || input_is_connected(id) == false)
         return NC;
 
-    if (input_is_gamecontroller(id))
+    if (input_is(id, USB_GAMECONTROLLER))
     {
         JoystickController *joy = (JoystickController *)input_devices[id].driver;
         return (const char *)joy->manufacturer();
     }
-    else if (input_is_mouse(id))
+    else if (input_is(id, USB_MOUSE))
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         return (const char *)mouse->manufacturer();
     }
-    else if (input_is_kb(id))
+    else if (input_is(id, USB_KB))
     {
         USBHIDInput *kb = (USBHIDInput *)input_devices[id].driver;
         return (const char *)kb->manufacturer();
     }
-    else if (input_is_hw_gamecontroller(id))
+    else if (input_is(id, HW_GAMECONTROLLER))
     {
         return "USB64";
     }
@@ -781,22 +754,22 @@ const char *input_get_product_string(int id)
     if (_check_id(id) == 0 || input_is_connected(id) == 0)
         return NC;
 
-    if (input_is_gamecontroller(id))
+    if (input_is(id, USB_GAMECONTROLLER))
     {
         JoystickController *joy = (JoystickController *)input_devices[id].driver;
         return (const char *)joy->product();
     }
-    else if (input_is_mouse(id))
+    else if (input_is(id, USB_MOUSE))
     {
         USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
         return (const char *)mouse->product();
     }
-    else if (input_is_kb(id))
+    else if (input_is(id, USB_KB))
     {
         USBHIDInput *kb = (USBHIDInput *)input_devices[id].driver;
         return (const char *)kb->product();
     }
-    else if (input_is_hw_gamecontroller(id))
+    else if (input_is(id, HW_GAMECONTROLLER))
     {
         return "HARDWIRED";
     }

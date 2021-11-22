@@ -99,28 +99,25 @@ static const randnet_map_t randnet_map[] = {
     {KEY_RIGHT, 0x0405},       //Right Cursor
 };
 
-enum
+typedef enum
 {
     USB_MOUSE,
     USB_KB,
     USB_GAMECONTROLLER,
     HW_GAMECONTROLLER,
     I2C_GAMECONTROLLER
-};
+} input_type_t;
 
 typedef struct
 {
     void *driver;
-    int type;
+    input_type_t type;
 } input;
 
 void input_init();
 void input_update_input_devices();
 bool input_is_connected(int id);
-bool input_is_mouse(int id);
-bool input_is_kb(int id);
-bool input_is_gamecontroller(int id);
-bool input_is_hw_gamecontroller(int id);
+bool input_is(int id, input_type_t type);
 uint16_t input_get_id_product(int id);
 uint16_t input_get_id_vendor(int id);
 const char *input_get_manufacturer_string(int id);
