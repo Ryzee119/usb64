@@ -151,7 +151,7 @@ void loop()
                 }
                 n64_in_dev[c].interrupt_attached = true;
             }
-            if (input_is_gamecontroller(c))
+            if (input_is(c, USB_GAMECONTROLLER))
             {
                 n64_buttonmap *new_state = (n64_buttonmap *)n64_response[c];
                 input_get_state(c, new_state,  &n64_combo);
@@ -191,7 +191,7 @@ void loop()
                 }
             }
 #if (MAX_MICE >= 1)
-            else if (input_is_mouse(c))
+            else if (input_is(c, USB_MOUSE))
             {
                 n64_buttonmap *new_state = (n64_buttonmap *)n64_response[c];
                 input_get_state(c, new_state,  &n64_combo);
@@ -207,7 +207,7 @@ void loop()
             }
 #endif
 #if (MAX_KB >= 1)
-            else if (input_is_kb(c))
+            else if (input_is(c, USB_KB))
             {
                 n64_randnet_kb *new_state = (n64_randnet_kb *)n64_response[c];
                 //Maintain the old led state
@@ -233,7 +233,7 @@ void loop()
 
         //Get a copy of the latest n64 button presses to handle the below combos
         uint16_t n64_buttons = 0;
-        if (input_is_gamecontroller(c))
+        if (input_is(c, USB_GAMECONTROLLER))
         {
             n64_buttonmap *new_state = (n64_buttonmap *)n64_response[c];
             n64_buttons = new_state->dButtons;
