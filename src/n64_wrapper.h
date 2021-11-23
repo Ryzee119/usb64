@@ -8,7 +8,6 @@
 extern "C" {
 #endif
 
-#include <Arduino.h>
 #include "n64_controller.h"
 
 #define N64_OUTPUT 1
