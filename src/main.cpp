@@ -1,10 +1,8 @@
 // Copyright 2020, Ryan Wendland, usb64
 // SPDX-License-Identifier: MIT
 
-#include <Arduino.h>
 #include "input.h"
 #include "printf.h"
-#include "n64_wrapper.h"
 #include "usb64_conf.h"
 #include "n64_controller.h"
 #include "n64_transferpak_gbcarts.h"
@@ -14,7 +12,7 @@
 #include "memory.h"
 #include "fileio.h"
 #include "tft.h"
-
+#include "n64_wrapper.h"
 
 static void ring_buffer_init(void);
 static void ring_buffer_flush();
@@ -48,22 +46,43 @@ void n64_controller4_clock_edge()
 }
 #endif
 
+#ifdef __IMXRT1062__
 extern "C" {
 FLASHMEM void startup_early_hook(void)
 {
     //Get these up as early as possible.
-    pinMode(N64_CONTROLLER_1_PIN, INPUT_PULLUP);
-    pinMode(N64_CONTROLLER_2_PIN, INPUT_PULLUP);
-    pinMode(N64_CONTROLLER_3_PIN, INPUT_PULLUP);
-    pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP);
-    pinMode(N64_CONSOLE_SENSE, INPUT_PULLDOWN);
+    n64hal_pin_set_mode(N64_CONTROLLER_1_PIN, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(N64_CONTROLLER_2_PIN, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(N64_CONTROLLER_3_PIN, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(N64_CONTROLLER_4_PIN, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(N64_CONSOLE_SENSE, N64_INPUT_PULLDOWN);
 }
 }
+#else
+void startup_early_hook(void)
+{
+
+}
+#endif
+
+#ifndef ARDUINO
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+int main()
+{
+    startup_early_hook();
+    setup();
+    loop();
+}
+#endif
 
 void setup()
 {
     //Init the serial port and ring buffer
-    serial_port.begin(256000);
+    n64hal_system_init();
+    n64hal_debug_init();
     ring_buffer_init();
     fileio_init();
     memory_init();
@@ -77,52 +96,49 @@ void setup()
 
     //Set up N64 sense pin. To determine is the N64 is turned on or off
     //Input is connected to the N64 3V3 line on the controller port.
-    pinMode(N64_CONSOLE_SENSE, INPUT_PULLDOWN);
-
-    pinMode(N64_FRAME, OUTPUT);
-
-    pinMode(USER_LED_PIN, OUTPUT);
+    n64hal_pin_set_mode(N64_CONSOLE_SENSE, N64_INPUT_PULLDOWN);
+    n64hal_pin_set_mode(N64_FRAME, N64_OUTPUT);
+    n64hal_pin_set_mode(USER_LED_PIN, N64_OUTPUT);
 
 #if (ENABLE_HARDWIRED_CONTROLLER >=1)
-    pinMode(HW_A, INPUT_PULLUP);
-    pinMode(HW_B, INPUT_PULLUP);
-    pinMode(HW_CU, INPUT_PULLUP);
-    pinMode(HW_CD, INPUT_PULLUP);
-    pinMode(HW_CL, INPUT_PULLUP);
-    pinMode(HW_CR, INPUT_PULLUP);
-    pinMode(HW_DU, INPUT_PULLUP);
-    pinMode(HW_DD, INPUT_PULLUP);
-    pinMode(HW_DL, INPUT_PULLUP);
-    pinMode(HW_DR, INPUT_PULLUP);
-    pinMode(HW_START, INPUT_PULLUP);
-    pinMode(HW_Z, INPUT_PULLUP);
-    pinMode(HW_R, INPUT_PULLUP);
-    pinMode(HW_L, INPUT_PULLUP);
-    pinMode(HW_EN, INPUT_PULLUP);
-    pinMode(HW_RUMBLE, OUTPUT);
+    n64hal_pin_set_mode(HW_A, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(HW_B, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(HW_CU, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(HW_CD, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(HW_CL, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(HW_CR, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(HW_DU, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(HW_DD, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(HW_DL, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(HW_DR, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(HW_START, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(HW_Z, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(HW_R, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(HW_L, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(HW_EN, N64_INPUT_PULLUP);
+    n64hal_pin_set_mode(HW_RUMBLE, N64_OUTPUT);
 #endif
 
 #if (MAX_CONTROLLERS >= 1)
     n64_in_dev[0].gpio_pin = N64_CONTROLLER_1_PIN;
-    pinMode(N64_CONTROLLER_1_PIN, INPUT_PULLUP);
+    n64hal_pin_set_mode(N64_CONTROLLER_1_PIN, N64_INPUT_PULLUP);
 #endif
 
 #if (MAX_CONTROLLERS >= 2)
     n64_in_dev[1].gpio_pin = N64_CONTROLLER_2_PIN;
-    pinMode(N64_CONTROLLER_2_PIN, INPUT_PULLUP);
+    n64hal_pin_set_mode(N64_CONTROLLER_2_PIN, N64_INPUT_PULLUP);
 #endif
 
 #if (MAX_CONTROLLERS >= 3)
     n64_in_dev[2].gpio_pin = N64_CONTROLLER_3_PIN;
-    pinMode(N64_CONTROLLER_3_PIN, INPUT_PULLUP);
+    n64hal_pin_set_mode(N64_CONTROLLER_3_PIN, N64_INPUT_PULLUP);
 #endif
 
 #if (MAX_CONTROLLERS >= 4)
     n64_in_dev[3].gpio_pin = N64_CONTROLLER_4_PIN;
-    pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP);
+    n64hal_pin_set_mode(N64_CONTROLLER_4_PIN, N64_INPUT_PULLUP);
 #endif
-    NVIC_SET_PRIORITY(IRQ_GPIO6789, 1);
-    digitalWrite(USER_LED_PIN, HIGH);
+    n64hal_output_set(USER_LED_PIN, 1);
 }
 
 static bool n64_combo = false;
@@ -144,10 +160,10 @@ void loop()
             {
                 switch (c)
                 {
-                    case 0: attachInterrupt(digitalPinToInterrupt(n64_in_dev[c].gpio_pin), n64_controller1_clock_edge, FALLING); break;
-                    case 1: attachInterrupt(digitalPinToInterrupt(n64_in_dev[c].gpio_pin), n64_controller2_clock_edge, FALLING); break;
-                    case 2: attachInterrupt(digitalPinToInterrupt(n64_in_dev[c].gpio_pin), n64_controller3_clock_edge, FALLING); break;
-                    case 3: attachInterrupt(digitalPinToInterrupt(n64_in_dev[c].gpio_pin), n64_controller4_clock_edge, FALLING); break;
+                    case 0: n64hal_attach_interrupt(n64_in_dev[c].gpio_pin, n64_controller1_clock_edge, N64_INTMODE_FALLING); break;
+                    case 1: n64hal_attach_interrupt(n64_in_dev[c].gpio_pin, n64_controller2_clock_edge, N64_INTMODE_FALLING); break;
+                    case 2: n64hal_attach_interrupt(n64_in_dev[c].gpio_pin, n64_controller3_clock_edge, N64_INTMODE_FALLING); break;
+                    case 3: n64hal_attach_interrupt(n64_in_dev[c].gpio_pin, n64_controller4_clock_edge, N64_INTMODE_FALLING); break;
                 }
                 n64_in_dev[c].interrupt_attached = true;
             }
@@ -228,7 +244,7 @@ void loop()
         if ((!input_is_connected(c) || !n64_is_on) && n64_in_dev[c].interrupt_attached)
         {
             n64_in_dev[c].interrupt_attached = false;
-            detachInterrupt(digitalPinToInterrupt(n64_in_dev[c].gpio_pin));
+            n64hal_detach_interrupt(n64_in_dev[c].gpio_pin);
         }
 
         //Get a copy of the latest n64 button presses to handle the below combos
@@ -525,7 +541,7 @@ static void ring_buffer_flush()
     static uint32_t _print_cursor = 0;
     while (ring_buffer[_print_cursor] != 0xFF)
     {
-        serial_port.write(ring_buffer[_print_cursor]);
+        n64hal_debug_write(ring_buffer[_print_cursor]);
         ring_buffer[_print_cursor] = 0xFF;
         _print_cursor = (_print_cursor + 1) % sizeof(ring_buffer);
     }

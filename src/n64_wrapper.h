@@ -12,6 +12,19 @@ extern "C" {
 
 #define N64_OUTPUT 1
 #define N64_INPUT 2
+#define N64_INPUT_PULLUP 2
+#define N64_INPUT_PULLDOWN 3
+
+#define N64_INTMODE_FALLING 1
+#define N64_INTMODE_CHANGE 2
+#define N64_INTMODE_RISING 3
+
+//System wrappers
+void n64hal_system_init();
+void n64hal_debug_init();
+void n64hal_debug_write(char c);
+void n64hal_attach_interrupt(uint8_t pin, void (*handler)(void), int mode);
+void n64hal_detach_interrupt(uint8_t pin);
 
 //RTC wrapper prototypes (For gameboy roms with RTC, i.e Pokemon games)
 void n64hal_rtc_read(uint8_t *day_high, uint8_t *day_low, uint8_t *h, uint8_t *m, uint8_t *s);
@@ -30,6 +43,7 @@ void n64hal_write_extram(void *tx_buff, void *dst, uint32_t offset, uint32_t len
 void n64hal_output_set(uint8_t pin, uint8_t level);
 void n64hal_input_swap(n64_input_dev_t *controller, uint8_t val);
 uint8_t n64hal_input_read(n64_input_dev_t *controller);
+void n64hal_pin_set_mode(int pin, uint8_t mode);
   
 //FileIO wrappers
 uint32_t n64hal_list_gb_roms(char **list, uint32_t max);
