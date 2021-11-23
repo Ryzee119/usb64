@@ -9,6 +9,21 @@
 #include "fileio.h"
 #include "memory.h"
 
+void n64hal_system_init()
+{
+    NVIC_SET_PRIORITY(IRQ_GPIO6789, 1);
+}
+
+void n64hal_debug_init()
+{
+    serial_port.begin(256000);
+}
+
+void n64hal_debug_write(char c)
+{
+    serial_port.write(c);
+}
+
 /*
  * Function: Reads a hardware realtime clock and populates day,h,m,s.
  * Used by Pokemon Gameboy games only with TPAK that have a RTC.
@@ -119,6 +134,31 @@ uint8_t n64hal_input_read(n64_input_dev_t *controller)
 }
 
 /*
+ * Function: Sets the GPIO mode of a pin
+ * ----------------------------
+ *   Returns: void
+ *
+ *   Pin number (See usb64_conf.h)
+ *   val: N64_OUTPUT or N64_INPUT_PULLDOWN or N64_INPUT_PULLUP
+ */
+void n64hal_pin_set_mode(int pin, uint8_t mode)
+{
+    switch (mode)
+    {
+    case N64_OUTPUT:
+        pinMode(pin, OUTPUT);
+        break;
+    case N64_INPUT_PULLDOWN:
+        pinMode(pin, INPUT_PULLDOWN);
+        break;
+    case N64_INPUT_PULLUP:
+    default:
+        pinMode(pin, INPUT_PULLUP);
+        break;
+    }
+}
+
+/*
  * Function: Sets an output GPI to a level
  * Speed critical!
  * ----------------------------
@@ -130,6 +170,26 @@ uint8_t n64hal_input_read(n64_input_dev_t *controller)
 void n64hal_output_set(uint8_t pin, uint8_t level)
 {
     digitalWriteFast(pin, level);
+}
+
+void n64hal_attach_interrupt(uint8_t pin, void (*handler)(void), int mode)
+{
+    int _mode = -1;
+    switch (mode)
+    {
+        case N64_INTMODE_CHANGE: _mode = CHANGE; break;
+        case N64_INTMODE_FALLING: _mode = FALLING; break;
+        case N64_INTMODE_RISING: _mode = RISING; break;
+    }
+    if (_mode != -1)
+    {
+        attachInterrupt(digitalPinToInterrupt(pin), handler, _mode);
+    }
+}
+
+void n64hal_detach_interrupt(uint8_t pin)
+{
+    detachInterrupt(digitalPinToInterrupt(pin));
 }
 
 /*
