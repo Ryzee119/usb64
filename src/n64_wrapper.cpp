@@ -7,6 +7,7 @@
 #include "memory.h"
 #include "usb64_conf.h"
 #include "fileio.h"
+#include "memory.h"
 
 /*
  * Function: Reads a hardware realtime clock and populates day,h,m,s.
@@ -189,13 +190,13 @@ uint32_t n64hal_list_gb_roms(char **gb_list, uint32_t max)
         {
             if (rom_count < max)
             {
-                gb_list[rom_count] = (char *)malloc(strlen(file_list[i]) + 1);
+                gb_list[rom_count] = (char *)memory_dev_malloc(strlen(file_list[i]) + 1);
                 strcpy(gb_list[rom_count], file_list[i]);
                 rom_count++;
             }
         }
         //Free file list as we go
-        free(file_list[i]);
+        memory_dev_free(file_list[i]);
     }
     return rom_count;
 }

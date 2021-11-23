@@ -4,7 +4,6 @@
 #ifndef _MEMORY_H
 #define _MEMORY_H
 
-#include <Arduino.h>
 #include "usb64_conf.h"
 
 #define MEMORY_READ_WRITE 0
@@ -25,5 +24,9 @@ void memory_flush_all(void);
 void memory_free_item(void *ptr);
 void memory_mark_dirty(void *ptr);
 uint8_t memory_get_ext_ram_size();
+
+bool memory_dev_init();
+void *memory_dev_malloc(uint32_t len);
+void memory_dev_free(void *add);
 
 #endif
