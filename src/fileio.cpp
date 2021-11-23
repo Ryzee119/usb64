@@ -6,6 +6,7 @@
 #include "usb64_conf.h"
 #include "printf.h"
 #include "fileio.h"
+#include "memory.h"
 
 void fileio_init()
 {
@@ -52,7 +53,7 @@ uint32_t fileio_list_directory(char **list, uint32_t max)
         }
 
         debug_print_fatfs("Found file: %s\n", filename);
-        list[file_count] = (char *)malloc(strlen(filename) + 1);
+        list[file_count] = (char *)memory_dev_malloc(strlen(filename) + 1);
         strcpy(list[file_count], filename);
         file_count++;
     }
