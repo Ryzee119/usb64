@@ -1,12 +1,18 @@
 // Copyright 2020, Ryan Wendland, usb64
 // SPDX-License-Identifier: MIT
 
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+#include "printf.h"
+
 #ifndef _USB64_CONF_h
 #define _USB64_CONF_h
 
 /* DEBUGGING OUTPUT - WARNING SOME OF THESE MAY BREAK TIMING AND CAUSE ISSUES
    USE ONLY FOR DEBUGGING */
-#define serial_port Serial
+#define serial_port Serial1
 #define DEBUG_STATUS 1  //General information
 #define DEBUG_N64 0     //For debugging N64 low level info
 #define DEBUG_TPAK 0    //For debugging N64 TPAK low level info. It's complex so has its own flag
@@ -87,7 +93,6 @@
 
 
 /* DEBUG PRINTERS */
-#include "printf.h"
 #define debug_print_status(fmt, ...)     do { if (DEBUG_STATUS)  printf(fmt, ##__VA_ARGS__); } while (0)
 #define debug_print_n64(fmt, ...)        do { if (DEBUG_N64)     printf(fmt, ##__VA_ARGS__); } while (0)
 #define debug_print_tpak(fmt, ...)       do { if (DEBUG_TPAK)    printf(fmt, ##__VA_ARGS__); } while (0)

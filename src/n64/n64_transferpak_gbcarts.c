@@ -7,8 +7,7 @@
  * Tranferpak emulation is my own RE.
  */
 
-#include <Arduino.h>
-#include "printf.h"
+#include "usb64_conf.h"
 #include "n64_mempak.h"
 #include "n64_virtualpak.h"
 #include "n64_settings.h"
