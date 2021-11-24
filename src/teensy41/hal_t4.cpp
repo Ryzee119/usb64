@@ -24,6 +24,16 @@ void n64hal_debug_write(char c)
     serial_port.write(c);
 }
 
+void n64hal_disable_interrupts()
+{
+    noInterrupts();
+}
+
+void n64hal_enable_interrupts()
+{
+    interrupts();
+}
+
 /*
  * Function: Reads a hardware realtime clock and populates day,h,m,s.
  * Used by Pokemon Gameboy games only with TPAK that have a RTC.
