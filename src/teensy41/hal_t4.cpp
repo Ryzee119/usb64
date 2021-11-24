@@ -121,16 +121,16 @@ void n64hal_input_swap(n64_input_dev_t *controller, uint8_t val)
 }
 
 /*
- * Function: Returns the data line level for the n64 controller passed to this function.
+ * Function: Returns the data line level for the pin passed to this function.
  * Speed critical!
  * ----------------------------
  *   Returns: 1 of the line if high, or 0 if the line is low.
  *
- *   controller: Pointer to the n64 controller struct which contains the gpio mapping
+ *   Pin number: (See usb64_conf.h)
  */
-uint8_t n64hal_input_read(n64_input_dev_t *controller)
+uint8_t n64hal_input_read(int pin)
 {
-    return digitalReadFast(controller->gpio_pin);
+    return digitalReadFast(pin);
 }
 
 /*
