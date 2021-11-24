@@ -11,8 +11,10 @@
  * and automatically flushes for you atleast. You can also manual flush with a button combo.
  */
 
-#include <Arduino.h>
+#include <stdint.h>
+#include <string.h>
 #include "memory.h"
+#include "n64_wrapper.h"
 #include "usb64_conf.h"
 #include "fileio.h"
 #include "printf.h"
@@ -115,7 +117,7 @@ void memory_free_item(void *ptr)
 //Flush SRAM to flash memory if required
 void memory_flush_all()
 {
-    noInterrupts();
+    n64hal_disable_interrupts();
     for (unsigned int i = 0; i < sizeof(sram) / sizeof(sram[0]); i++)
     {
         if (sram[i].len == 0 || sram[i].data == NULL || sram[i].read_only != 0 || sram[i].dirty == 0)
@@ -125,7 +127,7 @@ void memory_flush_all()
         fileio_write_to_file(sram[i].name, sram[i].data, sram[i].len);  
         sram[i].dirty = 0;
     }
-    interrupts();
+    n64hal_enable_interrupts();
 }
 
 void memory_mark_dirty(void *ptr)
