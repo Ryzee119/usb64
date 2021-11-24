@@ -1,11 +1,11 @@
 [submodule "src/printf"]
-	path = src/printf
+	path = src/lib/printf
 	url = https://github.com/mpaland/printf
 
 [submodule "src/USBHost_t36"]
-	path = src/USBHost_t36
+	path = src/teensy41/USBHost_t36
 	url = https://github.com/Ryzee119/USBHost_t36.git
 
 [submodule "src/ILI9341_t3n"]
-	path = src/ILI9341_t3n
+	path = src/teensy41/ILI9341_t3n
 	url = https://github.com/KurtE/ILI9341_t3n.git
