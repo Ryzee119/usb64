@@ -1,9 +1,7 @@
 // Copyright 2020, Ryan Wendland, usb64
 // SPDX-License-Identifier: MIT
 
-#include <math.h>
 #include "usb64_conf.h"
-#include "printf.h"
 
 void astick_apply_deadzone(float *out_x, float *out_y, float x, float y, float dz_low, float dz_high) {
     float magnitude = sqrtf(powf(x,2) + powf(y,2));
