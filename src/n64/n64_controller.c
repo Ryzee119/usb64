@@ -183,7 +183,7 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
     while (n64hal_hs_tick_get() < sample_clock);
 
     //Read bit
-    cont->data_buffer[cont->current_byte] |= n64hal_input_read(cont) << cont->current_bit;
+    cont->data_buffer[cont->current_byte] |= n64hal_input_read(cont->gpio_pin) << cont->current_bit;
     cont->current_bit -= 1;
 
     //Reset idle timer

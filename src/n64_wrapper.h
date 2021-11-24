@@ -42,7 +42,7 @@ void n64hal_write_extram(void *tx_buff, void *dst, uint32_t offset, uint32_t len
 //GPIO wrappers
 void n64hal_output_set(uint8_t pin, uint8_t level);
 void n64hal_input_swap(n64_input_dev_t *controller, uint8_t val);
-uint8_t n64hal_input_read(n64_input_dev_t *controller);
+uint8_t n64hal_input_read(int pin);
 void n64hal_pin_set_mode(int pin, uint8_t mode);
   
 //FileIO wrappers
