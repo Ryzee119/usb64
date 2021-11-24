@@ -1,7 +1,7 @@
 // Copyright 2020, Ryan Wendland, usb64
 // SPDX-License-Identifier: MIT
 
-#include <Arduino.h>
+#include <math.h>
 #include "usb64_conf.h"
 #include "printf.h"
 
