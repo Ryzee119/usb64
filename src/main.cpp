@@ -1,9 +1,8 @@
 // Copyright 2020, Ryan Wendland, usb64
 // SPDX-License-Identifier: MIT
 
-#include "input.h"
-#include "printf.h"
 #include "usb64_conf.h"
+#include "input.h"
 #include "n64_controller.h"
 #include "n64_transferpak_gbcarts.h"
 #include "n64_virtualpak.h"

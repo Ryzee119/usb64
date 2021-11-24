@@ -1,10 +1,7 @@
 // Copyright 2020, Ryan Wendland, usb64
 // SPDX-License-Identifier: MIT
 
-#include <stdint.h>
-#include <string.h>
 #include "usb64_conf.h"
-#include "printf.h"
 #include "fileio.h"
 #include "memory.h"
 

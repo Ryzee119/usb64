@@ -1,10 +1,14 @@
 // Copyright 2020, Ryan Wendland, usb64
 // SPDX-License-Identifier: MIT
 
+#ifdef ARDUINO
+#include <Arduino.h>
+#endif
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <math.h>
 #include "printf.h"
 
 #ifndef _USB64_CONF_h
@@ -91,6 +95,10 @@
 #define TFT_WIDTH 320
 #define TFT_HEIGHT 240
 
+/* Define for variables to store in flash only */
+#ifndef PROGMEM
+#define PROGMEM
+#endif
 
 /* DEBUG PRINTERS */
 #define debug_print_status(fmt, ...)     do { if (DEBUG_STATUS)  printf(fmt, ##__VA_ARGS__); } while (0)
