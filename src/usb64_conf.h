@@ -82,6 +82,8 @@
 #define TFT_SCK 27
 #define TFT_MISO 39
 #define TFT_RST 255
+#define TFT_WIDTH 320
+#define TFT_HEIGHT 240
 
 
 /* DEBUG PRINTERS */
