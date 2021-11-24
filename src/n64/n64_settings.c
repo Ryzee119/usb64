@@ -1,10 +1,9 @@
 // Copyright 2020, Ryan Wendland, usb64
 // SPDX-License-Identifier: MIT
 
-#include <Arduino.h>
+#include "usb64_conf.h"
 #include "n64_settings.h"
 #include "n64_wrapper.h"
-#include "printf.h"
 
 n64_settings *_settings = NULL;
 
