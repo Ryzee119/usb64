@@ -8,6 +8,8 @@
 #include "fileio.h"
 #include "memory.h"
 
+static bool fileio_ok = false;
+
 void fileio_init()
 {
     if (!fileio_dev_init())
@@ -17,6 +19,7 @@ void fileio_init()
     else
     {
         debug_print_fatfs("[FILEIO] Opened SD card OK!\n");
+        fileio_ok = true;
     }
 }
 
@@ -114,4 +117,9 @@ void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, 
     {
         debug_print_status("[FILEIO] Reading %s for %lu bytes ok!\n", filename, len);
     }
+}
+
+bool fileio_detected()
+{
+    return fileio_ok;
 }
