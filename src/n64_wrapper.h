@@ -25,6 +25,8 @@ void n64hal_debug_init();
 void n64hal_debug_write(char c);
 void n64hal_attach_interrupt(uint8_t pin, void (*handler)(void), int mode);
 void n64hal_detach_interrupt(uint8_t pin);
+void n64hal_disable_interrupts();
+void n64hal_enable_interrupts();
 
 //RTC wrapper prototypes (For gameboy roms with RTC, i.e Pokemon games)
 void n64hal_rtc_read(uint8_t *day_high, uint8_t *day_low, uint8_t *h, uint8_t *m, uint8_t *s);
