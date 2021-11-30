@@ -5,7 +5,6 @@
 #include "usb64_conf.h"
 #include "controller_icon.h"
 #include "usb64_logo.h"
-#include "printf.h"
 #include "GuiLite.h"
 
 #if (ENABLE_TFT_DISPLAY >= 1)
