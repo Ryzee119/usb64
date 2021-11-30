@@ -4,7 +4,6 @@
 #include "usb64_conf.h"
 #include "n64_controller.h"
 #include "input.h"
-#include "printf.h"
 #include "tft.h"
 #include "tusb.h"
 
@@ -60,11 +59,7 @@ void tuh_xinput_mount_cb(uint8_t dev_addr, uint8_t instance, const tusb_desc_int
     tuh_xinput_set_led(dev_addr, instance, 0, true);
     tuh_xinput_set_led(dev_addr, instance, 1, true);
     tuh_xinput_set_rumble(dev_addr, instance, 0, 0, true);
-    printf("tuh_xinput_receive_report\n");
-    if (tuh_xinput_receive_report(dev_addr, instance))
-    {
-        printf("ok!\n");
-    }
+    tuh_xinput_receive_report(dev_addr, instance);
 }
 
 void tuh_xinput_umount_cb(uint8_t dev_addr, uint8_t instance)
@@ -232,7 +227,7 @@ bool input_is(int id, input_type_t type)
 uint16_t input_get_id_product(int id)
 {
     if (_check_id(id) == 0)
-        return;
+        return 0;
 
     input_driver_t *in_dev = &input_devices[id];
 
@@ -244,7 +239,7 @@ uint16_t input_get_id_product(int id)
 uint16_t input_get_id_vendor(int id)
 {
     if (_check_id(id) == 0)
-        return;
+        return 0;
 
     input_driver_t *in_dev = &input_devices[id];
 
