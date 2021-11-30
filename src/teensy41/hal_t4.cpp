@@ -106,6 +106,11 @@ uint32_t n64hal_hs_tick_get()
     return ARM_DWT_CYCCNT;
 }
 
+uint32_t n64hal_millis()
+{
+    return millis();
+}
+
 /*
  * Function: Flips the gpio pin direction from an output (driven low) to an input (pulled up)
  *           for the controller passed by controller.

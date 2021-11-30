@@ -8,6 +8,7 @@
 extern "C" {
 #endif
 
+#include "usb64_conf.h"
 #include "n64_controller.h"
 
 #define N64_OUTPUT 1
@@ -36,6 +37,7 @@ void n64hal_rtc_write(uint8_t *day_high, uint8_t *day_low, uint8_t *h, uint8_t *
 uint32_t n64hal_hs_tick_get_speed();
 void n64hal_hs_tick_init();
 uint32_t n64hal_hs_tick_get();
+uint32_t n64hal_millis();
   
 //RAM access wrappers
 void n64hal_read_extram(void *rx_buff, void *src, uint32_t offset, uint32_t len);
