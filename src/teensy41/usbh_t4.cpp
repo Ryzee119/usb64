@@ -1,9 +1,8 @@
 // Copyright 2020, Ryan Wendland, usb64
 // SPDX-License-Identifier: MIT
 
-#include <Arduino.h>
+#include "usb64_conf.h"
 #include "tusb.h"
-#include "printf.h"
 
 void USB_OTG2_IRQHandler(void)
 {

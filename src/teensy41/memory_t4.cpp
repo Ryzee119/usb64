@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 #include "memory.h"
-#include "printf.h"
 
 static uint32_t internal_size = 32768; //Smaller than this will malloc to internal RAM instead
 extern uint8_t external_psram_size; //in MB. Set in startup.c
