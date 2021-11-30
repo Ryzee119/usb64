@@ -76,6 +76,8 @@ extern "C" int CFG_TUSB_DEBUG_PRINTF(const char *format, ...)
 #endif
 
 #ifndef ARDUINO
+void setup();
+void loop();
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -294,7 +296,7 @@ void loop()
 
         //Handle ram flushing. Auto flushes when the N64 is turned off :)
         static uint32_t flushing_toggle[MAX_CONTROLLERS] = {0};
-        n64_is_on = digitalRead(N64_CONSOLE_SENSE);
+        n64_is_on = n64hal_input_read(N64_CONSOLE_SENSE);
         if ((n64_combo && (n64_buttons & N64_A)) || (n64_is_on == 0))
         {
             if (flushing_toggle[c] == 0)
@@ -328,14 +330,6 @@ void loop()
         {
             tft_toggle[c] = 0;
         }
-
-        //Measure Teensy temp and if it has changed, flag a TFT update
-        static int32_t teensy_temp = 0;
-        if (abs((int32_t)tempmonGetTemp() - teensy_temp) > 2)
-        {
-            teensy_temp = (int32_t)tempmonGetTemp();
-            tft_flag_update();
-        }
 #endif
 
         //Handle peripheral change combinations
@@ -351,7 +345,7 @@ void loop()
             if (n64_in_dev[c].current_peripheral == PERI_NONE)
                 break; //Already changing peripheral
 
-            timer_peri_change[c] = millis();
+            timer_peri_change[c] = n64hal_millis();
 
             /* CLEAR CURRENT PERIPHERALS */
             if (n64_in_dev[c].mempack != NULL)
@@ -504,7 +498,7 @@ void loop()
 
         //Simulate a peripheral change time. The peripheral goes to NONE
         //for a short period. Some games need this.
-        if (n64_in_dev[c].current_peripheral == PERI_NONE && (millis() - timer_peri_change[c]) > PERI_CHANGE_TIME)
+        if (n64_in_dev[c].current_peripheral == PERI_NONE && (n64hal_millis() - timer_peri_change[c]) > PERI_CHANGE_TIME)
         {
             n64_in_dev[c].current_peripheral = n64_in_dev[c].next_peripheral;
             tft_flag_update();
@@ -535,7 +529,7 @@ void loop()
 /* PRINTF HANDLING */
 static uint32_t ring_buffer_pos = 0;
 static char ring_buffer[4096];
-void _putchar(char character)
+extern "C" void _putchar(char character)
 {
     ring_buffer[ring_buffer_pos] = character;
     tft_add_log(character);

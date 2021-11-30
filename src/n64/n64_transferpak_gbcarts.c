@@ -320,8 +320,8 @@ void gb_init_cart(gameboycart *cart, uint8_t *gb_header, char *filename)
 
     memcpy(cart->filename, filename, sizeof(cart->filename));
     debug_print_tpak("[TPAK] gb_init_cart: GB Name: %.15s\n", cart->title);
-    debug_print_tpak("[TPAK] gb_init_cart: ROM Bytes: %lu\n", cart->romsize);
-    debug_print_tpak("[TPAK] gb_init_cart: SRAM Bytes: %lu\n", cart->ramsize);
+    debug_print_tpak("[TPAK] gb_init_cart: ROM Bytes: %u\n", cart->romsize);
+    debug_print_tpak("[TPAK] gb_init_cart: SRAM Bytes: %u\n", cart->ramsize);
     debug_print_tpak("[TPAK] gb_init_cart: MBC Type: 0x%02x\n", cart->mbc);
 }
 
