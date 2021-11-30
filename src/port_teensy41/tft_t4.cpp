@@ -95,8 +95,6 @@ void tft_dev_init()
 #if TFT_USE_FRAMEBUFFER
     static c_surface surface(TFT_WIDTH, TFT_HEIGHT, 2, Z_ORDER_LEVEL_0);
     static c_display display(_framebuffer, TFT_WIDTH, TFT_HEIGHT, &surface);
-    psurface_guilite = &surface;
-    pdisplay_guilite = &display;
     tft.setFrameBuffer((uint16_t *)_framebuffer);
     tft.useFrameBuffer(true);
 #else
