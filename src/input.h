@@ -4,7 +4,8 @@
 #ifndef _INPUT_H
 #define _INPUT_H
 
-#include <Arduino.h>
+#include "usb64_conf.h"
+#include "tusb.h"
 
 typedef struct
 {
@@ -101,18 +102,31 @@ static const randnet_map_t randnet_map[] = {
 
 typedef enum
 {
-    USB_MOUSE,
-    USB_KB,
-    USB_GAMECONTROLLER,
-    HW_GAMECONTROLLER,
-    I2C_GAMECONTROLLER
+    INPUT_NONE,
+    INPUT_MOUSE,
+    INPUT_KEYBOARD,
+    INPUT_GAMECONTROLLER,
 } input_type_t;
 
-typedef struct
+typedef enum input_backend
 {
-    void *driver;
+    BACKEND_NONE,
+    BACKEND_XINPUT,
+    BACKEND_HID_KEYBOARD,
+    BACKEND_HID_MOUSE,
+    BACKEND_HARDWIRED,
+} input_backend_t;
+
+typedef struct input_driver
+{
     input_type_t type;
-} input;
+    input_backend_t backend;
+    uint8_t _data[CFG_TUH_XINPUT_EPIN_BUFSIZE];
+    uint8_t *data;
+    uint16_t uid;
+    bool (*set_rumble)(uint8_t dev_addr, uint8_t instance, uint8_t lValue, uint8_t rValue, bool block);
+    bool (*set_led)(uint8_t dev_addr, uint8_t instance, uint8_t quadrant, bool block);
+}input_driver_t;
 
 void input_init();
 void input_update_input_devices();
