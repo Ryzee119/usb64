@@ -1,3 +1,8 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreorder"
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+
 #pragma once
 
 #define REAL_TIME_TASK_CYCLE_MS		50
@@ -4335,3 +4340,4 @@ WND_TREE g_number_board_children[] =
 	{0,0,0,0,0,0,0}
 };
 #endif
+#pragma GCC diagnostic pop
