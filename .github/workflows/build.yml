@@ -20,9 +20,18 @@ jobs:
     steps:
     - name: Checkout repo
       uses: actions/checkout@v1
-      with:
-        submodules: recursive
 
+    - name: Get submoduiles
+      run: |
+        git submodule init
+        git submodule update
+        # If manually get TinyUSBs submodules we need otherwise its a huge repo
+        cd src/lib/tinyusb
+        # Teensy41 Specific
+        git submodule init hw/mcu/nxp/mcux-sdk
+        git submodule update
+        cd ../../../
+ 
     - name: Set up Python
       uses: actions/setup-python@v1
 
