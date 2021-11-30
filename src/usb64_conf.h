@@ -9,7 +9,13 @@
 #include <string.h>
 #include <stdbool.h>
 #include <math.h>
+
 #include "printf.h"
+#undef printf
+#undef sprintf
+#undef snprinf
+#undef vsnprintf 
+#undef vprintf
 
 #ifndef _USB64_CONF_h
 #define _USB64_CONF_h
@@ -101,11 +107,12 @@
 #endif
 
 /* DEBUG PRINTERS */
-#define debug_print_status(fmt, ...)     do { if (DEBUG_STATUS)  printf(fmt, ##__VA_ARGS__); } while (0)
-#define debug_print_n64(fmt, ...)        do { if (DEBUG_N64)     printf(fmt, ##__VA_ARGS__); } while (0)
-#define debug_print_tpak(fmt, ...)       do { if (DEBUG_TPAK)    printf(fmt, ##__VA_ARGS__); } while (0)
-#define debug_print_usbhost(fmt, ...)    do { if (DEBUG_USBHOST) printf(fmt, ##__VA_ARGS__); } while (0)
-#define debug_print_fatfs(fmt, ...)      do { if (DEBUG_FATFS)   printf(fmt, ##__VA_ARGS__); } while (0)
-#define debug_print_memory(fmt, ...)     do { if (DEBUG_MEMORY)  printf(fmt, ##__VA_ARGS__); } while (0)
-#define debug_print_error(fmt, ...)      do { if (DEBUG_ERROR)   printf(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_status(fmt, ...)     do { if (DEBUG_STATUS)  printf_(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_n64(fmt, ...)        do { if (DEBUG_N64)     printf_(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_tpak(fmt, ...)       do { if (DEBUG_TPAK)    printf_(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_usbhost(fmt, ...)    do { if (DEBUG_USBHOST) printf_(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_fatfs(fmt, ...)      do { if (DEBUG_FATFS)   printf_(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_memory(fmt, ...)     do { if (DEBUG_MEMORY)  printf_(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_error(fmt, ...)      do { if (DEBUG_ERROR)   printf_(fmt, ##__VA_ARGS__); } while (0)
+
 #endif
