@@ -7,7 +7,7 @@
 
 #include "host/usbh.h"
 #include "host/usbh_classdriver.h"
-#include "hid_host.h"
+#include "class/hid/hid_host.h"
 
 // Invoked when device with hid interface is mounted
 // Report descriptor is also available for use. tuh_hid_parse_report_descriptor()
