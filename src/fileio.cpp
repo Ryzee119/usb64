@@ -81,9 +81,9 @@ void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
     {
         debug_print_error("[FILEIO] ERROR: Could not write %s\n", filename);
     }
-    else if (ret == -3)
+    else
     {
-        debug_print_status("[FILEIO] Writing %s for %lu bytes ok!\n", filename, len);
+        debug_print_status("[FILEIO] Writing %s for %u bytes ok!\n", filename, len);
     }
 }
 
@@ -110,9 +110,9 @@ void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, 
     {
         debug_print_error("[FILEIO] ERROR: Could not read %s\n", filename);
     }
-    else if (ret == -3)
+    else
     {
-        debug_print_status("[FILEIO] Reading %s for %lu bytes ok!\n", filename, len);
+        debug_print_status("[FILEIO] Reading %s for %u bytes ok!\n", filename, len);
     }
 }
 
