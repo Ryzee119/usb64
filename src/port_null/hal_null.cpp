@@ -9,23 +9,72 @@
 #include "fileio.h"
 #include "memory.h"
 
+/*
+ * Function: Initialse any device specifc aspects
+ * ----------------------------
+ *   Returns: void
+ */
 void n64hal_system_init()
 {
 }
 
+/*
+ * Function: Initialse the device debuffer (i.e UART etc)
+ * ----------------------------
+ *   Returns: void
+ */
 void n64hal_debug_init()
 {
 }
 
+/*
+ * Function: Write a character to a debug output (i.e UART etc)
+ * ----------------------------
+ *   Returns: void
+ */
 void n64hal_debug_write(char c)
 {
 }
 
+/*
+ * Function: Disable global interrupts for the device.
+ * ----------------------------
+ *   Returns: void
+ */
 void n64hal_disable_interrupts()
 {
 }
 
+/*
+ * Function: Enable global interrupts for the device.
+ * ----------------------------
+ *   Returns: void
+ */
 void n64hal_enable_interrupts()
+{
+}
+
+/*
+ * Function: Attach an interrupt from a pin (See usb64_conf.h for pin numbers)
+ * ----------------------------
+ *   Returns: void
+ *
+ *   pin: The pin the configure (See usb64_conf.h)
+ *   handler: Interrupt handler function in the form `void my_int_handler(void)`
+ *   mode: N64_INTMODE_FALLING or N64_INTMODE_CHANGE or N64_INTMODE_RISING
+ */
+void n64hal_attach_interrupt(uint8_t pin, void (*handler)(void), int mode)
+{
+}
+
+/*
+ * Function: Disconnect an interrupt from a pin (See usb64_conf.h for pin numbers)
+ * ----------------------------
+ *   Returns: void
+ *
+ *   pin: The pin the configure (See usb64_conf.h)
+ */
+void n64hal_detach_interrupt(uint8_t pin)
 {
 }
 
@@ -120,7 +169,7 @@ void n64hal_input_swap(n64_input_dev_t *controller, uint8_t val)
  * ----------------------------
  *   Returns: 1 of the line if high, or 0 if the line is low.
  *
- *   Pin number: (See usb64_conf.h)
+ *   pin: The pin the configure (See usb64_conf.h)
  */
 uint8_t n64hal_input_read(int pin)
 {
@@ -132,7 +181,7 @@ uint8_t n64hal_input_read(int pin)
  * ----------------------------
  *   Returns: void
  *
- *   Pin number (See usb64_conf.h)
+ *   pin: The pin the configure (See usb64_conf.h)
  *   val: N64_OUTPUT or N64_INPUT_PULLDOWN or N64_INPUT_PULLUP
  */
 void n64hal_pin_set_mode(int pin, uint8_t mode)
@@ -145,18 +194,10 @@ void n64hal_pin_set_mode(int pin, uint8_t mode)
  * ----------------------------
  *   Returns: void.
  *
- *   pin: Arduino compatible pin number
+ *   pin: The pin the configure (See usb64_conf.h)
  *   level: 1 or 0
  */
 void n64hal_output_set(uint8_t pin, uint8_t level)
-{
-}
-
-void n64hal_attach_interrupt(uint8_t pin, void (*handler)(void), int mode)
-{
-}
-
-void n64hal_detach_interrupt(uint8_t pin)
 {
 }
 
