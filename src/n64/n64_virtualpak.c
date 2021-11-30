@@ -290,7 +290,7 @@ void n64_virtualpak_update(n64_mempack *vpak)
 
     //Print generic headers and footers
     n64_virtualpak_write_string("USB64 - RYZEE119", HEADING, MENU_NAME_FIELD);
-    sprintf(buff, "CONTROLLER %u", controller_page + 1);
+    sprintf_(buff, "CONTROLLER %u", controller_page + 1);
     n64_virtualpak_write_string(buff, SUBHEADING, MENU_NAME_FIELD);
     n64_virtualpak_write_string("________________", SUBHEADING + 1, MENU_NAME_FIELD);
     n64_virtualpak_write_string("CHANGE CONT", CHANGE_CONTROLLER, MENU_NAME_FIELD);
@@ -353,7 +353,7 @@ void n64_virtualpak_update(n64_mempack *vpak)
 
     if (current_menu == MENU_CONTROLLER_SETTINGS)
     {
-        sprintf(buff, "CONTROLLER %u", controller_page + 1);
+        sprintf_(buff, "CONTROLLER %u", controller_page + 1);
         n64_virtualpak_write_string(buff, SUBHEADING + 0, MENU_NAME_FIELD);
         n64_virtualpak_write_string("________________", SUBHEADING + 1, MENU_NAME_FIELD);
         n64_virtualpak_write_string("CONT SETTINGS", SUBHEADING + 2, MENU_NAME_FIELD);
@@ -396,16 +396,16 @@ void n64_virtualpak_update(n64_mempack *vpak)
         }
 
         //Print the current values of each setting
-        sprintf(buff, "%u", settings->sensitivity[controller_page]);
+        sprintf_(buff, "%u", settings->sensitivity[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 4, MENU_EXT_FIELD);
 
-        sprintf(buff, "%u", settings->deadzone[controller_page]);
+        sprintf_(buff, "%u", settings->deadzone[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 7, MENU_EXT_FIELD);
 
-        sprintf(buff, "%u", settings->snap_axis[controller_page]);
+        sprintf_(buff, "%u", settings->snap_axis[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 10, MENU_EXT_FIELD);
 
-        sprintf(buff, "%u", settings->octa_correct[controller_page]);
+        sprintf_(buff, "%u", settings->octa_correct[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 11, MENU_EXT_FIELD);
 
         vpak->virtual_selected_row = -1;
