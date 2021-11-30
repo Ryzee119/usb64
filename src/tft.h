@@ -15,7 +15,6 @@ void tft_add_log(char c);
 //TFT device specific functions.
 void tft_dev_init();
 void tft_dev_draw(bool force);
-void *tft_dev_get_fb();
 bool tft_dev_is_busy();
 
 #endif

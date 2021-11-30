@@ -100,6 +100,8 @@
 #define TFT_RST 255
 #define TFT_WIDTH 320
 #define TFT_HEIGHT 240
+#define TFT_PIXEL_SIZE 2
+#define TFT_USE_FRAMEBUFFER 1
 
 /* Define for variables to store in flash only */
 #ifndef PROGMEM
@@ -107,12 +109,12 @@
 #endif
 
 /* DEBUG PRINTERS */
-#define debug_print_status(fmt, ...)     do { if (DEBUG_STATUS)  printf_(fmt, ##__VA_ARGS__); } while (0)
-#define debug_print_n64(fmt, ...)        do { if (DEBUG_N64)     printf_(fmt, ##__VA_ARGS__); } while (0)
-#define debug_print_tpak(fmt, ...)       do { if (DEBUG_TPAK)    printf_(fmt, ##__VA_ARGS__); } while (0)
-#define debug_print_usbhost(fmt, ...)    do { if (DEBUG_USBHOST) printf_(fmt, ##__VA_ARGS__); } while (0)
-#define debug_print_fatfs(fmt, ...)      do { if (DEBUG_FATFS)   printf_(fmt, ##__VA_ARGS__); } while (0)
-#define debug_print_memory(fmt, ...)     do { if (DEBUG_MEMORY)  printf_(fmt, ##__VA_ARGS__); } while (0)
-#define debug_print_error(fmt, ...)      do { if (DEBUG_ERROR)   printf_(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_status(fmt, ...)     do { if (DEBUG_STATUS)  usb64_printf(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_n64(fmt, ...)        do { if (DEBUG_N64)     usb64_printf(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_tpak(fmt, ...)       do { if (DEBUG_TPAK)    usb64_printf(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_usbhost(fmt, ...)    do { if (DEBUG_USBHOST) usb64_printf(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_fatfs(fmt, ...)      do { if (DEBUG_FATFS)   usb64_printf(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_memory(fmt, ...)     do { if (DEBUG_MEMORY)  usb64_printf(fmt, ##__VA_ARGS__); } while (0)
+#define debug_print_error(fmt, ...)      do { if (DEBUG_ERROR)   usb64_printf(fmt, ##__VA_ARGS__); } while (0)
 
 #endif
