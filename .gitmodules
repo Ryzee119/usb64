@@ -1,6 +1,6 @@
 [submodule "src/lib/tinyusb"]
 	path = src/lib/tinyusb
-	url = https://github.com/hathach/tinyusb.git
+	url = https://github.com/Ryzee119/tinyusb.git
 [submodule "src/teensy41/ILI9341_t3n"]
 	path = src/port_teensy41/ILI9341_t3n
 	url = https://github.com/KurtE/ILI9341_t3n.git
