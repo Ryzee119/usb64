@@ -50,7 +50,7 @@ uint8_t *memory_alloc_ram(const char *name, uint32_t alloc_len, uint32_t read_on
             //Already malloced, check len is ok
             if (sram[i].len <= alloc_len)
             {
-                debug_print_memory("[MEMORY] Memory already malloced for %s at 0x%08x, returning pointer to it\n", name, sram[i].data);
+                debug_print_memory("[MEMORY] Memory already malloced for %s at 0x%llx, returning pointer to it\n", name, (uintptr_t)sram[i].data);
                 return sram[i].data;
             }
 
@@ -82,7 +82,7 @@ uint8_t *memory_alloc_ram(const char *name, uint32_t alloc_len, uint32_t read_on
             sram[i].read_only = read_only;
             sram[i].dirty = 0;
             
-            debug_print_memory("[MEMORY] Alloc'd %s, %u bytes at 0x%08x\n", sram[i].name, sram[i].len, sram[i].data);
+            debug_print_memory("[MEMORY] Alloc'd %s, %u bytes at 0x%llx\n", sram[i].name, sram[i].len, (uintptr_t)sram[i].data);
             return sram[i].data;
         }
     }
@@ -100,7 +100,7 @@ void memory_free_item(void *ptr)
     {
         if (sram[i].data == ptr)
         {
-            debug_print_memory("[MEMORY] Freeing %s at 0x%08x\n", sram[i].name, sram[i].data);
+            debug_print_memory("[MEMORY] Freeing %s at 0x%llx\n", sram[i].name, (uintptr_t)sram[i].data);
             memory_dev_free(sram[i].data);
             sram[i].name[0] = '\0';
             sram[i].data = NULL;
@@ -109,7 +109,7 @@ void memory_free_item(void *ptr)
             return;
         }
     }
-    debug_print_memory("[MEMORY] WARNING: Did not free 0x%08x\n", ptr);
+    debug_print_memory("[MEMORY] WARNING: Did not free 0x%llx\n", (uintptr_t)ptr);
 }
 
 //Flush SRAM to flash memory if required
@@ -142,5 +142,5 @@ void memory_mark_dirty(void *ptr)
             return;
         }
     }
-    debug_print_error("[MEMORY] ERROR: Could not find 0x%08x\n", ptr);
+    debug_print_error("[MEMORY] ERROR: Could not find 0x%llx\n", (uintptr_t)ptr);
 }

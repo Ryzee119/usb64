@@ -6,7 +6,6 @@
 #include "n64_controller.h"
 #include "input.h"
 #include "memory.h"
-#include "printf.h"
 #include "tft.h"
 #include "fileio.h"
 
@@ -78,7 +77,7 @@ static const char *n64_peri_to_string(n64_input_dev_t *c)
         if (c->mempack->virtual_is_active)
             return "VIRTUAL PAK";
 
-        snprintf(text_buff, sizeof(text_buff), "MPAK (BANK %lu)", c->mempack->id);
+        snprintf(text_buff, sizeof(text_buff), "MPAK (BANK %u)", c->mempack->id);
         return text_buff;
     case PERI_TPAK:
         snprintf(text_buff, sizeof(text_buff), "TPAK (%s)", (c->tpak->gbcart->rom == NULL) ? "NO ROM" : c->tpak->gbcart->title);
@@ -127,7 +126,7 @@ void tft_try_update()
     //Dump the framebuffer to a file on the SD Card, 10 seconds after power up. Assuming 16bit display.
     //Convert to png with
     //ffmpeg -vcodec rawvideo -f rawvideo -pix_fmt rgb565le -s 320x240 -i tft_dump.bin -f image2 -vcodec png tft_dump.png
-    if (millis() > 10000)
+    if (n64hal_millis() > 10000)
     {
         fileio_write_to_file("tft_dump.bin", (uint8_t *)tft_dev_get_fb(), TFT_WIDTH * TFT_HEIGHT * 2);
         debug_print_status("TFT framebuffer dumped\n");

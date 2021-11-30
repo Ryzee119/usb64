@@ -396,16 +396,16 @@ void n64_virtualpak_update(n64_mempack *vpak)
         }
 
         //Print the current values of each setting
-        sprintf(buff, "%u\0", settings->sensitivity[controller_page]);
+        sprintf(buff, "%u", settings->sensitivity[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 4, MENU_EXT_FIELD);
 
-        sprintf(buff, "%u\0", settings->deadzone[controller_page]);
+        sprintf(buff, "%u", settings->deadzone[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 7, MENU_EXT_FIELD);
 
-        sprintf(buff, "%u\0", settings->snap_axis[controller_page]);
+        sprintf(buff, "%u", settings->snap_axis[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 10, MENU_EXT_FIELD);
 
-        sprintf(buff, "%u\0", settings->octa_correct[controller_page]);
+        sprintf(buff, "%u", settings->octa_correct[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 11, MENU_EXT_FIELD);
 
         vpak->virtual_selected_row = -1;
@@ -448,12 +448,12 @@ void n64_virtualpak_update(n64_mempack *vpak)
 
 void n64_virtualpak_write_info_1(char *msg)
 {
-    strncpy(info_text_0, msg, sizeof(info_text_0));
+    strncpy(info_text_0, msg, sizeof(info_text_0) - 1);
 }
 
 void n64_virtualpak_write_info_2(char *msg)
 {
-    strncpy(info_text_1, msg, sizeof(info_text_1));
+    strncpy(info_text_1, msg, sizeof(info_text_1) - 1);
 }
 
 uint8_t n64_virtualpak_get_controller_page()
