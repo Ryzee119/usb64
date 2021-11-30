@@ -13,6 +13,7 @@
 #include "tft.h"
 #include "n64_wrapper.h"
 
+void usbh_dev_init(void);
 static void ring_buffer_init(void);
 static void ring_buffer_flush();
 
@@ -64,6 +65,16 @@ void startup_early_hook(void)
 }
 #endif
 
+#ifdef CFG_TUSB_DEBUG_PRINTF
+extern "C" int CFG_TUSB_DEBUG_PRINTF(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    return 1;
+}
+#endif
+
 #ifndef ARDUINO
 #include <stdint.h>
 #include <stdio.h>
@@ -85,6 +96,7 @@ void setup()
     ring_buffer_init();
     fileio_init();
     memory_init();
+    usbh_dev_init();
     input_init();
     tft_init();
     n64_subsystem_init(n64_in_dev);
@@ -166,7 +178,7 @@ void loop()
                 }
                 n64_in_dev[c].interrupt_attached = true;
             }
-            if (input_is(c, USB_GAMECONTROLLER))
+            if (input_is(c, INPUT_GAMECONTROLLER))
             {
                 n64_buttonmap *new_state = (n64_buttonmap *)n64_response[c];
                 input_get_state(c, new_state,  &n64_combo);
@@ -206,7 +218,7 @@ void loop()
                 }
             }
 #if (MAX_MICE >= 1)
-            else if (input_is(c, USB_MOUSE))
+            else if (input_is(c, INPUT_MOUSE))
             {
                 n64_buttonmap *new_state = (n64_buttonmap *)n64_response[c];
                 input_get_state(c, new_state,  &n64_combo);
@@ -222,7 +234,7 @@ void loop()
             }
 #endif
 #if (MAX_KB >= 1)
-            else if (input_is(c, USB_KB))
+            else if (input_is(c, INPUT_KEYBOARD))
             {
                 n64_randnet_kb *new_state = (n64_randnet_kb *)n64_response[c];
                 //Maintain the old led state
@@ -248,7 +260,7 @@ void loop()
 
         //Get a copy of the latest n64 button presses to handle the below combos
         uint16_t n64_buttons = 0;
-        if (input_is(c, USB_GAMECONTROLLER))
+        if (input_is(c, INPUT_GAMECONTROLLER))
         {
             n64_buttonmap *new_state = (n64_buttonmap *)n64_response[c];
             n64_buttons = new_state->dButtons;
