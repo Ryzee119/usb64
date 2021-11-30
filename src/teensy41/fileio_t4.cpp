@@ -61,7 +61,7 @@ int fileio_dev_read(char *filename, uint32_t file_offset, uint8_t *data, uint32_
     }
     else
     {
-        return -3;
+        return 0;
     }
     fil.close();
 }
@@ -79,7 +79,7 @@ int fileio_dev_write(char *filename, uint8_t *data, uint32_t len)
     }
     else
     {
-        return -3;
+        return 0;
     }
     fil.close();
 }
