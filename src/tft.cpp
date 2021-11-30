@@ -76,7 +76,7 @@ static const char *n64_peri_to_string(n64_input_dev_t *c)
         if (c->mempack->virtual_is_active)
             return "VIRTUAL PAK";
 
-        snprintf(text_buff, sizeof(text_buff), "MPAK (BANK %u)", c->mempack->id);
+        snprintf(text_buff, sizeof(text_buff), "MPAK (BANK %u)", (unsigned int)c->mempack->id);
         return text_buff;
     case PERI_TPAK:
         snprintf(text_buff, sizeof(text_buff), "TPAK (%s)", (c->tpak->gbcart->rom == NULL) ? "NO ROM" : c->tpak->gbcart->title);

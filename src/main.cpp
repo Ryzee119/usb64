@@ -458,7 +458,7 @@ void loop()
 
                 //Create the filename
                 char filename[32];
-                snprintf(filename, sizeof(filename), "MEMPAK%02u%s", mempak_bank, MEMPAK_SAVE_EXT);
+                snprintf(filename, sizeof(filename), "MEMPAK%02u%s", (unsigned int)mempak_bank, MEMPAK_SAVE_EXT);
 
                 //Scan controllers to see if mempack is in use
                 for (uint32_t i = 0; i < MAX_CONTROLLERS; i++)
