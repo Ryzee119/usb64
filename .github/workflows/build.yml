@@ -43,7 +43,7 @@ jobs:
         echo "BUILD_TAG=$BUILD_TAG" >> $GITHUB_ENV
         
     - name: Compile code
-      run: platformio run -e teensy41
+      run: platformio run
 
     - if: github.event_name == 'push' 
       name: Create Release
