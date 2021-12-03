@@ -150,6 +150,16 @@ uint32_t n64hal_hs_tick_get()
 }
 
 /*
+ * Function: Get the number of milliseconds since power up.
+ * ----------------------------
+ *   Returns: 32 bit tick value at 1000Hz.
+ */
+uint32_t n64hal_millis()
+{
+    return 0;
+}
+
+/*
  * Function: Flips the gpio pin direction from an output (driven low) to an input (pulled up)
  *           for the controller passed by controller.
  * Speed critical!
