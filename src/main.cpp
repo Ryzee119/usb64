@@ -82,11 +82,14 @@ void loop();
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-int main()
+int main(void)
 {
     startup_early_hook();
     setup();
-    loop();
+    while(1)
+    {
+        loop();
+    }
 }
 #endif
 
