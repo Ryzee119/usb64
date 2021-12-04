@@ -13,7 +13,7 @@ typedef struct
     uint16_t randnet_matrix;
 } randnet_map_t;
 
-static const randnet_map_t randnet_map[] = {
+static const randnet_map_t randnet_map[] PROGMEM = {
     {HID_KEY_ESCAPE, 0x0A08},         //Escape
     {HID_KEY_F1, 0x0B01},          // F1
     {HID_KEY_F2, 0x0A01},          // F2
