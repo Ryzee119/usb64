@@ -103,15 +103,14 @@
 #define TFT_PIXEL_SIZE 2
 #define TFT_USE_FRAMEBUFFER 1
 
-/* Define for variables to store in flash only */
+/* Optional, to save RAM, define for variables to store in flash only */
 #ifndef PROGMEM
 #define PROGMEM
 #endif
-/* Define for function to store in flash only */
+/* Optional, to save RAM, define for function to store in flash only */
 #ifndef FLASHMEM
 #define FLASHMEM
 #endif
-
 
 /* DEBUG PRINTERS */
 #define debug_print_status(fmt, ...)     do { if (DEBUG_STATUS)  usb64_printf(fmt, ##__VA_ARGS__); } while (0)
