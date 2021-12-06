@@ -31,7 +31,6 @@ extern n64_transferpak n64_tpak[MAX_CONTROLLERS];
 
 static char text_buff[32];
 
-#define BG_COLOR GL_RGB(16, 20, 16)
 extern const LATTICE_FONT_INFO Arial_14_GL;
 extern const LATTICE_FONT_INFO Arial_19_GL;
 extern c_surface *psurface_guilite;
@@ -86,7 +85,7 @@ static const char *n64_peri_to_string(n64_input_dev_t *c)
     }
 }
 
-void tft_init()
+FLASHMEM void tft_init()
 {
     tft_dev_init();
 
@@ -95,7 +94,7 @@ void tft_init()
         return;
     }
     
-    psurface_guilite->fill_rect(0, 0, TFT_WIDTH, TFT_HEIGHT, BG_COLOR, Z_ORDER_LEVEL_0);
+    psurface_guilite->fill_rect(0, 0, TFT_WIDTH, TFT_HEIGHT, TFT_BG_COLOR, Z_ORDER_LEVEL_0);
 
     static c_image usb64_image;
     memset(&usb64_image, 0, sizeof(c_image));
@@ -104,12 +103,12 @@ void tft_init()
     _image.height = 35;
     _image.width = 120;
     _image.pixel_color_array = usb64_logo;
-    usb64_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 0, BG_COLOR);
+    usb64_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 0, TFT_BG_COLOR);
 
     //Draw RAM status
     snprintf(text_buff, sizeof(text_buff), "Detected RAM: %uMB", memory_get_ext_ram_size());
     extram_size.set_surface(psurface_guilite);
-    extram_size.set_bg_color(BG_COLOR);
+    extram_size.set_bg_color(TFT_BG_COLOR);
     extram_size.set_font_color(GL_RGB(255, 255, 255));
     extram_size.set_wnd_pos(125, 0, 1, Arial_14_GL.height);
     extram_size.set_font_type(&Arial_14_GL);
@@ -161,7 +160,7 @@ void tft_force_update()
         _tft_page_changed = 0;
         if (_tft_page == 0)
         {
-            psurface_guilite->fill_rect(0, 40, TFT_WIDTH, TFT_HEIGHT, BG_COLOR, Z_ORDER_LEVEL_0);
+            psurface_guilite->fill_rect(0, 40, TFT_WIDTH, TFT_HEIGHT, TFT_BG_COLOR, Z_ORDER_LEVEL_0);
             static c_image controller_image;
             BITMAP_INFO _image;
             memset(&controller_image, 0, sizeof(c_image));
@@ -169,14 +168,14 @@ void tft_force_update()
             _image.height = 45;
             _image.width = 48;
             _image.pixel_color_array = controller_icon;
-            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((TFT_HEIGHT - 45) * 0 / 4), BG_COLOR);
-            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((TFT_HEIGHT - 45) * 1 / 4), BG_COLOR);
-            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((TFT_HEIGHT - 45) * 2 / 4), BG_COLOR);
-            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((TFT_HEIGHT - 45) * 3 / 4), BG_COLOR);
+            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((TFT_HEIGHT - 45) * 0 / 4), TFT_BG_COLOR);
+            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((TFT_HEIGHT - 45) * 1 / 4), TFT_BG_COLOR);
+            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((TFT_HEIGHT - 45) * 2 / 4), TFT_BG_COLOR);
+            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((TFT_HEIGHT - 45) * 3 / 4), TFT_BG_COLOR);
         }
         else if (_tft_page == 1)
         {
-            psurface_guilite->fill_rect(0, 40, TFT_WIDTH, TFT_HEIGHT, BG_COLOR, Z_ORDER_LEVEL_0);
+            psurface_guilite->fill_rect(0, 40, TFT_WIDTH, TFT_HEIGHT, TFT_BG_COLOR, Z_ORDER_LEVEL_0);
         }
     }
 
@@ -188,7 +187,7 @@ void tft_force_update()
         {
             uint32_t colour = input_is_connected(i) ? GL_RGB(0, 255, 0) : GL_RGB(255, 255, 255);
             controller_status[i].set_surface(psurface_guilite);
-            controller_status[i].set_bg_color(BG_COLOR);
+            controller_status[i].set_bg_color(TFT_BG_COLOR);
             controller_status[i].set_font_color(colour);
             controller_status[i].set_wnd_pos(50, (45 + 0) + ((TFT_HEIGHT - 45) * i / 4), TFT_WIDTH, Arial_19_GL.height);
             controller_status[i].set_font_type(&Arial_19_GL);
@@ -198,7 +197,7 @@ void tft_force_update()
             snprintf(text_buff, sizeof(text_buff), "0x%04x/0x%04x", input_get_id_vendor(i), input_get_id_product(i));
             controller_id[i].set_surface(psurface_guilite);
             controller_id[i].set_font_color(colour);
-            controller_id[i].set_bg_color(BG_COLOR);
+            controller_id[i].set_bg_color(TFT_BG_COLOR);
             controller_id[i].set_wnd_pos(50, (45 + 20) + ((TFT_HEIGHT - 45) * i / 4), TFT_WIDTH, Arial_19_GL.height);
             controller_id[i].set_font_type(&Arial_19_GL);
             controller_id[i].set_str(text_buff);
@@ -207,14 +206,14 @@ void tft_force_update()
     }
     else if (_tft_page == 1)
     {
-        psurface_guilite->fill_rect(0, 40, TFT_WIDTH, TFT_HEIGHT, BG_COLOR, Z_ORDER_LEVEL_0);
+        psurface_guilite->fill_rect(0, 40, TFT_WIDTH, TFT_HEIGHT, TFT_BG_COLOR, Z_ORDER_LEVEL_0);
         for (int i = 0; i < _tft_log_max_lines; i++)
         {
             if (_tft_log_text_lines[i] == NULL)
                 break;
 
             tft_log[i].set_surface(psurface_guilite);
-            tft_log[i].set_bg_color(BG_COLOR);
+            tft_log[i].set_bg_color(TFT_BG_COLOR);
             tft_log[i].set_font_color(GL_RGB(255, 255, 255));
             tft_log[i].set_wnd_pos(0, 45 + i * Arial_14_GL.height, TFT_WIDTH, Arial_14_GL.height);
             tft_log[i].set_font_type(&Arial_14_GL);
@@ -237,7 +236,7 @@ void tft_force_update()
         colour = GL_RGB(0, 255, 0);
     }
     n64_status.set_surface(psurface_guilite);
-    n64_status.set_bg_color(BG_COLOR);
+    n64_status.set_bg_color(TFT_BG_COLOR);
     n64_status.set_font_color(colour);
     n64_status.set_wnd_pos(TFT_WIDTH - (10 * 8), 0, 100, Arial_14_GL.height);
     n64_status.set_font_type(&Arial_14_GL);
@@ -257,7 +256,7 @@ void tft_force_update()
         colour = GL_RGB(0, 255, 0);
     }
     n64_status.set_surface(psurface_guilite);
-    n64_status.set_bg_color(BG_COLOR);
+    n64_status.set_bg_color(TFT_BG_COLOR);
     n64_status.set_font_color(colour);
     n64_status.set_wnd_pos(125, Arial_14_GL.height, 100, Arial_14_GL.height);
     n64_status.set_font_type(&Arial_14_GL);
