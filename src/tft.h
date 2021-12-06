@@ -4,6 +4,8 @@
 #ifndef _TFT_H
 #define _TFT_H
 
+#define TFT_BG_COLOR GL_RGB(16, 20, 16)
+
 //TFT API
 void tft_init();
 uint8_t tft_change_page(uint8_t page);
