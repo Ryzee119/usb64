@@ -7,7 +7,7 @@
 
 static bool fileio_ok = false;
 
-void fileio_init()
+FLASHMEM void fileio_init()
 {
     if (!fileio_dev_init())
     {
