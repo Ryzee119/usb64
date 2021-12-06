@@ -161,7 +161,7 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
     uint32_t start_clock = n64hal_hs_tick_get();
 
     //If bus has been idle for 300us, start of a new stream.
-    if ((n64hal_hs_tick_get() - cont->bus_idle_timer_clks) > (300 * n64hal_hs_tick_get_speed() / 1000000))
+    if ((n64hal_hs_tick_get() - cont->bus_idle_timer_clks) > (300 * (n64hal_hs_tick_get_speed() / 1000000)))
     {
         n64_reset_stream(cont);
         cont->peri_access = 0;
