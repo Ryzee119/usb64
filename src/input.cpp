@@ -84,7 +84,7 @@ static int _check_id(uint8_t id)
     return 1;
 }
 
-void input_init()
+FLASHMEM void input_init()
 {
     tusb_init();
     memset(input_devices, 0x00, sizeof(input_devices));

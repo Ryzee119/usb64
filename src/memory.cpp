@@ -19,7 +19,7 @@
 
 static sram_storage sram[32] = {0};
 
-void memory_init()
+FLASHMEM void memory_init()
 {
     if (!memory_dev_init())
     {
@@ -82,7 +82,7 @@ uint8_t *memory_alloc_ram(const char *name, uint32_t alloc_len, uint32_t read_on
             sram[i].read_only = read_only;
             sram[i].dirty = 0;
             
-            debug_print_memory("[MEMORY] Alloc'd %s, %u bytes at 0x%llx\n", sram[i].name, sram[i].len, (uintptr_t)sram[i].data);
+            debug_print_memory("[MEMORY] Alloc'd %s, %u bytes at 0x%x\n", sram[i].name, sram[i].len, (uintptr_t)sram[i].data);
             return sram[i].data;
         }
     }
