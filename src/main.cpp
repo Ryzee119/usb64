@@ -278,6 +278,8 @@ void loop()
                 input_apply_rumble(c, 0xFF);
             if (n64_in_dev[c].rpak->state == RUMBLE_STOP)
                 input_apply_rumble(c, 0x00);
+            if (n64_in_dev[c].rpak->state != RUMBLE_APPLIED && ENABLE_HARDWIRED_CONTROLLER)
+                n64hal_output_set(HW_RUMBLE, n64_in_dev[c].rpak->state == RUMBLE_START);
             n64_in_dev[c].rpak->state = RUMBLE_APPLIED;
         }
 

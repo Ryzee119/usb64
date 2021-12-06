@@ -4,3 +4,6 @@
 [submodule "src/teensy41/ILI9341_t3n"]
 	path = src/port_teensy41/ILI9341_t3n
 	url = https://github.com/KurtE/ILI9341_t3n.git
+[submodule "src/lib/tinyalloc"]
+	path = src/lib/tinyalloc
+	url = https://github.com/thi-ng/tinyalloc.git
