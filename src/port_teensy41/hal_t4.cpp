@@ -19,6 +19,48 @@ void n64hal_debug_init()
     serial_port.begin(256000);
 }
 
+void n64hal_gpio_init()
+{
+    pinMode(N64_CONTROLLER_1_PIN, INPUT_PULLUP);
+    pinMode(N64_CONTROLLER_2_PIN, INPUT_PULLUP);
+    pinMode(N64_CONTROLLER_3_PIN, INPUT_PULLUP);
+    pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP);
+    pinMode(N64_CONSOLE_SENSE_PIN, INPUT_PULLDOWN);
+
+    //Set up N64 sense pin. To determine is the N64 is turned on or off
+    //Input is connected to the N64 3V3 line on the controller port.
+    pinMode(N64_CONSOLE_SENSE_PIN, INPUT_PULLDOWN);
+    pinMode(N64_FRAME_PIN, OUTPUT);
+    pinMode(USER_LED_PIN, OUTPUT);
+
+#if (ENABLE_HARDWIRED_CONTROLLER >= 1)
+    pinMode(HW_A, INPUT_PULLUP);
+    pinMode(HW_B, INPUT_PULLUP);
+    pinMode(HW_CU, INPUT_PULLUP);
+    pinMode(HW_CD, INPUT_PULLUP);
+    pinMode(HW_CL, INPUT_PULLUP);
+    pinMode(HW_CR, INPUT_PULLUP);
+    pinMode(HW_DU, INPUT_PULLUP);
+    pinMode(HW_DD, INPUT_PULLUP);
+    pinMode(HW_DL, INPUT_PULLUP);
+    pinMode(HW_DR, INPUT_PULLUP);
+    pinMode(HW_START, INPUT_PULLUP);
+    pinMode(HW_Z, INPUT_PULLUP);
+    pinMode(HW_R, INPUT_PULLUP);
+    pinMode(HW_L, INPUT_PULLUP);
+    pinMode(HW_EN, INPUT_PULLUP);
+    pinMode(HW_RUMBLE, OUTPUT);
+#endif
+
+    pinMode(N64_CONTROLLER_1_PIN, INPUT_PULLUP);
+    pinMode(N64_CONTROLLER_2_PIN, INPUT_PULLUP);
+    pinMode(N64_CONTROLLER_3_PIN, INPUT_PULLUP);
+    pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP);
+
+    NVIC_SET_PRIORITY(IRQ_GPIO6789, 1);
+    digitalWrite(USER_LED_PIN, HIGH);
+}
+
 void n64hal_debug_write(char c)
 {
     serial_port.write(c);
@@ -111,6 +153,12 @@ uint32_t n64hal_millis()
     return millis();
 }
 
+dev_gpio_t *n64hal_pin_to_gpio(usb64_pin_t pin)
+{
+   //Not used for Arduino backend
+   return NULL;
+}
+
 /*
  * Function: Flips the gpio pin direction from an output (driven low) to an input (pulled up)
  *           for the controller passed by controller.
@@ -121,16 +169,16 @@ uint32_t n64hal_millis()
  *   controller: Pointer to the n64 controller struct which contains the gpio mapping
  *   val: N64_OUTPUT or N64_INPUT
  */
-void n64hal_input_swap(n64_input_dev_t *controller, uint8_t val)
+void n64hal_input_swap(usb64_pin_t pin, uint8_t val)
 {
     switch (val)
     {
     case N64_OUTPUT:
-        pinMode(controller->gpio_pin, OUTPUT);
+        pinMode(pin, OUTPUT);
         break;
     case N64_INPUT:
     default:
-        pinMode(controller->gpio_pin, INPUT_PULLUP);
+        pinMode(pin, INPUT_PULLUP);
         break;
     }
 }
@@ -143,34 +191,9 @@ void n64hal_input_swap(n64_input_dev_t *controller, uint8_t val)
  *
  *   Pin number: (See usb64_conf.h)
  */
-uint8_t n64hal_input_read(int pin)
+uint8_t n64hal_input_read(usb64_pin_t pin)
 {
     return digitalReadFast(pin);
-}
-
-/*
- * Function: Sets the GPIO mode of a pin
- * ----------------------------
- *   Returns: void
- *
- *   Pin number (See usb64_conf.h)
- *   val: N64_OUTPUT or N64_INPUT_PULLDOWN or N64_INPUT_PULLUP
- */
-void n64hal_pin_set_mode(int pin, uint8_t mode)
-{
-    switch (mode)
-    {
-    case N64_OUTPUT:
-        pinMode(pin, OUTPUT);
-        break;
-    case N64_INPUT_PULLDOWN:
-        pinMode(pin, INPUT_PULLDOWN);
-        break;
-    case N64_INPUT_PULLUP:
-    default:
-        pinMode(pin, INPUT_PULLUP);
-        break;
-    }
 }
 
 /*
@@ -182,19 +205,25 @@ void n64hal_pin_set_mode(int pin, uint8_t mode)
  *   pin: Arduino compatible pin number
  *   level: 1 or 0
  */
-void n64hal_output_set(uint8_t pin, uint8_t level)
+void n64hal_output_set(usb64_pin_t pin, uint8_t level)
 {
     digitalWriteFast(pin, level);
 }
 
-void n64hal_attach_interrupt(uint8_t pin, void (*handler)(void), int mode)
+void n64hal_attach_interrupt(usb64_pin_t pin, void (*handler)(void), int mode)
 {
     int _mode = -1;
     switch (mode)
     {
-        case N64_INTMODE_CHANGE: _mode = CHANGE; break;
-        case N64_INTMODE_FALLING: _mode = FALLING; break;
-        case N64_INTMODE_RISING: _mode = RISING; break;
+    case N64_INTMODE_CHANGE:
+        _mode = CHANGE;
+        break;
+    case N64_INTMODE_FALLING:
+        _mode = FALLING;
+        break;
+    case N64_INTMODE_RISING:
+        _mode = RISING;
+        break;
     }
     if (_mode != -1)
     {
@@ -202,7 +231,7 @@ void n64hal_attach_interrupt(uint8_t pin, void (*handler)(void), int mode)
     }
 }
 
-void n64hal_detach_interrupt(uint8_t pin)
+void n64hal_detach_interrupt(usb64_pin_t pin)
 {
     detachInterrupt(digitalPinToInterrupt(pin));
 }
