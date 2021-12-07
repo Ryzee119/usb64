@@ -45,7 +45,6 @@ void n64hal_write_extram(void *tx_buff, void *dst, uint32_t offset, uint32_t len
 
 //GPIO wrappers
 void n64hal_gpio_init();
-dev_gpio_t *n64hal_pin_to_gpio(usb64_pin_t pin);
 void n64hal_output_set(usb64_pin_t pin, uint8_t level);
 void n64hal_input_swap(usb64_pin_t pin, uint8_t val);
 uint8_t n64hal_input_read(usb64_pin_t pin);

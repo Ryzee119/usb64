@@ -43,12 +43,6 @@
 #define ENABLE_HARDWIRED_CONTROLLER 1 //Ability to hardware a N64 controller into the usb64.
 #define PERI_CHANGE_TIME 750          //Milliseconds to simulate a peripheral changing time. Needed for some games.
 
-//Not used for Arduino backend
-typedef struct
-{
-   int pin;
-} dev_gpio_t;
-
 /* PIN MAPPING - Teensy uses an Arduino Backend, we just assign the enum to the Arduino Pin number
    USB64_PIN_MAX must be the largest pin number in the list add one*/
 typedef enum {
