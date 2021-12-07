@@ -43,34 +43,23 @@
 #define ENABLE_HARDWIRED_CONTROLLER 1 //Ability to hardware a N64 controller into the usb64.
 #define PERI_CHANGE_TIME 750          //Milliseconds to simulate a peripheral changing time. Needed for some games.
 
-/* PIN MAPPING */
-#define N64_CONSOLE_SENSE 37
-#define N64_CONTROLLER_1_PIN 36
-#define N64_CONTROLLER_2_PIN 35
-#define N64_CONTROLLER_3_PIN 34
-#define N64_CONTROLLER_4_PIN 33
-#define N64_FRAME 23 //Pulses high each time N64 console requests input. Presumably related to frames.
-#define USER_LED_PIN 13
+typedef struct
+{
+   int pin;
+} dev_gpio_t;
 
-//Hardwired interface. All digital inputs are pulled up, active low.
-#define HW_A 2
-#define HW_B 3
-#define HW_CU 4
-#define HW_CD 5
-#define HW_CL 6
-#define HW_CR 7
-#define HW_DU 8
-#define HW_DD 9
-#define HW_DL 10
-#define HW_DR 11
-#define HW_START 12
-#define HW_Z 28
-#define HW_R 29
-#define HW_L 30
-#define HW_RUMBLE 31 //Output, 1 when should be rumbling
-#define HW_EN 32 //Active low, pulled high
-#define HW_X 24 //Analog input, 0V to VCC. VCC/2 centre
-#define HW_Y 25 //Analog input, 0V to VCC. VCC/2 centre
+/* PIN MAPPING */
+typedef enum {
+   USER_LED_PIN,
+   N64_FRAME_PIN,
+   HW_RUMBLE,
+   N64_CONSOLE_SENSE_PIN,
+   N64_CONTROLLER_1_PIN,
+   N64_CONTROLLER_2_PIN,
+   N64_CONTROLLER_3_PIN,
+   N64_CONTROLLER_4_PIN,
+   USB64_PIN_MAX,
+} usb64_pin_t;
 
 /* FILESYSTEM */
 #define MAX_FILENAME_LEN 256
@@ -92,12 +81,6 @@
 /* TFT DISPLAY */
 #define ENABLE_TFT_DISPLAY 1
 #define TFT_ROTATION 1 //0-3
-#define TFT_DC 40
-#define TFT_CS 41
-#define TFT_MOSI 26
-#define TFT_SCK 27
-#define TFT_MISO 39
-#define TFT_RST 255
 #define TFT_WIDTH 320
 #define TFT_HEIGHT 240
 #define TFT_PIXEL_SIZE 2

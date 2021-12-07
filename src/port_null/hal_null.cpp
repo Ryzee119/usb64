@@ -28,6 +28,16 @@ void n64hal_debug_init()
 }
 
 /*
+ * Function: Initialse the device GPIO for all pins set in usb64_conf.h
+ * Note, n64 controller pins must be input pullup wth falling edge interrupt enabled.
+ * ----------------------------
+ *   Returns: void
+ */
+void n64hal_gpio_init()
+{
+}
+
+/*
  * Function: Write a character to a debug output (i.e UART etc)
  * ----------------------------
  *   Returns: void
@@ -63,7 +73,7 @@ void n64hal_enable_interrupts()
  *   handler: Interrupt handler function in the form `void my_int_handler(void)`
  *   mode: N64_INTMODE_FALLING or N64_INTMODE_CHANGE or N64_INTMODE_RISING
  */
-void n64hal_attach_interrupt(uint8_t pin, void (*handler)(void), int mode)
+void n64hal_attach_interrupt(usb64_pin_t pin, void (*handler)(void), int mode)
 {
 }
 
@@ -74,7 +84,7 @@ void n64hal_attach_interrupt(uint8_t pin, void (*handler)(void), int mode)
  *
  *   pin: The pin the configure (See usb64_conf.h)
  */
-void n64hal_detach_interrupt(uint8_t pin)
+void n64hal_detach_interrupt(usb64_pin_t pin)
 {
 }
 
@@ -160,6 +170,16 @@ uint32_t n64hal_millis()
 }
 
 /*
+ * Function: Converts a usb64_pin_t enum (See usb64_config.h) into your device specifc gpio structure
+ * ----------------------------
+ *   Returns: Pointer to the dev_gpio_t struct defined in usb64_conf.h
+ */
+dev_gpio_t *n64hal_pin_to_gpio(usb64_pin_t pin)
+{
+   return NULL;
+}
+
+/*
  * Function: Flips the gpio pin direction from an output (driven low) to an input (pulled up)
  *           for the controller passed by controller.
  * Speed critical!
@@ -169,7 +189,7 @@ uint32_t n64hal_millis()
  *   controller: Pointer to the n64 controller struct which contains the gpio mapping
  *   val: N64_OUTPUT or N64_INPUT
  */
-void n64hal_input_swap(n64_input_dev_t *controller, uint8_t val)
+void n64hal_input_swap(usb64_pin_t pin, uint8_t val)
 {
 }
 
@@ -181,21 +201,9 @@ void n64hal_input_swap(n64_input_dev_t *controller, uint8_t val)
  *
  *   pin: The pin the configure (See usb64_conf.h)
  */
-uint8_t n64hal_input_read(int pin)
+uint8_t n64hal_input_read(usb64_pin_t pin)
 {
     return 0;
-}
-
-/*
- * Function: Sets the GPIO mode of a pin
- * ----------------------------
- *   Returns: void
- *
- *   pin: The pin the configure (See usb64_conf.h)
- *   val: N64_OUTPUT or N64_INPUT_PULLDOWN or N64_INPUT_PULLUP
- */
-void n64hal_pin_set_mode(int pin, uint8_t mode)
-{
 }
 
 /*
@@ -207,7 +215,7 @@ void n64hal_pin_set_mode(int pin, uint8_t mode)
  *   pin: The pin the configure (See usb64_conf.h)
  *   level: 1 or 0
  */
-void n64hal_output_set(uint8_t pin, uint8_t level)
+void n64hal_output_set(usb64_pin_t pin, uint8_t level)
 {
 }
 
