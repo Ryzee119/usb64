@@ -43,11 +43,6 @@
 #define ENABLE_HARDWIRED_CONTROLLER 1 //Ability to hardware a N64 controller into the usb64.
 #define PERI_CHANGE_TIME 750          //Milliseconds to simulate a peripheral changing time. Needed for some games.
 
-typedef struct
-{
-   int pin;
-} dev_gpio_t;
-
 /* PIN MAPPING */
 typedef enum {
    USER_LED_PIN,

@@ -170,16 +170,6 @@ uint32_t n64hal_millis()
 }
 
 /*
- * Function: Converts a usb64_pin_t enum (See usb64_config.h) into your device specifc gpio structure
- * ----------------------------
- *   Returns: Pointer to the dev_gpio_t struct defined in usb64_conf.h
- */
-dev_gpio_t *n64hal_pin_to_gpio(usb64_pin_t pin)
-{
-   return NULL;
-}
-
-/*
  * Function: Flips the gpio pin direction from an output (driven low) to an input (pulled up)
  *           for the controller passed by controller.
  * Speed critical!

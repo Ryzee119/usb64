@@ -153,12 +153,6 @@ uint32_t n64hal_millis()
     return millis();
 }
 
-dev_gpio_t *n64hal_pin_to_gpio(usb64_pin_t pin)
-{
-   //Not used for Arduino backend
-   return NULL;
-}
-
 /*
  * Function: Flips the gpio pin direction from an output (driven low) to an input (pulled up)
  *           for the controller passed by controller.
