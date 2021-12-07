@@ -61,7 +61,7 @@ typedef struct
                                       //
     uint32_t interrupt_attached;      //Flag is set when this controller is connected to an ext int.
     uint32_t bus_idle_timer_clks;     //Timer counter for bus idle timing
-    uint32_t gpio_pin;                //What pin is this controller connected to
+    usb64_pin_t  pin;                 //What pin is this controller connected to
 } n64_input_dev_t;
 
 //N64 JOYBUS
