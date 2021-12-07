@@ -225,7 +225,7 @@ void tft_force_update()
     //Draw N64 console status
     uint32_t colour;
     const char *n64_status_text;
-    if (n64hal_input_read(N64_CONSOLE_SENSE) == 0)
+    if (n64hal_input_read(N64_CONSOLE_SENSE_PIN) == 0)
     {
         n64_status_text = "N64 is OFF";
         colour = GL_RGB(255, 0, 0);

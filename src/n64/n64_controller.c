@@ -46,6 +46,10 @@ void n64_subsystem_init(n64_input_dev_t *in_dev)
         in_dev[i].interrupt_attached = false;
         in_dev[i].peri_access = 0;
         in_dev[i].type = N64_CONTROLLER;
+        in_dev[i].pin = (i == 0) ? N64_CONTROLLER_1_PIN :
+                        (i == 1) ? N64_CONTROLLER_2_PIN :
+                        (i == 2) ? N64_CONTROLLER_3_PIN :
+                        (i == 3) ? N64_CONTROLLER_4_PIN : -1;
     }
 
     //Setup the Controller pin IO mapping and interrupts
@@ -118,10 +122,10 @@ static void n64_send_stream(uint8_t *txbuff, uint32_t len, n64_input_dev_t *c)
     while (len > 0)
     {
         while ((n64hal_hs_tick_get() - cycle_start) < cycle_cnt);
-        n64hal_input_swap(c, N64_OUTPUT); //OUTPUT_PP will pull low
+        n64hal_input_swap(c->pin, N64_OUTPUT); //OUTPUT_PP will pull low
         (txbuff[current_byte] & 0x80) ? (cycle_cnt += 1 * U_SEC) : (cycle_cnt += 3 * U_SEC);
         while ((n64hal_hs_tick_get() - cycle_start) < cycle_cnt);
-        n64hal_input_swap(c, N64_INPUT);
+        n64hal_input_swap(c->pin, N64_INPUT);
         (txbuff[current_byte] & 0x80) ? (cycle_cnt += 3 * U_SEC) : (cycle_cnt += 1 * U_SEC);
         txbuff[current_byte] = txbuff[current_byte] << 1;
         current_bit--;
@@ -137,10 +141,10 @@ static void n64_send_stream(uint8_t *txbuff, uint32_t len, n64_input_dev_t *c)
 
     //Send stop bit. Pull low for 2us, then release.
     while ((n64hal_hs_tick_get() - cycle_start) < cycle_cnt);
-    n64hal_input_swap(c, N64_OUTPUT);
+    n64hal_input_swap(c->pin, N64_OUTPUT);
     cycle_cnt += 2 * U_SEC;
     while ((n64hal_hs_tick_get() - cycle_start) < cycle_cnt);
-    n64hal_input_swap(c, N64_INPUT); //Release bus. We're done
+    n64hal_input_swap(c->pin, N64_INPUT); //Release bus. We're done
 }
 
 static void n64_reset_stream(n64_input_dev_t *cont)
@@ -181,7 +185,7 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
     while (n64hal_hs_tick_get() < sample_clock);
 
     //Read bit
-    cont->data_buffer[cont->current_byte] |= n64hal_input_read(cont->gpio_pin) << cont->current_bit;
+    cont->data_buffer[cont->current_byte] |= n64hal_input_read(cont->pin) << cont->current_bit;
     cont->current_bit -= 1;
 
     //Reset idle timer
@@ -218,12 +222,12 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
         case N64_CONTROLLER_STATUS:
             if (cont->type == N64_RANDNET) //Randnet does not response to this
                 break;
-            n64hal_output_set(N64_FRAME, 1);
+            n64hal_output_set(N64_FRAME_PIN, 1);
             n64_wait_micros(2);
             n64_send_stream((uint8_t *)&cont->b_state, 4, cont);
             n64_reset_stream(cont);
             cont->b_state.dButtons = 0x0000;
-            n64hal_output_set(N64_FRAME, 0);
+            n64hal_output_set(N64_FRAME_PIN, 0);
             break;
         case N64_RANDNET_REQ:
             break;
