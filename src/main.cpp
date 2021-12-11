@@ -112,6 +112,7 @@ void loop()
                     case 3: n64hal_attach_interrupt(n64_in_dev[c].pin, n64_controller4_clock_edge, N64_INTMODE_FALLING); break;
                 }
                 n64_in_dev[c].interrupt_attached = true;
+                tft_flag_update();
             }
             if (input_is(c, INPUT_GAMECONTROLLER))
             {
