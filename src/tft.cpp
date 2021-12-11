@@ -264,6 +264,8 @@ void tft_force_update()
     n64_status.show_window();
 
     tft_dev_draw(true);
+
+    _tft_update_needed = 0;
 }
 
 void tft_flag_update()
