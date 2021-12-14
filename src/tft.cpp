@@ -294,7 +294,7 @@ void tft_add_log(char c)
     }
     else
     {
-        tft_log_pos++;
+        tft_log_pos = (tft_log_pos + 1) % 256;
     }
 
     //Exceeded max lines, remove oldest line and shift lines up by one
