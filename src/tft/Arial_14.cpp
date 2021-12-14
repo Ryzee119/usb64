@@ -1,4 +1,4 @@
-#include "usb64_conf.h"
+#include "common.h"
 #include "GuiLite.h"
 
 static const unsigned char _32[] PROGMEM = {

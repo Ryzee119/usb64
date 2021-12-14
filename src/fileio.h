@@ -4,7 +4,7 @@
 #ifndef _FILEIO_H
 #define _FILEIO_H
 
-#include "usb64_conf.h"
+#include "common.h"
 
 //File access API
 void fileio_init(void);

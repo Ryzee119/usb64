@@ -1,17 +1,13 @@
 // Copyright 2020, Ryan Wendland, usb64
 // SPDX-License-Identifier: MIT
 
-#include "usb64_conf.h"
+#include "common.h"
 #include "input.h"
 #include "n64_controller.h"
-#include "n64_transferpak_gbcarts.h"
-#include "n64_virtualpak.h"
-#include "n64_settings.h"
 #include "analog_stick.h"
 #include "memory.h"
 #include "fileio.h"
 #include "tft.h"
-#include "n64_wrapper.h"
 
 void usbh_dev_init(void);
 static void ring_buffer_init(void);

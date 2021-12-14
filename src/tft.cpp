@@ -1,8 +1,7 @@
 // Copyright 2020, Ryan Wendland, usb64
 // SPDX-License-Identifier: MIT
 
-#include "usb64_conf.h"
-#include "n64_wrapper.h"
+#include "common.h"
 #include "n64_controller.h"
 #include "input.h"
 #include "memory.h"

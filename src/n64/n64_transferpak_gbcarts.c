@@ -7,13 +7,7 @@
  * Tranferpak emulation is my own RE.
  */
 
-#include "usb64_conf.h"
-#include "n64_mempak.h"
-#include "n64_virtualpak.h"
-#include "n64_settings.h"
-#include "n64_transferpak_gbcarts.h"
 #include "n64_controller.h"
-#include "n64_wrapper.h"
 
 static uint32_t _gb_get_rom_size(uint8_t rom_type)
 {

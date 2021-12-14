@@ -4,7 +4,7 @@
 #ifndef _INPUT_H
 #define _INPUT_H
 
-#include "usb64_conf.h"
+#include "common.h"
 #include "tusb.h"
 
 typedef struct

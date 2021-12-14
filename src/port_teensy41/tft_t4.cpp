@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #include <Arduino.h>
-#include "usb64_conf.h"
+#include "common.h"
 #include "controller_icon.h"
 #include "usb64_logo.h"
 #include "GuiLite.h"
