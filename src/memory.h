@@ -4,7 +4,7 @@
 #ifndef _MEMORY_H
 #define _MEMORY_H
 
-#include "usb64_conf.h"
+#include "common.h"
 
 #define MEMORY_READ_WRITE 0
 #define MEMORY_READ_ONLY 1

@@ -8,9 +8,11 @@
 extern "C" {
 #endif
 
-#include "usb64_conf.h"
+#include <stdint.h>
 #include "n64_mempak.h"
 #include "n64_rumblepak.h"
+#include "n64_settings.h"
+#include "n64_virtualpak.h"
 #include "n64_transferpak_gbcarts.h"
 
 typedef struct  __attribute__((packed))

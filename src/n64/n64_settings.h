@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#include "usb64_conf.h"
+#include "common.h"
 
 typedef struct
 {

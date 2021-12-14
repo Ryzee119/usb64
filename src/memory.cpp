@@ -11,10 +11,9 @@
  * and automatically flushes for you atleast. You can also manual flush with a button combo.
  */
 
-#include "usb64_conf.h"
+#include "common.h"
 #include "memory.h"
-#include "n64_wrapper.h"
-#include "usb64_conf.h"
+#include "common.h"
 #include "fileio.h"
 
 static sram_storage sram[32] = {0};

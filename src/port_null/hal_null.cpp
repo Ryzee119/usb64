@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: MIT
 
 #include <stdlib.h>
-#include "n64_controller.h"
-#include "n64_wrapper.h"
+#include "common.h"
 #include "memory.h"
-#include "usb64_conf.h"
 #include "fileio.h"
 #include "memory.h"
 
