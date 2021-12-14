@@ -468,7 +468,6 @@ static char ring_buffer[4096];
 extern "C" void _putchar(char character)
 {
     ring_buffer[ring_buffer_pos] = character;
-    tft_add_log(character);
     ring_buffer_pos = (ring_buffer_pos + 1) % sizeof(ring_buffer);
 }
 
@@ -483,6 +482,7 @@ static void ring_buffer_flush()
     while (ring_buffer[_print_cursor] != 0xFF)
     {
         n64hal_debug_write(ring_buffer[_print_cursor]);
+        tft_add_log(ring_buffer[_print_cursor]);
         ring_buffer[_print_cursor] = 0xFF;
         _print_cursor = (_print_cursor + 1) % sizeof(ring_buffer);
     }
