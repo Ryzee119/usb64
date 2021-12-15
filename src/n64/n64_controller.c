@@ -49,7 +49,7 @@ void n64_subsystem_init(n64_input_dev_t *in_dev)
     n64hal_hs_tick_init();
 }
 
-static uint8_t n64_get_crc(uint8_t *data)
+__attribute__((weak)) uint8_t n64_get_crc(uint8_t *data)
 {
     //Generated from http://www.sunshine2k.de/coding/javascript/crc/crc_js.html
     //N64 CRC poly was brute forced as x^7 + x^2 + x^0 (0x85), initial value = 0
