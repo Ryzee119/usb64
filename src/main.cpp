@@ -188,6 +188,7 @@ void loop()
         {
             n64_in_dev[c].interrupt_attached = false;
             n64hal_detach_interrupt(n64_in_dev[c].pin);
+            tft_flag_update();
         }
 
         //Get a copy of the latest n64 button presses to handle the below combos
