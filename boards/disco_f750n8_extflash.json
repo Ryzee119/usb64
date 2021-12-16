@@ -1,0 +1,44 @@
+{
+  "build": {
+    "cpu": "cortex-m7",
+    "extra_flags": "-DSTM32F750xx",
+    "f_cpu": "216000000L",
+    "mcu": "stm32f750n8h6",
+    "product_line": "STM32F750xx"
+  },
+  "connectivity": [
+    "can",
+    "ethernet"
+  ],
+  "debug": {
+    "default_tools": [
+      "stlink"
+    ],
+    "jlink_device": "STM32F750N8",
+    "onboard_tools": [
+      "stlink"
+    ],
+    "openocd_board": "stm32f7discovery",
+    "openocd_target": "stm32f7x",
+    "svd_path": "STM32F750x.svd"
+  },
+  "frameworks": [
+    "cmsis",
+    "stm32cube",
+    "libopencm3"
+  ],
+  "name": "STM32F7508-DK",
+  "upload": {
+    "maximum_ram_size": 327680,
+    "maximum_size": 16777216,
+    "protocol": "stlink",
+    "protocols": [
+      "jlink",
+      "cmsis-dap",
+      "stlink",
+      "blackmagic"
+    ]
+  },
+  "url": "https://www.st.com/content/st_com/en/products/evaluation-tools/product-evaluation-tools/mcu-mpu-eval-tools/stm32-mcu-mpu-eval-tools/stm32-discovery-kits/stm32f7508-dk.html",
+  "vendor": "ST"
+}
