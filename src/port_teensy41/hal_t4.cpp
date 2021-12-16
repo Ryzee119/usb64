@@ -260,6 +260,28 @@ void n64hal_write_extram(void *tx_buff, void *dst, uint32_t offset, uint32_t len
 }
 
 /*
+ * Function: Allocates a block of memory
+ * ----------------------------
+ *   Returns: pointer to memory region
+ *
+ *   len: How many bytes to allocate
+ */
+void *n64hal_malloc(uint32_t len)
+{
+    return memory_dev_malloc(len);
+}
+
+/*
+ * Function: Free a block of memory
+ * ----------------------------
+ *   addr: The address to free
+ */
+void n64hal_free(void *addr)
+{
+    memory_dev_free(addr);
+}
+
+/*
  * Function: Returns a list of gameboy roms located on nonvolatile storage
  * WARNING: This mallocs memory on the heap. It must be free'd by user.
  * ----------------------------
