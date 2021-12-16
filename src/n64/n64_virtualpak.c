@@ -205,9 +205,9 @@ void n64_virtualpak_init(n64_mempack *vpak)
     for (uint32_t i = 0; i < num_roms; i++)
     {
         if (gbrom_filenames[i] != NULL)
-            free(gbrom_filenames[i]);
+            n64hal_free(gbrom_filenames[i]);
         if (gbrom_titlenames[i] != NULL)
-            free(gbrom_titlenames[i]);
+            n64hal_free(gbrom_titlenames[i]);
 
         gbrom_filenames[i] = NULL;
         gbrom_titlenames[i] = NULL;
@@ -225,7 +225,7 @@ void n64_virtualpak_init(n64_mempack *vpak)
         gb_init_cart(&gb_cart, gb_header, gbrom_filenames[i]);
 
         //Copy the gb cart title (from the rom header into an array)
-        gbrom_titlenames[i] = (char *)malloc(strlen(gb_cart.title) + 1);
+        gbrom_titlenames[i] = (char *)n64hal_malloc(strlen(gb_cart.title) + 1);
         strcpy(gbrom_titlenames[i], gb_cart.title);
     }
     n64_virtualpak_update(vpak);
