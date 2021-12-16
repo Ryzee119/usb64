@@ -97,6 +97,10 @@ uint8_t n64hal_input_read(usb64_pin_t pin);
 uint32_t n64hal_list_gb_roms(char **list, uint32_t max);
 void n64hal_read_storage(char *name, uint32_t file_offset, uint8_t *data, uint32_t len);
 
+//Memory wrappers
+void *n64hal_malloc(uint32_t len);
+void n64hal_free(void *addr);
+
 #ifdef __cplusplus
 }
 #endif
