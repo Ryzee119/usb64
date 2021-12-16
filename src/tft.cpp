@@ -285,7 +285,7 @@ void tft_add_log(char c)
     if (c == '\n')
     {
         tft_log[tft_log_pos] = '\0';
-        _tft_log_text_lines[tft_log_line_num] = (char *)malloc(strlen(tft_log) + 1);
+        _tft_log_text_lines[tft_log_line_num] = (char *)memory_dev_malloc(strlen(tft_log) + 1);
         if (_tft_log_text_lines[tft_log_line_num] != NULL)
         {
             strcpy(_tft_log_text_lines[tft_log_line_num], tft_log);
