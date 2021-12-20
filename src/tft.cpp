@@ -285,7 +285,7 @@ void tft_add_log(char c)
     if (c == '\n')
     {
         tft_log[tft_log_pos] = '\0';
-        _tft_log_text_lines[tft_log_line_num] = (char *)memory_dev_malloc(strlen(tft_log) + 1);
+        _tft_log_text_lines[tft_log_line_num] = (char *)malloc(strlen(tft_log) + 1);
         if (_tft_log_text_lines[tft_log_line_num] != NULL)
         {
             strcpy(_tft_log_text_lines[tft_log_line_num], tft_log);
@@ -302,7 +302,7 @@ void tft_add_log(char c)
     //Exceeded max lines, remove oldest line and shift lines up by one
     if (tft_log_line_num >= _tft_log_max_lines)
     {
-        memory_dev_free(_tft_log_text_lines[0]);
+        free(_tft_log_text_lines[0]);
         for (uint32_t i = 0; i < _tft_log_max_lines - 1; i++)
         {
             _tft_log_text_lines[i] = _tft_log_text_lines[i + 1];
