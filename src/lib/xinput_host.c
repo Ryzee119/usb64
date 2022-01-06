@@ -280,7 +280,11 @@ bool xinputh_set_config(uint8_t dev_addr, uint8_t itf_num)
 
 bool xinputh_xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, uint32_t xferred_bytes)
 {
-    (void)result;
+    if (result != XFER_RESULT_SUCCESS)
+    {
+        return false;
+    }
+
     uint8_t const dir = tu_edpt_dir(ep_addr);
     uint8_t const instance = get_instance_id_by_epaddr(dev_addr, ep_addr);
     xinputh_interface_t *xid_itf = get_instance(dev_addr, instance);
@@ -289,7 +293,7 @@ bool xinputh_xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, ui
 
     if (dir == TUSB_DIR_IN)
     {
-        TU_LOG2("Get Report callback (%u, %u)\r\n", dev_addr, instance);
+        TU_LOG2("Get Report callback (%u, %u, %u bytes)\r\n", dev_addr, instance, xferred_bytes);
         TU_LOG2_MEM(xid_itf->epin_buf, xferred_bytes, 2);
         if (xid_itf->type == XBOX360_WIRED)
         {
