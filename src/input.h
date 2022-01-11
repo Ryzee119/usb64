@@ -119,6 +119,7 @@ typedef enum input_backend
 
 typedef struct input_driver
 {
+    uint8_t slot;
     input_type_t type;
     input_backend_t backend;
     uint8_t _data[CFG_TUH_XINPUT_EPIN_BUFSIZE];

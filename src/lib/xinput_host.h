@@ -62,6 +62,8 @@ typedef struct
 {
     xinput_type_t type;
     xinput_gamepad_t pad;
+    uint8_t connected;
+    uint8_t new_pad_data;
     uint8_t itf_num;
     uint8_t ep_in;
     uint8_t ep_out;
@@ -76,7 +78,7 @@ typedef struct
 void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len);
 TU_ATTR_WEAK void tuh_xinput_report_sent_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len);
 TU_ATTR_WEAK void tuh_xinput_umount_cb(uint8_t dev_addr, uint8_t instance);
-TU_ATTR_WEAK void tuh_xinput_mount_cb(uint8_t dev_addr, uint8_t instance, const tusb_desc_interface_t *desc_report);
+TU_ATTR_WEAK void tuh_xinput_mount_cb(uint8_t dev_addr, uint8_t instance, const xinputh_interface_t *xinput_itf);
 bool tuh_xinput_receive_report(uint8_t dev_addr, uint8_t instance);
 bool tuh_xinput_send_report(uint8_t dev_addr, uint8_t instance, const uint8_t *txbuf, uint16_t len);
 bool tuh_xinput_set_led(uint8_t dev_addr, uint8_t instance, uint8_t quadrant, bool block);
@@ -107,7 +109,7 @@ static const uint8_t xboxone_rumble[] = {0x09, 0x00, 0x00, 0x09, 0x00, 0x0f, 0x0
 static const uint8_t xbox360w_led[] = {0x00, 0x00, 0x08, 0x40};
 //Sending 0x00, 0x00, 0x08, 0x00 will permanently disable rumble until you do this:
 static const uint8_t xbox360w_rumble_enable[] = {0x00, 0x00, 0x08, 0x01};
-static const uint8_t xbox360w_rumble[] = {0x00, 0x01, 0x0F, 0xC0};
+static const uint8_t xbox360w_rumble[] = {0x00, 0x01, 0x0F, 0xC0, 0x00, 0x00};
 static const uint8_t xbox360w_inquire_present[] = {0x08, 0x00, 0x0F, 0xC0};
 static const uint8_t xbox360w_controller_info[] = {0x00, 0x00, 0x00, 0x40};
 static const uint8_t xbox360w_unknown[] = {0x00, 0x00, 0x02, 0x80};

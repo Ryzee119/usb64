@@ -117,7 +117,7 @@ bool tuh_xinput_set_rumble(uint8_t dev_addr, uint8_t instance, uint8_t lValue, u
         memcpy(txbuf, xbox360w_rumble, sizeof(xbox360w_rumble));
         txbuf[5] = lValue;
         txbuf[6] = rValue;
-        len = sizeof(xbox360w_led);
+        len = sizeof(xbox360w_rumble);
         break;
     case XBOX360_WIRED:
         memcpy(txbuf, xbox360_wired_rumble, sizeof(xbox360_wired_rumble));
@@ -231,14 +231,13 @@ bool xinputh_set_config(uint8_t dev_addr, uint8_t itf_num)
 {
     uint8_t instance = get_instance_id_by_itfnum(dev_addr, itf_num);
     xinputh_interface_t *xid_itf = get_instance(dev_addr, instance);
+    xid_itf->connected = true;
 
     if (xid_itf->type == XBOX360_WIRELESS)
     {
-        tuh_xinput_send_report(dev_addr, instance, xbox360w_controller_info, sizeof(xbox360w_controller_info));
-        wait_for_tx_complete(dev_addr, xid_itf->ep_out);
-        tuh_xinput_send_report(dev_addr, instance, xbox360w_unknown, sizeof(xbox360w_unknown));
-        wait_for_tx_complete(dev_addr, xid_itf->ep_out);
-        tuh_xinput_send_report(dev_addr, instance, xbox360w_rumble_enable, sizeof(xbox360w_rumble_enable));
+        //Wireless controllers may not be connected yet.
+        xid_itf->connected = false;
+        tuh_xinput_send_report(dev_addr, instance, xbox360w_inquire_present, sizeof(xbox360w_inquire_present));
         wait_for_tx_complete(dev_addr, xid_itf->ep_out);
     }
     else if (xid_itf->type == XBOX360_WIRED)
@@ -273,7 +272,7 @@ bool xinputh_set_config(uint8_t dev_addr, uint8_t itf_num)
 
     if (tuh_xinput_mount_cb)
     {
-        tuh_xinput_mount_cb(dev_addr, instance, NULL);
+        tuh_xinput_mount_cb(dev_addr, instance, xid_itf);
     }
     return true;
 }
@@ -329,7 +328,61 @@ bool xinputh_xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, ui
                 pad->sThumbLY = rdata[9] << 8 | rdata[8];
                 pad->sThumbRX = rdata[11] << 8 | rdata[10];
                 pad->sThumbRY = rdata[13] << 8 | rdata[12];
+
+                xid_itf->new_pad_data = true;
             }           
+        }
+        else if (xid_itf->type == XBOX360_WIRELESS)
+        {
+            //Connect/Disconnect packet
+            if (rdata[0] & 0x08)
+            {
+                if (rdata[1] != 0x00 && xid_itf->connected == false)
+                {
+                    TU_LOG2("XINPUT: WIRELESS CONTROLLER CONNECTED\n");
+                    xid_itf->connected = true;
+                }
+                else if (rdata[1] == 0x00 && xid_itf->connected == true)
+                {
+                    TU_LOG2("XINPUT: WIRELESS CONTROLLER DISCONNECTED\n");
+                    xid_itf->connected = false;
+                }
+            }
+
+            //Button status packet
+            if ((rdata[1] & 1) && rdata[5] == 0x13)
+            {
+                tu_memclr(pad, sizeof(xinput_gamepad_t));
+                uint16_t wButtons = rdata[7] << 8 | rdata[6];
+
+                //Map digital buttons
+                if (wButtons & (1 << 0)) pad->wButtons |= XINPUT_GAMEPAD_DPAD_UP;
+                if (wButtons & (1 << 1)) pad->wButtons |= XINPUT_GAMEPAD_DPAD_DOWN;
+                if (wButtons & (1 << 2)) pad->wButtons |= XINPUT_GAMEPAD_DPAD_LEFT;
+                if (wButtons & (1 << 3)) pad->wButtons |= XINPUT_GAMEPAD_DPAD_RIGHT;
+                if (wButtons & (1 << 4)) pad->wButtons |= XINPUT_GAMEPAD_START;
+                if (wButtons & (1 << 5)) pad->wButtons |= XINPUT_GAMEPAD_BACK;
+                if (wButtons & (1 << 6)) pad->wButtons |= XINPUT_GAMEPAD_LEFT_THUMB;
+                if (wButtons & (1 << 7)) pad->wButtons |= XINPUT_GAMEPAD_RIGHT_THUMB;
+                if (wButtons & (1 << 8)) pad->wButtons |= XINPUT_GAMEPAD_LEFT_SHOULDER;
+                if (wButtons & (1 << 9)) pad->wButtons |= XINPUT_GAMEPAD_RIGHT_SHOULDER;
+                if (wButtons & (1 << 12)) pad->wButtons |= XINPUT_GAMEPAD_A;
+                if (wButtons & (1 << 13)) pad->wButtons |= XINPUT_GAMEPAD_B;
+                if (wButtons & (1 << 14)) pad->wButtons |= XINPUT_GAMEPAD_X;
+                if (wButtons & (1 << 15)) pad->wButtons |= XINPUT_GAMEPAD_Y;
+
+                //Map the left and right triggers
+                pad->bLeftTrigger = rdata[8];
+                pad->bRightTrigger = rdata[9];
+
+                //Map analog sticks
+                pad->sThumbLX = rdata[11] << 8 | rdata[10];
+                pad->sThumbLY = rdata[13] << 8 | rdata[12];
+                pad->sThumbRX = rdata[15] << 8 | rdata[14];
+                pad->sThumbRY = rdata[17] << 8 | rdata[16];
+
+                xid_itf->new_pad_data = true;
+            }
         }
         else if (xid_itf->type == XBOXONE)
         {
@@ -363,6 +416,8 @@ bool xinputh_xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, ui
                 pad->sThumbLY = rdata[13] << 8 | rdata[12];
                 pad->sThumbRX = rdata[15] << 8 | rdata[14];
                 pad->sThumbRY = rdata[17] << 8 | rdata[16];
+
+                xid_itf->new_pad_data = true;
             }          
         }
         else if (xid_itf->type == XBOXOG)
@@ -398,9 +453,12 @@ bool xinputh_xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, ui
                 pad->sThumbLY = rdata[15] << 8 | rdata[14];
                 pad->sThumbRX = rdata[17] << 8 | rdata[16];
                 pad->sThumbRY = rdata[19] << 8 | rdata[18];
+
+                xid_itf->new_pad_data = true;
             }
         } 
-        tuh_xinput_report_received_cb(dev_addr, instance, (const uint8_t *)&xid_itf->pad, sizeof(xinput_gamepad_t));
+        tuh_xinput_report_received_cb(dev_addr, instance, (const uint8_t *)xid_itf, sizeof(xinputh_interface_t));
+        xid_itf->new_pad_data = false;
     }
     else
     {
@@ -409,7 +467,6 @@ bool xinputh_xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, ui
             tuh_xinput_report_sent_cb(dev_addr, instance, xid_itf->epout_buf, xferred_bytes);
         }
     }
-    
 
     return true;
 }
