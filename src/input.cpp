@@ -35,6 +35,52 @@ static input_driver_t *find_slot(uint16_t uid)
     return NULL;
 }
 
+void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_report, uint16_t desc_len)
+{
+    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+
+    if (itf_protocol != HID_ITF_PROTOCOL_NONE)
+    {
+        input_driver_t *in_dev = find_slot(0);
+
+        in_dev->type    = (itf_protocol == HID_ITF_PROTOCOL_MOUSE) ? INPUT_MOUSE : INPUT_KEYBOARD;
+        in_dev->backend = (itf_protocol == HID_ITF_PROTOCOL_MOUSE) ? BACKEND_HID_MOUSE : BACKEND_HID_KEYBOARD;
+        in_dev->uid = dev_addr << 8 | instance;
+        in_dev->set_rumble = NULL;
+        in_dev->set_led = NULL;
+        in_dev->data = in_dev->_data;
+
+        tuh_hid_receive_report(dev_addr, instance);
+    }
+}
+
+// Invoked when received report from device via interrupt endpoint
+static uint32_t hid_data_tick[MAX_USB_CONTROLLERS] = {0};
+void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *report, uint16_t len)
+{
+    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+    input_driver_t *in_dev = find_slot(dev_addr << 8 | instance);
+
+    if (in_dev != NULL && itf_protocol != HID_ITF_PROTOCOL_NONE)
+    {
+        hid_data_tick[in_dev->slot] = n64hal_millis();
+        memcpy(in_dev->data, report, TU_MIN(len, CFG_TUH_XINPUT_EPIN_BUFSIZE));
+    }
+
+    tuh_hid_receive_report(dev_addr, instance);
+}
+
+void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
+{
+    uint16_t uid = dev_addr << 8 | instance;
+    input_driver_t *in_dev = find_slot(uid);
+    while (in_dev != NULL)
+    {
+        memset(in_dev, 0, sizeof(input_driver_t));
+        in_dev = find_slot(uid);
+    }
+}
+
 void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *report, uint16_t len)
 {
     xinputh_interface_t *xid_itf = (xinputh_interface_t *)report;
@@ -212,6 +258,28 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
         {
             state->dButtons &= ~N64_ST;
             state->dButtons |= N64_RES;
+        }
+    }
+    else if (input_is(id, INPUT_MOUSE))
+    {
+        //N64 report is basically a n64 controller response
+        n64_buttonmap *state = (n64_buttonmap *)response;
+        hid_mouse_report_t *report = (hid_mouse_report_t *)in_dev->data;
+        bool new_data = state->x_axis != report->x || state->y_axis != -report->y;
+
+        state->dButtons = 0;
+        state->x_axis = report->x;
+        state->y_axis = -report->y;
+
+        if (report->buttons & (1 << 0)) state->dButtons |= N64_A;   //A left click
+        if (report->buttons & (1 << 1)) state->dButtons |= N64_B;   //B right click
+        if (report->buttons & (1 << 2)) state->dButtons |= N64_ST;  //ST middle click
+
+        //Need to do this for stale data and mouse wont send a 0 byte if its not moving
+        if (n64hal_millis() - hid_data_tick[in_dev->slot] > 10)
+        {
+            report->x = 0;
+            report->y = 0;
         }
     }
 
