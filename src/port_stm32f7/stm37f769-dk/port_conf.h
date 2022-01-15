@@ -61,11 +61,11 @@ typedef enum {
 
 /* Define for variables to store in flash only */
 #ifndef PROGMEM
-#define PROGMEM  __attribute__((section(".text.rodata")))
+#define PROGMEM
 #endif
 /* Define for function to store in flash only */
 #ifndef FLASHMEM
-#define FLASHMEM  __attribute__ ((section (".text.code")))
+#define FLASHMEM
 #endif
 
 #endif
