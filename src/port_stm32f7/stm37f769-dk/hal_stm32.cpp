@@ -46,9 +46,9 @@ void n64hal_system_init()
 
     __disable_irq();
     //Move the interrupt vector table from Flash to RAM. Should have better interrupt perf and consistency
-    void *vtor = (void *)RAMDTCM_BASE;
-    memcpy(vtor, (void *)SCB->VTOR, 0x200);
-    SCB->VTOR = (uint32_t)vtor;
+    //void *vtor = (void *)RAMDTCM_BASE;
+    //memcpy(vtor, (void *)SCB->VTOR, 0x200);
+    //SCB->VTOR = (uint32_t)vtor;
     __enable_irq();
 
     __HAL_RCC_CRC_CLK_ENABLE();
