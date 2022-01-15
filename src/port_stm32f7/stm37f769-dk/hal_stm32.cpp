@@ -46,9 +46,9 @@ void n64hal_system_init()
 
     __disable_irq();
     //Move the interrupt vector table from Flash to RAM. Should have better interrupt perf and consistency
-    //void *vtor = (void *)RAMDTCM_BASE;
-    //memcpy(vtor, (void *)SCB->VTOR, 0x200);
-    //SCB->VTOR = (uint32_t)vtor;
+    void *vtor = (void *)RAMDTCM_BASE;
+    memcpy(vtor, (void *)SCB->VTOR, 0x200);
+    SCB->VTOR = (uint32_t)vtor;
     __enable_irq();
 
     __HAL_RCC_CRC_CLK_ENABLE();
@@ -94,9 +94,8 @@ void n64hal_gpio_init()
     dev_gpio_t *pin;
     GPIO_InitTypeDef GPIO_InitStruct;
 
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    __HAL_RCC_GPIOI_CLK_ENABLE();
-    __HAL_RCC_GPIOG_CLK_ENABLE();
+    __HAL_RCC_GPIOF_CLK_ENABLE();
+    __HAL_RCC_GPIOJ_CLK_ENABLE();
 
     for (int i = 0; i < USB64_PIN_MAX; i++)
     {
@@ -150,8 +149,8 @@ void n64hal_gpio_init()
     pin = n64hal_pin_to_gpio(N64_CONTROLLER_3_PIN);
     HAL_GPIO_WritePin(pin->port, pin->pin, GPIO_PIN_RESET);
     GPIO_InitStruct.Pin = pin->pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
     HAL_GPIO_Init(pin->port, &GPIO_InitStruct);
 
@@ -186,18 +185,20 @@ void n64hal_debug_write(char c)
 void n64hal_disable_interrupts()
 {
     //Disable the controller input interrupts
-    HAL_NVIC_DisableIRQ(EXTI9_5_IRQn);
-    HAL_NVIC_DisableIRQ(EXTI2_IRQn);
+    HAL_NVIC_DisableIRQ(EXTI0_IRQn);
+    HAL_NVIC_DisableIRQ(EXTI1_IRQn);
     HAL_NVIC_DisableIRQ(EXTI3_IRQn);
+    HAL_NVIC_DisableIRQ(EXTI4_IRQn);
     HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
 }
 
 void n64hal_enable_interrupts()
 {
     //Disable the controller input interrupts
-    HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
-    HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+    HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+    HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+    HAL_NVIC_EnableIRQ(EXTI4_IRQn);
     HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
 }
 
