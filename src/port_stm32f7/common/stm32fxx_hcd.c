@@ -150,16 +150,18 @@ static usbh_endpoint_t *_find_endpoint(uint8_t dev_addr, uint8_t ep_addr)
 
 static bool _endpoint_xfer(usbh_endpoint_t *ep, uint8_t is_setup)
 {
+    static const uint8_t speed[3] = {HCD_DEVICE_SPEED_FULL, HCD_DEVICE_SPEED_LOW, HCD_DEVICE_SPEED_HIGH};
     HAL_StatusTypeDef ret = HAL_OK;
     HCD_HCTypeDef *hc = &hhcd.hc[ep->ch_num];
     uint8_t hc_ep_addr = hc->ep_num | ((hc->ep_is_in) ? 0x80 : 0x00);
+    tusb_speed_t tusb_speed = tuh_speed_get(ep->dev_addr);
     if (hc->dev_addr != ep->dev_addr || hc_ep_addr != ep->ep_desc.bEndpointAddress || hc->dev_addr == 0)
     {
         ret = HAL_HCD_HC_Init(&hhcd,
                               ep->ch_num,
                               ep->ep_desc.bEndpointAddress,
                               ep->dev_addr,
-                              HAL_HCD_GetCurrentSpeed(&hhcd), //FIXME tuh_speed_get?
+                              speed[tusb_speed],
                               ep->ep_type,
                               ep->ep_desc.wMaxPacketSize);
     }
@@ -381,7 +383,7 @@ bool hcd_init(uint8_t rhport)
     hhcd.Init.low_power_enable = 0;
     hhcd.Init.phy_itface =  (rhport == 0) ? HCD_PHY_EMBEDDED : USB_OTG_ULPI_PHY;
     hhcd.Init.Sof_enable = 1;
-    hhcd.Init.speed = (rhport == 0) ? HCD_SPEED_FULL : HCD_SPEED_HIGH;
+    hhcd.Init.speed = HCD_SPEED_FULL;
     hhcd.Init.vbus_sensing_enable = 0;
     hhcd.Init.lpm_enable = 0;
     res = HAL_HCD_Init(&hhcd);
