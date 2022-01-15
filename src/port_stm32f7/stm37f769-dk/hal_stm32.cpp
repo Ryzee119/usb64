@@ -189,7 +189,7 @@ void n64hal_disable_interrupts()
     HAL_NVIC_DisableIRQ(EXTI1_IRQn);
     HAL_NVIC_DisableIRQ(EXTI3_IRQn);
     HAL_NVIC_DisableIRQ(EXTI4_IRQn);
-    HAL_NVIC_DisableIRQ(OTG_FS_IRQn);
+    HAL_NVIC_DisableIRQ(OTG_HS_IRQn);
 }
 
 void n64hal_enable_interrupts()
@@ -199,7 +199,7 @@ void n64hal_enable_interrupts()
     HAL_NVIC_EnableIRQ(EXTI1_IRQn);
     HAL_NVIC_EnableIRQ(EXTI3_IRQn);
     HAL_NVIC_EnableIRQ(EXTI4_IRQn);
-    HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+    HAL_NVIC_EnableIRQ(OTG_HS_IRQn);
 }
 
 void n64hal_attach_interrupt(usb64_pin_t pin, void (*handler)(void), int mode)
