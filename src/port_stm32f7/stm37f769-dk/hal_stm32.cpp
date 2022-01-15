@@ -412,6 +412,7 @@ extern "C" void EXTI4_IRQHandler(void)
         n64_4();
     }
     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_4);
+    HAL_NVIC_ClearPendingIRQ(EXTI4_IRQn);
 }
 
 extern "C" void EXTI3_IRQHandler(void)
@@ -421,6 +422,7 @@ extern "C" void EXTI3_IRQHandler(void)
         n64_3();
     }
     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
+    HAL_NVIC_ClearPendingIRQ(EXTI3_IRQn);
 }
 
 extern "C" void EXTI0_IRQHandler(void)
@@ -430,6 +432,7 @@ extern "C" void EXTI0_IRQHandler(void)
         n64_2();
     }
     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
+    HAL_NVIC_ClearPendingIRQ(EXTI0_IRQn);
 }
 
 extern "C" void EXTI1_IRQHandler(void)
@@ -439,6 +442,7 @@ extern "C" void EXTI1_IRQHandler(void)
         n64_1();
     }
     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
+    HAL_NVIC_ClearPendingIRQ(EXTI1_IRQn);
 }
 
 void SystemClock_Config(void)
