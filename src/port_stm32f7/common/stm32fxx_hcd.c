@@ -374,15 +374,14 @@ tusb_speed_t hcd_port_speed_get(uint8_t rhport)
 // Initialize controller to host mode
 bool hcd_init(uint8_t rhport)
 {
-    (void)rhport;
     HAL_StatusTypeDef res = HAL_ERROR;
-    hhcd.Instance = USB_OTG_FS;
+    hhcd.Instance = (rhport == 0) ? USB_OTG_FS : USB_OTG_HS;
     hhcd.Init.Host_channels = MAX_PIPES;
     hhcd.Init.dma_enable = 0;
     hhcd.Init.low_power_enable = 0;
-    hhcd.Init.phy_itface = HCD_PHY_EMBEDDED;
+    hhcd.Init.phy_itface =  (rhport == 0) ? HCD_PHY_EMBEDDED : USB_OTG_ULPI_PHY;
     hhcd.Init.Sof_enable = 1;
-    hhcd.Init.speed = HCD_SPEED_FULL;
+    hhcd.Init.speed = (rhport == 0) ? HCD_SPEED_FULL : HCD_SPEED_HIGH;
     hhcd.Init.vbus_sensing_enable = 0;
     hhcd.Init.lpm_enable = 0;
     res = HAL_HCD_Init(&hhcd);
@@ -390,7 +389,7 @@ bool hcd_init(uint8_t rhport)
     {
         res = HAL_HCD_Start(&hhcd);
     }
-    HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
+    HAL_NVIC_EnableIRQ((rhport == 0) ? OTG_FS_IRQn : OTG_HS_IRQn);
     return (res == HAL_OK);
 }
 
