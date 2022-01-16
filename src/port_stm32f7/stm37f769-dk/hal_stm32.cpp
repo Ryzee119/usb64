@@ -7,7 +7,7 @@
 #include "fileio.h"
 #include "memory.h"
 
-UART_HandleTypeDef huart6;
+UART_HandleTypeDef huart;
 CRC_HandleTypeDef hcrc;
 
 static void SystemClock_Config(void);
@@ -67,26 +67,26 @@ void n64hal_system_init()
 void n64hal_debug_init()
 {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
-    __HAL_RCC_USART6_CLK_ENABLE();
-    __HAL_RCC_GPIOC_CLK_ENABLE();
-    GPIO_InitStruct.Pin = GPIO_PIN_7 | GPIO_PIN_6;
+    __HAL_RCC_USART1_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_9;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF8_USART6;
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+    GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    huart6.Instance = USART6;
-    huart6.Init.BaudRate = 115200;
-    huart6.Init.WordLength = UART_WORDLENGTH_8B;
-    huart6.Init.StopBits = UART_STOPBITS_1;
-    huart6.Init.Parity = UART_PARITY_NONE;
-    huart6.Init.Mode = UART_MODE_TX_RX;
-    huart6.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    huart6.Init.OverSampling = UART_OVERSAMPLING_16;
-    huart6.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-    huart6.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-    HAL_UART_Init(&huart6);
+    huart.Instance = USART1;
+    huart.Init.BaudRate = 115200;
+    huart.Init.WordLength = UART_WORDLENGTH_8B;
+    huart.Init.StopBits = UART_STOPBITS_1;
+    huart.Init.Parity = UART_PARITY_NONE;
+    huart.Init.Mode = UART_MODE_TX_RX;
+    huart.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+    huart.Init.OverSampling = UART_OVERSAMPLING_16;
+    huart.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+    huart.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+    HAL_UART_Init(&huart);
 }
 
 void n64hal_gpio_init()
@@ -179,7 +179,7 @@ void n64hal_gpio_init()
 
 void n64hal_debug_write(char c)
 {
-    HAL_UART_Transmit(&huart6, (uint8_t *)&c, 1, 5000);
+    HAL_UART_Transmit(&huart, (uint8_t *)&c, 1, 5000);
 }
 
 void n64hal_disable_interrupts()
@@ -390,7 +390,7 @@ void n64hal_read_storage(char *name, uint32_t file_offset, uint8_t *data, uint32
 
 void Error_Handler(void)
 {
-    HAL_UART_Transmit(&huart6, (uint8_t *)"Error_Handler\n", 14, 5000);
+    HAL_UART_Transmit(&huart, (uint8_t *)"Error_Handler\n", 14, 5000);
     __disable_irq();
     while (1)
     {
