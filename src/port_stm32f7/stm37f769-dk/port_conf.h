@@ -8,7 +8,6 @@
 #include "stm32f769i_discovery_lcd.h"
 #include "stm32f769i_discovery_sd.h"
 #include "stm32f769i_discovery_sdram.h"
-#include "main.h"
 
 /* PIN MAPPING - Teensy uses an Arduino Backend, we just assign the enum to the Arduino Pin number
    USB64_PIN_MAX must be the largest pin number in the list add one*/

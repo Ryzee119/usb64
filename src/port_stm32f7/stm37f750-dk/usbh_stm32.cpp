@@ -23,12 +23,12 @@ void usbh_dev_init()
     GPIO_InitTypeDef GPIO_InitStruct;
 
     //Turn on 5V output
-    GPIO_InitStruct.Pin = OTG_FS_PowerSwitchOn_Pin;
+    GPIO_InitStruct.Pin = GPIO_PIN_5;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(OTG_FS_PowerSwitchOn_GPIO_Port, &GPIO_InitStruct);
-    HAL_GPIO_WritePin(OTG_FS_PowerSwitchOn_GPIO_Port, OTG_FS_PowerSwitchOn_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_5, GPIO_PIN_RESET);
 
     //Setup USB data pins
     GPIO_InitStruct.Pin = GPIO_PIN_11 | GPIO_PIN_12;

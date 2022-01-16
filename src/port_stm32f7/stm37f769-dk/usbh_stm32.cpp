@@ -23,6 +23,8 @@ extern "C" void OTG_HS_IRQHandler(void)
 #define ULPI_D2_GPIO_Port GPIOB
 #define ULPI_D1_Pin GPIO_PIN_0
 #define ULPI_D1_GPIO_Port GPIOB
+#define ULPI_D3_Pin GPIO_PIN_10
+#define ULPI_D3_GPIO_Port GPIOB
 #define ULPI_D4_Pin GPIO_PIN_11
 #define ULPI_D4_GPIO_Port GPIOB
 #define ULPI_D6_Pin GPIO_PIN_13
