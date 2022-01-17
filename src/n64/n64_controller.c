@@ -20,6 +20,35 @@ static uint8_t n64_cont_with_peri[] = {0x05, 0x00, 0x01};
 static uint8_t n64_cont_no_peri[]   = {0x05, 0x00, 0x02};
 static uint8_t n64_cont_crc_error[] = {0x05, 0x00, 0x04};
 
+//Only works with compatible ED64 flashcarts
+static n64_game_t current_game;
+const char *n64_get_current_game()
+{
+    if (current_game.crc_hi == 0)
+    {
+        return "";
+    }
+    if (current_game.name != NULL)
+    {
+        return current_game.name;
+    };
+    //Reverse the CRC for comparison
+    uint32_t __crc = (current_game.crc_hi >> 24 & 0xFF) << 0 |
+                     (current_game.crc_hi >> 16 & 0xFF) << 8 |
+                     (current_game.crc_hi >> 8 & 0xFF) << 16 |
+                     (current_game.crc_hi >> 0 & 0xFF) << 24;
+
+    for (int i = 0; i < (sizeof(game_crc_lookup) / sizeof(n64_game_crc_lookup_t)); i++)
+    {
+        if (game_crc_lookup[i].crc_hi == __crc)
+        {
+            current_game.name = game_crc_lookup[i].name;
+            return current_game.name;
+        }
+    }
+    return "";
+}
+
 void n64_subsystem_init(n64_input_dev_t *in_dev)
 {
     // INITIALISE THE N64 STRUCTS //
@@ -44,6 +73,8 @@ void n64_subsystem_init(n64_input_dev_t *in_dev)
                         (i == 2) ? N64_CONTROLLER_3_PIN :
                         (i == 3) ? N64_CONTROLLER_4_PIN : -1;
     }
+
+    memset(&current_game, 0, sizeof(current_game));
 
     //Setup the Controller pin IO mapping and interrupts
     n64hal_hs_tick_init();
@@ -226,9 +257,11 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
             break;
         case N64_PERI_READ:
         case N64_PERI_WRITE:
+        case N64_ED64_GAMEID:
             cont->peri_access = 1;
             break;
         default:
+            debug_print_n64("[N64] Unknown command %02x\n", cont->data_buffer[N64_COMMAND_POS]);
             cont->peri_access = 0;
             n64_reset_stream(cont);
             break;
@@ -259,8 +292,26 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
         n64_reset_stream(cont);
     }
 
+    //Ref https://gitlab.com/pixelfx-public/n64-game-id
+    //ED64 sends a 10 byte packet on game launch which contains the game CRC, ROM type and country code
+    if (cont->peri_access == 1 && (cont->data_buffer[N64_COMMAND_POS] == N64_ED64_GAMEID) && cont->current_byte == 1 /*Command byte*/ + 10)
+    {
+        n64_game_t *_game = (n64_game_t *)&cont->data_buffer[1];
+        current_game.crc_hi = _game->crc_hi;
+        current_game.crc_low = _game->crc_low;
+        current_game.media_format = _game->media_format;
+        current_game.country_code = _game->country_code;
+        current_game.name = NULL;
+        debug_print_n64("[N64] ED64 Packet received... Booting Game ...\n");
+        debug_print_n64("      CRC High: %08x Low: %08x\n", current_game.crc_hi, current_game.crc_low);
+        debug_print_n64("      Media Format: %02x\n", current_game.media_format);
+        debug_print_n64("      Country Code: %02x\n", current_game.country_code);
+        cont->peri_access = 0;
+        n64_reset_stream(cont);
+    }
+
     //If we are accessing the peripheral bus, let's handle that
-    if (cont->peri_access == 1)
+    else if (cont->peri_access == 1)
     {
         uint16_t peri_address = (cont->data_buffer[N64_ADDRESS_MSB_POS] << 8 |
                                  cont->data_buffer[N64_ADDRESS_LSB_POS]);
