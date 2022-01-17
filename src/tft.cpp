@@ -262,6 +262,16 @@ void tft_force_update()
     n64_status.set_str(fileio_status_text);
     n64_status.show_window();
 
+    //Draw the current games name
+    n64_status_text = n64_get_current_game();
+    n64_status.set_surface(psurface_guilite);
+    n64_status.set_bg_color(TFT_BG_COLOR);
+    n64_status.set_font_color(GL_RGB(255, 255, 255));
+    n64_status.set_wnd_pos(125, Arial_14_GL.height * 2, 200, Arial_14_GL.height);
+    n64_status.set_font_type(&Arial_14_GL);
+    n64_status.set_str(n64_status_text);
+    n64_status.show_window();
+
     tft_dev_draw(true);
 
     _tft_update_needed = 0;
