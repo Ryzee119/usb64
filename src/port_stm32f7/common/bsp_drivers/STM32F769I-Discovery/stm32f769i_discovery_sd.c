@@ -158,7 +158,7 @@ uint8_t BSP_SD_Init(void)
     uSdHandle.Init.ClockPowerSave      = SDMMC_CLOCK_POWER_SAVE_DISABLE;
     uSdHandle.Init.BusWide             = SDMMC_BUS_WIDE_1B;
     uSdHandle.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
-    uSdHandle.Init.ClockDiv            = SDMMC_TRANSFER_CLK_DIV;
+    uSdHandle.Init.ClockDiv            = 0x2; //48MHz / (6 + 2) = 6MHZ. Default value was unreliable for me
 
   /* Msp SD Detect pin initialization */
   BSP_SD_Detect_MspInit(&uSdHandle, NULL);
