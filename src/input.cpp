@@ -13,6 +13,27 @@ input_driver_t input_devices[MAX_USB_CONTROLLERS];
 
 uint32_t hardwired1;
 
+static uint8_t kb_modifier_to_key(uint8_t modifier)
+{
+    if (modifier & KEYBOARD_MODIFIER_LEFTCTRL)
+        return HID_KEY_CONTROL_LEFT;
+    if (modifier & KEYBOARD_MODIFIER_LEFTSHIFT)
+        return HID_KEY_SHIFT_LEFT;
+    if (modifier & KEYBOARD_MODIFIER_LEFTALT)
+        return HID_KEY_ALT_LEFT;
+    if (modifier & KEYBOARD_MODIFIER_LEFTGUI)
+        return HID_KEY_GUI_LEFT;
+    if (modifier & KEYBOARD_MODIFIER_RIGHTCTRL)
+        return HID_KEY_CONTROL_RIGHT;
+    if (modifier & KEYBOARD_MODIFIER_RIGHTSHIFT)
+        return HID_KEY_SHIFT_RIGHT;
+    if (modifier & KEYBOARD_MODIFIER_RIGHTALT)
+        return HID_KEY_ALT_RIGHT;
+    if (modifier & KEYBOARD_MODIFIER_RIGHTGUI)
+        return HID_KEY_GUI_RIGHT;
+    return 0;
+}
+
 static input_driver_t *find_slot(uint16_t uid)
 {
     //See if input device already exists
@@ -265,7 +286,6 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
         //N64 report is basically a n64 controller response
         n64_buttonmap *state = (n64_buttonmap *)response;
         hid_mouse_report_t *report = (hid_mouse_report_t *)in_dev->data;
-        bool new_data = state->x_axis != report->x || state->y_axis != -report->y;
 
         state->dButtons = 0;
         state->x_axis = report->x;
@@ -282,7 +302,57 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
             report->y = 0;
         }
     }
+    else if (input_is(id, INPUT_KEYBOARD))
+    {
+        n64_randnet_kb *new_state = (n64_randnet_kb *)response;
+        hid_keyboard_report_t *report = (hid_keyboard_report_t *)in_dev->data;
+        memset(new_state->buttons, 0, sizeof(new_state->buttons));
+        new_state->flags = 0;
 
+        //https://sites.google.com/site/consoleprotocols/home/nintendo-joy-bus-documentation/n64-specific/randnet-keyboard
+        uint8_t a = 0, b = 0, c = 0;
+        uint8_t mod = report->modifier;
+        uint8_t hid_keyboard_press = kb_modifier_to_key(mod & (1 << c));
+        mod &= ~(1 << c);
+        while (a < RANDNET_MAX_BUTTONS && b < sizeof(report->keycode))
+        {
+            if (hid_keyboard_press != 0)
+            {
+                //report outputs 1 if too many keys are pressed on the keyboard
+                if (hid_keyboard_press == 1)
+                {
+                    new_state->flags |= RANDNET_FLAG_EXCESS_BUTTONS;
+                    break;
+                }
+                //Randnet has a status flag for the home button.
+                if (hid_keyboard_press == HID_KEY_HOME)
+                {
+                    new_state->flags |= RANDNET_FLAG_HOME_KEY;
+                    break;
+                }
+                //Handle all other key presses
+                for (uint32_t d = 0; d < (sizeof(randnet_map) / sizeof(randnet_map_t)); d++)
+                {
+                    if (hid_keyboard_press == randnet_map[d].keypad)
+                    {
+                        new_state->buttons[a++] = randnet_map[d].randnet_matrix;
+                        break;
+                    }
+                }
+            }
+            //Get the next key (modifier or normal key)
+            if (mod)
+            {
+                c++;
+                hid_keyboard_press = kb_modifier_to_key(mod & (1 << c));
+                mod &= ~(1 << c);
+            }
+            else
+            {
+                hid_keyboard_press = report->keycode[b++];
+            }
+        }
+    }
     return 1;
 }
 
