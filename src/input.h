@@ -9,7 +9,7 @@
 
 typedef struct
 {
-    uint16_t keypad;
+    uint8_t keypad;
     uint16_t randnet_matrix;
 } randnet_map_t;
 
@@ -86,10 +86,10 @@ static const randnet_map_t randnet_map[] PROGMEM = {
     {HID_KEY_MINUS, 0x1004},       //- (Long dash)
     {HID_KEY_ARROW_UP, 0x0204},          //Up Cursor
     {HID_KEY_SHIFT_RIGHT, 0x0E06},             //Right Shift
-    {103, 0x1107},             //Ctrl
-    {110, 0x0F07},             //Opt
+    {HID_KEY_CONTROL_LEFT, 0x1107},//Ctrl
+    {HID_KEY_GUI_LEFT, 0x0F07},    //Opt
     {HID_KEY_SEMICOLON, 0x1105},   //| (Pipes)
-    {105, 0x1008},             //Alt
+    {HID_KEY_ALT_LEFT, 0x1008},    //Alt
     {HID_KEY_KEYPAD_1, 0x1002},        //Japanese 'alphanumeric key'
     {HID_KEY_SPACE, 0x0602},       //Space
     {HID_KEY_KEYPAD_2, 0x0E02},        //Japanese 'kana'
