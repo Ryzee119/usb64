@@ -19,11 +19,15 @@ typedef enum {
 
 /* TFT DISPLAY */
 #define ENABLE_TFT_DISPLAY 1
-#define TFT_ROTATION 1 //0-3
+//Draw to a framebuffer, which you can then send to a screen (via DMA etc)
+#define TFT_USE_FRAMEBUFFER 0
 #define TFT_WIDTH 320
 #define TFT_HEIGHT 240
-#define TFT_PIXEL_SIZE 2
-#define TFT_USE_FRAMEBUFFER 1
+//The TFT image is drawn within the framebuffer size. You can have this differ from above
+//if you dont want to draw into the entire screen space.
+#define TFT_FRAMEBUFFER_WIDTH 320
+#define TFT_FRAMEBUFFER_HEIGHT 240
+#define TFT_PIXEL_SIZE 2 //16bpp = 2, 32bpp = 4
 
 /* Optional, to save RAM, define for variables to store in flash only */
 #ifndef PROGMEM
