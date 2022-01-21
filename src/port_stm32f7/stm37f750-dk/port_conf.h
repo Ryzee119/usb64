@@ -55,8 +55,10 @@ typedef enum {
 #define ENABLE_TFT_DISPLAY 1
 #define TFT_WIDTH 480
 #define TFT_HEIGHT 272
+//Want one of these dimensions to be to a multiple of above
+#define TFT_FRAMEBUFFER_WIDTH 362
+#define TFT_FRAMEBUFFER_HEIGHT 272
 #define TFT_PIXEL_SIZE 4
-#define TFT_USE_FRAMEBUFFER 0
 
 /* Define for variables to store in flash only */
 #ifndef PROGMEM
