@@ -14,6 +14,8 @@
 #include "controller_icon.h"
 #include "usb64_logo.h"
 
+static const int WIDTH = TFT_FRAMEBUFFER_WIDTH;
+static const int HEIGHT = TFT_FRAMEBUFFER_HEIGHT;
 static uint8_t _tft_page = 0;
 static uint8_t _tft_page_changed = 1;
 static uint8_t _tft_max_pages = 2;
@@ -93,7 +95,7 @@ FLASHMEM void tft_init()
         return;
     }
     
-    psurface_guilite->fill_rect(0, 0, TFT_WIDTH, TFT_HEIGHT, TFT_BG_COLOR, Z_ORDER_LEVEL_0);
+    psurface_guilite->fill_rect(0, 0, WIDTH, HEIGHT, TFT_BG_COLOR, Z_ORDER_LEVEL_0);
 
     static c_image usb64_image;
     memset(&usb64_image, 0, sizeof(c_image));
@@ -125,7 +127,7 @@ void tft_try_update()
     //ffmpeg -vcodec rawvideo -f rawvideo -pix_fmt rgb565le -s 320x240 -i tft_dump.bin -f image2 -vcodec png tft_dump.png
     if (n64hal_millis() > 10000)
     {
-        fileio_write_to_file("tft_dump.bin", (uint8_t *)tft_dev_get_fb(), TFT_WIDTH * TFT_HEIGHT * 2);
+        fileio_write_to_file("tft_dump.bin", (uint8_t *)tft_dev_get_fb(), WIDTH * HEIGHT * 2);
         debug_print_status("TFT framebuffer dumped\n");
         while (1) yield();
     }
@@ -159,7 +161,7 @@ void tft_force_update()
         _tft_page_changed = 0;
         if (_tft_page == 0)
         {
-            psurface_guilite->fill_rect(0, 40, TFT_WIDTH, TFT_HEIGHT, TFT_BG_COLOR, Z_ORDER_LEVEL_0);
+            psurface_guilite->fill_rect(0, 40, WIDTH, HEIGHT, TFT_BG_COLOR, Z_ORDER_LEVEL_0);
             static c_image controller_image;
             BITMAP_INFO _image;
             memset(&controller_image, 0, sizeof(c_image));
@@ -167,14 +169,14 @@ void tft_force_update()
             _image.height = 45;
             _image.width = 48;
             _image.pixel_color_array = controller_icon;
-            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((TFT_HEIGHT - 45) * 0 / 4), TFT_BG_COLOR);
-            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((TFT_HEIGHT - 45) * 1 / 4), TFT_BG_COLOR);
-            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((TFT_HEIGHT - 45) * 2 / 4), TFT_BG_COLOR);
-            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((TFT_HEIGHT - 45) * 3 / 4), TFT_BG_COLOR);
+            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((HEIGHT - 45) * 0 / 4), TFT_BG_COLOR);
+            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((HEIGHT - 45) * 1 / 4), TFT_BG_COLOR);
+            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((HEIGHT - 45) * 2 / 4), TFT_BG_COLOR);
+            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((HEIGHT - 45) * 3 / 4), TFT_BG_COLOR);
         }
         else if (_tft_page == 1)
         {
-            psurface_guilite->fill_rect(0, 40, TFT_WIDTH, TFT_HEIGHT, TFT_BG_COLOR, Z_ORDER_LEVEL_0);
+            psurface_guilite->fill_rect(0, 40, WIDTH, HEIGHT, TFT_BG_COLOR, Z_ORDER_LEVEL_0);
         }
     }
 
@@ -188,7 +190,7 @@ void tft_force_update()
             controller_status[i].set_surface(psurface_guilite);
             controller_status[i].set_bg_color(TFT_BG_COLOR);
             controller_status[i].set_font_color(colour);
-            controller_status[i].set_wnd_pos(50, (45 + 0) + ((TFT_HEIGHT - 45) * i / 4), TFT_WIDTH, Arial_19_GL.height);
+            controller_status[i].set_wnd_pos(50, (45 + 0) + ((HEIGHT - 45) * i / 4), WIDTH, Arial_19_GL.height);
             controller_status[i].set_font_type(&Arial_19_GL);
             controller_status[i].set_str(n64_peri_to_string(&n64_in_dev[i]));
             controller_status[i].show_window();
@@ -197,7 +199,7 @@ void tft_force_update()
             controller_id[i].set_surface(psurface_guilite);
             controller_id[i].set_font_color(colour);
             controller_id[i].set_bg_color(TFT_BG_COLOR);
-            controller_id[i].set_wnd_pos(50, (45 + 20) + ((TFT_HEIGHT - 45) * i / 4), TFT_WIDTH, Arial_19_GL.height);
+            controller_id[i].set_wnd_pos(50, (45 + 20) + ((HEIGHT - 45) * i / 4), WIDTH, Arial_19_GL.height);
             controller_id[i].set_font_type(&Arial_19_GL);
             controller_id[i].set_str(text_buff);
             controller_id[i].show_window();
@@ -205,7 +207,7 @@ void tft_force_update()
     }
     else if (_tft_page == 1)
     {
-        psurface_guilite->fill_rect(0, 40, TFT_WIDTH, TFT_HEIGHT, TFT_BG_COLOR, Z_ORDER_LEVEL_0);
+        psurface_guilite->fill_rect(0, 40, WIDTH, HEIGHT, TFT_BG_COLOR, Z_ORDER_LEVEL_0);
         for (int i = 0; i < _tft_log_max_lines; i++)
         {
             if (_tft_log_text_lines[i] == NULL)
@@ -214,7 +216,7 @@ void tft_force_update()
             tft_log[i].set_surface(psurface_guilite);
             tft_log[i].set_bg_color(TFT_BG_COLOR);
             tft_log[i].set_font_color(GL_RGB(255, 255, 255));
-            tft_log[i].set_wnd_pos(0, 45 + i * Arial_14_GL.height, TFT_WIDTH, Arial_14_GL.height);
+            tft_log[i].set_wnd_pos(0, 45 + i * Arial_14_GL.height, WIDTH, Arial_14_GL.height);
             tft_log[i].set_font_type(&Arial_14_GL);
             tft_log[i].set_str(_tft_log_text_lines[i]);
             tft_log[i].show_window();
@@ -237,7 +239,7 @@ void tft_force_update()
     n64_status.set_surface(psurface_guilite);
     n64_status.set_bg_color(TFT_BG_COLOR);
     n64_status.set_font_color(colour);
-    n64_status.set_wnd_pos(TFT_WIDTH - (10 * 8), 0, 100, Arial_14_GL.height);
+    n64_status.set_wnd_pos(WIDTH - (10 * 8), 0, 100, Arial_14_GL.height);
     n64_status.set_font_type(&Arial_14_GL);
     n64_status.set_str(n64_status_text);
     n64_status.show_window();
