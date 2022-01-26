@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        board: [teensy41,template]
+        board: [teensy41,disco_f769ni,disco_f750n8,template]
 
     steps:
     - name: Checkout repo
@@ -52,15 +52,16 @@ jobs:
         platformio run -e ${{ matrix.board }}
         # platformio system prune --force
 
-    - name: Upload firmware artifact to current run
+    - if: matrix.board != 'template'
+      name: Upload firmware artifact to current run
       uses: actions/upload-artifact@v2
       with:
         name: test-firmware-${{ matrix.board }}
         path: |
           .pio/build/**/*.hex
-          .pio/build/**/*.bin
+          # .pio/build/**/*.bin # Should not be required for any boards, and makes upload file size incorrect!
           .pio/build/**/*.elf
-          .pio/build/**/*.map
+          # .pio/build/**/*.map # Currently not generated.
 
     - if: github.event_name == 'push' && github.ref == 'refs/heads/master' #TODO handle previews
       name: Create Release
@@ -72,7 +73,7 @@ jobs:
         draft: false
         prerelease: false
 
-    - if: github.event_name == 'push' && github.ref == 'refs/heads/master' #TODO handle previews
+    - if: github.event_name == 'push' && github.ref == 'refs/heads/master' && matrix.board != 'template' #TODO handle previews
       name: Upload binary for release
       id: upload-release-asset 
       uses: actions/upload-release-asset@v1
