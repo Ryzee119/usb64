@@ -39,8 +39,8 @@ typedef enum
 typedef enum
 {
     PERI_NONE,
-    PERI_RUMBLE,
-    PERI_MEMPAK,
+    PERI_RPAK,
+    PERI_CPAK,
     PERI_TPAK
 } n64_peri_type;
 
@@ -55,11 +55,11 @@ typedef struct
     n64_input_type type;              //Store the type of input device. Controller, Mouse. Randnet etc.
     n64_buttonmap b_state;            //N64 controller button and analog stick map
     n64_randnet_kb kb_state;          //Randnet keyboard object
-    n64_peri_type current_peripheral; //Peripheral flag, PERI_NONE, PERI_RUMBLE, PERI_MEMPAK, PERI_TPAK
+    n64_peri_type current_peripheral; //Peripheral flag, PERI_NONE, PERI_RPAK, PERI_CPAK, PERI_TPAK
     n64_peri_type next_peripheral;    //What Peripheral to change to next after timer
     n64_transferpak *tpak;            //Pointer to installed transferpak
     n64_rumblepak *rpak;              //Pointer to installed rumblepak
-    n64_mempack *mempack;             //Pointer to installed mempack
+    n64_controllerpak *cpak;          //Pointer to installed controllerpak
                                       //
     uint32_t interrupt_attached;      //Flag is set when this controller is connected to an ext int.
     uint32_t bus_idle_timer_clks;     //Timer counter for bus idle timing
@@ -126,9 +126,9 @@ typedef struct
 #define RANDNET_FLAG_EXCESS_BUTTONS    (1 << 4)
 
 //Mempak
-#define MEMPAK_SIZE 32768
-#define MAX_MEMPAKS MAX_CONTROLLERS
-#define VIRTUAL_PAK MAX_MEMPAKS
+#define CPAK_SIZE 32768
+#define MAX_CPAKS MAX_CONTROLLERS
+#define VIRTUAL_PAK MAX_CPAKS
 
 void n64_subsystem_init(n64_input_dev_t *in_dev);
 void n64_controller_hande_new_edge(n64_input_dev_t *cont);

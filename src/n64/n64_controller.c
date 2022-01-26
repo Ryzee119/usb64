@@ -9,7 +9,7 @@
 //#define USE_N64_ADDRESS_CRC
 
 n64_rumblepak n64_rpak[MAX_CONTROLLERS];
-n64_mempack n64_mpack[MAX_CONTROLLERS];
+n64_controllerpak n64_cpak[MAX_CONTROLLERS];
 n64_transferpak n64_tpak[MAX_CONTROLLERS];
 gameboycart gb_cart[MAX_CONTROLLERS];
 
@@ -57,12 +57,12 @@ void n64_subsystem_init(n64_input_dev_t *in_dev)
         in_dev[i].id = i;
         in_dev[i].current_bit = 7;
         in_dev[i].current_byte = 0;
-        in_dev[i].current_peripheral = PERI_RUMBLE;
+        in_dev[i].current_peripheral = PERI_RPAK;
         in_dev[i].next_peripheral = in_dev[i].current_peripheral;
         in_dev[i].rpak = &n64_rpak[i];
-        in_dev[i].mempack = &n64_mpack[i];
-        in_dev[i].mempack->id = VIRTUAL_PAK;
-        in_dev[i].mempack->data = NULL;
+        in_dev[i].cpak = &n64_cpak[i];
+        in_dev[i].cpak->id = VIRTUAL_PAK;
+        in_dev[i].cpak->data = NULL;
         in_dev[i].tpak = &n64_tpak[i];
         in_dev[i].tpak->gbcart = &gb_cart[i];
         in_dev[i].interrupt_attached = false;
@@ -341,7 +341,7 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
             {
                 case 0x0:
                     //VIRTUAL MEMPAK NOTE TABLE HOOK
-                    if (cont->mempack->virtual_is_active && cont->current_peripheral == PERI_MEMPAK &&
+                    if (cont->cpak->virtual_is_active && cont->current_peripheral == PERI_CPAK &&
                         peri_address >= 0x300 && peri_address < 0x500)
                     {
                         /*
@@ -352,8 +352,8 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
                          * I use this as a hacky menu for the N64
                          */
                         uint32_t row = (peri_address - 0x300) / 0x20; //What row you have 'selected' 0-15
-                        cont->mempack->virtual_update_req = 1;
-                        cont->mempack->virtual_selected_row = row;
+                        cont->cpak->virtual_update_req = 1;
+                        cont->cpak->virtual_selected_row = row;
                         debug_print_n64("[N64] Virtualpak write at row %u\n", row);
                         break;
                     }
@@ -365,8 +365,8 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
                 case 0x5:
                 case 0x6:
                 case 0x7:
-                    if (cont->current_peripheral == PERI_MEMPAK && !cont->crc_error)
-                        n64_mempack_write32(cont->mempack, peri_address, &cont->data_buffer[N64_DATA_POS]);
+                    if (cont->current_peripheral == PERI_CPAK && !cont->crc_error)
+                        n64_cpak_write32(cont->cpak, peri_address, &cont->data_buffer[N64_DATA_POS]);
                     break;
                 case 0x8:
                     if (cont->current_peripheral == PERI_TPAK)
@@ -376,7 +376,7 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
                         (cont->data_buffer[N64_DATA_POS] == 0xFE) ? tpak_reset(cont->tpak)      : (0);
                         debug_print_tpak("[TPAK] Powerstate set to %u\n", cont->tpak->power_state);
                     }
-                    else if (cont->current_peripheral == PERI_RUMBLE)
+                    else if (cont->current_peripheral == PERI_RPAK)
                     {
                         //N64 writes 32 bytes of 0x80 to initialise the rumblepak, 0xFE to reset it
                         (cont->data_buffer[N64_DATA_POS] == 0x80) ? cont->rpak->initialised = 1 : (0);
@@ -401,7 +401,7 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
                     }
                     break;
                 case 0xC:
-                     if (cont->current_peripheral == PERI_RUMBLE)
+                     if (cont->current_peripheral == PERI_RPAK)
                      {
                          (cont->data_buffer[N64_DATA_POS] == 0x01) ? (cont->rpak->state = RUMBLE_START) :
                                                                      (cont->rpak->state = RUMBLE_STOP);
@@ -483,15 +483,15 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
                 case 0x5:
                 case 0x6:
                 case 0x7:
-                    if (cont->current_peripheral == PERI_MEMPAK)
+                    if (cont->current_peripheral == PERI_CPAK)
                     {
-                        n64_mempack_read32(cont->mempack, peri_address, &cont->data_buffer[N64_DATA_POS]);
+                        n64_cpak_read32(cont->cpak, peri_address, &cont->data_buffer[N64_DATA_POS]);
                     }
                     break;
                 case 0x8:
                 case 0x9:
                     //If rumblepak is initialised, respond with 32bytes of 0x80.
-                    if (cont->current_peripheral == PERI_RUMBLE && cont->rpak->initialised == 1)
+                    if (cont->current_peripheral == PERI_RPAK && cont->rpak->initialised == 1)
                     {
                         memset(&cont->data_buffer[N64_DATA_POS], 0x80, 32);
                         debug_print_n64("[N64] Request rumblepak state. Sending 0x80s (its initialised)\n");

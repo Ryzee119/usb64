@@ -28,8 +28,8 @@ extern "C" {
 #define MENU_NAME_FIELD 0
 #define MENU_EXT_FIELD 1
 
-void n64_virtualpak_init(n64_mempack *vpak);
-void n64_virtualpak_update(n64_mempack *vpak);
+void n64_virtualpak_init(n64_controllerpak *vpak);
+void n64_virtualpak_update(n64_controllerpak *vpak);
 void n64_virtualpak_read32(uint16_t address, uint8_t *rx_buff);
 void n64_virtualpak_write32(uint16_t address, uint8_t *tx_buff);
 void n64_virtualpak_write_info_1(char* msg);
