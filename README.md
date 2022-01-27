@@ -6,14 +6,14 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 **NOTE: This project is still in development, PRs and ideas are welcome. See todo list for ideas.**
 
 - [x] N64 controller emulation (up to four controllers at once!).
-- [x] Rumblepak emulation.
-- [x] Mempak emulation with four selectable banks. Technically unlimited.
-- [x] Transferpak emulation. Put Gameboy ROMS on an SD Card!
+- [x] Rumble Pak emulation.
+- [x] Controller Pak emulation with four selectable banks. Technically unlimited.
+- [x] Transfer Pak emulation. Put Gameboy ROMS on an SD Card!
 - [x] N64 mouse emulation. Use a USB Mouse!
 - [x] N64 Randnet emulation. Use a USB keyboard!
 - [x] Configurable deadzones and sensitivity from the N64 Console.
 - [x] True dual analog sticks with GoldenEye and Perfect Dark.
-- [x] SD card driver with FATFS support for storage/backup of Gameboy ROMS, mempaks etc.
+- [x] SD card driver with FATFS support for storage/backup of Gameboy ROMS, controller paks etc.
 - [x] A single hardwired controller interface for ultimate hacking.
 - [x] Optional TFT LCD Support.
 
@@ -36,10 +36,10 @@ Precompiled binaries can be downloaded from [Releases](https://github.com/Ryzee1
 - A hardwired controller, use your own buttons etc.
 
 ## Controls
-- Back + D-Pad = Insert Mempak banks 1 to 4
+- Back + D-Pad = Insert Controller Pak banks 0 to 3
 - Back + LB = Insert Rumblepak
 - Back + RB = Insert Transferpak
-- Back + Start = Select *virtual pak* (Use in-game mempak managers to configure the device)
+- Back + Start = Select *virtual pak* (Use in-game Controller Pak managers to configure the device)
 - Back + B = Switch to true dual-analog stick more for GoldenEye 007/Perfect Dark
 - Back + A = Backup buffered memory to SD Card **(DO THIS BEFORE POWER OFF!)**
 
