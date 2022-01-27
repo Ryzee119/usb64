@@ -30,7 +30,7 @@ uint8_t n64_virtualpak_scratch[0x20] = {
     0x81, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
     0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F};
 
-//First 0x300 bytes of mempak. I took this from a mempak I generated on my n64.
+//First 0x300 bytes of controller pak. I took this from a controller pak I generated on my n64.
 //const as the console only needs to read from this area
 const uint8_t n64_virtualpak_header[0x300] PROGMEM = {
     0x81, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
@@ -82,7 +82,7 @@ const uint8_t n64_virtualpak_header[0x300] PROGMEM = {
     0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03,
     0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03};
 
-//This is the notesTable located at address 0x300 to 0x500 in the mempack address space.
+//This is the notesTable located at address 0x300 to 0x500 in the cpak address space.
 //This initialises the title blocks as all blank titles using 1 page each.
 //Basically what is displayed on the mempak manager page.
 /* 0x4E = N (Media Type Cartridge)
@@ -142,7 +142,7 @@ uint8_t n64_virtualpak_note_table[0x200] = {
 static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
 {
     //Obtained from pulling known save titles and a bit of trial and error
-    static const uint8_t MEMPACK_CHARMAP[] =
+    static const uint8_t CPAK_CHARMAP[] =
         {
             '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
             ' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -173,9 +173,9 @@ static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
             msg[i] = '-'; //replace _ with -
 
         //Find a match in the CHARMAP
-        for (uint32_t j = 0; j < sizeof(MEMPACK_CHARMAP); j++)
+        for (uint32_t j = 0; j < sizeof(CPAK_CHARMAP); j++)
         {
-            if (msg[i] == MEMPACK_CHARMAP[j])
+            if (msg[i] == CPAK_CHARMAP[j])
                 n64char = j;
         }
 
@@ -195,7 +195,7 @@ static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
     }
 }
 
-void n64_virtualpak_init(n64_mempack *vpak)
+void n64_virtualpak_init(n64_controllerpak *vpak)
 {
     vpak->virtual_is_active = 1;
     vpak->virtual_selected_row = MENU_MAIN;
@@ -252,7 +252,7 @@ void n64_virtualpak_write32(uint16_t address, uint8_t *tx_buff)
         memcpy(&n64_virtualpak_scratch[address], tx_buff, 32);
 }
 
-void n64_virtualpak_update(n64_mempack *vpak)
+void n64_virtualpak_update(n64_controllerpak *vpak)
 {
     n64_settings *settings = n64_settings_get();
     if (settings == NULL)

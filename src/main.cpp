@@ -281,10 +281,10 @@ void loop()
             timer_peri_change[c] = n64hal_millis();
 
             /* CLEAR CURRENT PERIPHERALS */
-            if (n64_in_dev[c].mempack != NULL)
+            if (n64_in_dev[c].cpak != NULL)
             {
-                n64_in_dev[c].mempack->data = NULL;
-                n64_in_dev[c].mempack->id = VIRTUAL_PAK;
+                n64_in_dev[c].cpak->data = NULL;
+                n64_in_dev[c].cpak->id = VIRTUAL_PAK;
             }
 
             if (n64_in_dev[c].tpak != NULL)
@@ -317,7 +317,7 @@ void loop()
             //Changing peripheral to RUMBLEPAK
             if (n64_buttons & N64_LB)
             {
-                n64_in_dev[c].next_peripheral = PERI_RUMBLE;
+                n64_in_dev[c].next_peripheral = PERI_RPAK;
                 debug_print_status("[MAIN] C%u to rpak\n", c);
             }
 
@@ -353,7 +353,7 @@ void loop()
 
                     if (gb_cart->rom == NULL || (gb_cart->ram == NULL && gb_cart->ramsize > 0))
                     {
-                        n64_in_dev[c].next_peripheral = PERI_RUMBLE; //Error, just set to rumblepak
+                        n64_in_dev[c].next_peripheral = PERI_RPAK; //Error, just set to rumblepak
                         debug_print_error("[MAIN] ERROR: Could not allocate rom or ram buffer for %s\n", n64_in_dev[c].tpak->gbcart->filename);
                         n64_in_dev[c].tpak->gbcart->romsize = 0;
                         n64_in_dev[c].tpak->gbcart->ramsize = 0;
@@ -363,7 +363,7 @@ void loop()
                 }
                 else
                 {
-                    n64_in_dev[c].next_peripheral = PERI_RUMBLE; //Error, just set to rumblepak
+                    n64_in_dev[c].next_peripheral = PERI_RPAK; //Error, just set to rumblepak
                     if (gb_cart->filename[0] == '\0')
                         debug_print_error("[MAIN] ERROR: No default TPAK ROM set or no ROMs found\n");
                     else if (memory_get_ext_ram_size() == 0)
@@ -373,58 +373,59 @@ void loop()
                 }
             }
 
-            //Changing peripheral to MEMPAK
+            //Changing peripheral to CPAK
             if ((n64_buttons & N64_DU || n64_buttons & N64_DD ||
                  n64_buttons & N64_DL || n64_buttons & N64_DR ||
                  n64_buttons & N64_ST))
             {
-                n64_in_dev[c].next_peripheral = PERI_MEMPAK;
+                n64_in_dev[c].next_peripheral = PERI_CPAK;
 
-                //Allocate mempack based on combo if available
-                uint32_t mempak_bank = 0;
+                //Allocate cpak based on combo if available
+                uint32_t cpak_bank_num = 0;
                 uint16_t b = n64_buttons;
-                (b & N64_DU) ? mempak_bank = 0 : (0);
-                (b & N64_DR) ? mempak_bank = 1 : (0);
-                (b & N64_DD) ? mempak_bank = 2 : (0);
-                (b & N64_DL) ? mempak_bank = 3 : (0);
-                (b & N64_ST) ? mempak_bank = VIRTUAL_PAK : (0);
+                (b & N64_DU) ? cpak_bank_num = 0 : (0);
+                (b & N64_DR) ? cpak_bank_num = 1 : (0);
+                (b & N64_DD) ? cpak_bank_num = 2 : (0);
+                (b & N64_DL) ? cpak_bank_num = 3 : (0);
+                (b & N64_ST) ? cpak_bank_num = VIRTUAL_PAK : (0);
 
                 //Create the filename
                 char filename[32];
-                snprintf(filename, sizeof(filename), "MEMPAK%02u%s", (unsigned int)mempak_bank, MEMPAK_SAVE_EXT);
+                snprintf(filename, sizeof(filename), "CONTROLLER_PAK_%02u%s", (unsigned int)cpak_bank_num, CPAK_SAVE_EXT);
 
-                //Scan controllers to see if mempack is in use
+                //Scan controllers to see if cpak is in use
                 for (uint32_t i = 0; i < MAX_CONTROLLERS; i++)
                 {
-                    if (n64_in_dev[i].mempack->id == mempak_bank && mempak_bank != VIRTUAL_PAK)
+                    if (n64_in_dev[i].cpak->id == cpak_bank_num && cpak_bank_num != VIRTUAL_PAK)
                     {
-                        debug_print_status("[MAIN] WARNING: mpak in use by C%u. Setting to rpak\n", i);
-                        n64_in_dev[c].next_peripheral = PERI_RUMBLE;
+                        debug_print_status("[MAIN] WARNING: cpak in use by C%u. Setting to rpak\n", i);
+                        n64_in_dev[c].next_peripheral = PERI_RPAK;
                         break;
                     }
                 }
 
-                //Mempack wasn't in use, so allocate it in ram
-                if (n64_in_dev[c].next_peripheral != PERI_RUMBLE && mempak_bank != VIRTUAL_PAK)
+                //cpak wasn't in use, so allocate it in ram
+                if (n64_in_dev[c].next_peripheral != PERI_RPAK && cpak_bank_num != VIRTUAL_PAK)
                 {
-                    n64_in_dev[c].mempack->data = memory_alloc_ram(filename, MEMPAK_SIZE, MEMORY_READ_WRITE);
+                    n64_in_dev[c].cpak->data = memory_alloc_ram(filename, CPAK_SIZE, MEMORY_READ_WRITE);
+                    //TODO: create an initalized CPAK data if file is empty or does not exist?!
                 }
 
-                if (n64_in_dev[c].mempack->data != NULL)
+                if (n64_in_dev[c].cpak->data != NULL)
                 {
-                    debug_print_status("[MAIN] C%u to mpak %u\n", c, mempak_bank);
-                    n64_in_dev[c].mempack->virtual_is_active = 0;
-                    n64_in_dev[c].mempack->id = mempak_bank;
+                    debug_print_status("[MAIN] C%u to cpak %u\n", c, cpak_bank_num);
+                    n64_in_dev[c].cpak->virtual_is_active = 0;
+                    n64_in_dev[c].cpak->id = cpak_bank_num;
                 }
-                else if (mempak_bank == VIRTUAL_PAK)
+                else if (cpak_bank_num == VIRTUAL_PAK)
                 {
-                    debug_print_status("[MAIN] C%u to virtual pak\n", c);
-                    n64_virtualpak_init(n64_in_dev[c].mempack);
+                    debug_print_status("[MAIN] C%u to virtual cpak\n", c);
+                    n64_virtualpak_init(n64_in_dev[c].cpak);
                 }
                 else
                 {
                     debug_print_error("[MAIN] ERROR: Could not alloc RAM for %s, setting to rpak\n", filename);
-                    n64_in_dev[c].next_peripheral = PERI_RUMBLE;
+                    n64_in_dev[c].next_peripheral = PERI_RPAK;
                 }
             }
         }
@@ -438,11 +439,11 @@ void loop()
         }
 
         //Update the virtual pak if required
-        if (n64_in_dev[c].mempack->virtual_update_req == 1)
+        if (n64_in_dev[c].cpak->virtual_update_req == 1)
         {
             //For the USB64-INFO1 Page, I write the controller info (PID,VID etc)
             char msg[256];
-            n64_virtualpak_update(n64_in_dev[c].mempack); //Update so we get the right page
+            n64_virtualpak_update(n64_in_dev[c].cpak); //Update so we get the right page
             uint8_t c_page = n64_virtualpak_get_controller_page();
             sprintf(msg, "%u:0x%04x/0x%04x\n%.15s\n%.15s\n",
                         c_page + 1,
@@ -453,7 +454,7 @@ void loop()
             n64_virtualpak_write_info_1(msg);
 
             //Normal update
-            n64_virtualpak_update(n64_in_dev[c].mempack);
+            n64_virtualpak_update(n64_in_dev[c].cpak);
         }
 
     } //END FOR LOOP

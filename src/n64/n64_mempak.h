@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-#define MEMPAK_SIZE 32768
+#define CPAK_SIZE 32768
 
 typedef struct
 {
@@ -18,10 +18,10 @@ typedef struct
     uint32_t virtual_is_active;
     uint32_t virtual_update_req;
     uint32_t virtual_selected_row;
-} n64_mempack;
+} n64_controllerpak;
 
-void n64_mempack_read32(n64_mempack *mempack, uint16_t address, uint8_t *rx_buff);
-void n64_mempack_write32(n64_mempack *mempack, uint16_t address, uint8_t *tx_buff);
+void n64_cpak_read32(n64_controllerpak *cpak, uint16_t address, uint8_t *rx_buff);
+void n64_cpak_write32(n64_controllerpak *cpak, uint16_t address, uint8_t *tx_buff);
 
 #ifdef __cplusplus
 }
