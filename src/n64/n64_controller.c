@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "n64_controller.h"
+#include "n64_rom_database.h"
 
 //Uncomment to enable mempak READ address CRC checks.
 //May cause timing issues.
@@ -20,33 +21,35 @@ static uint8_t n64_cont_with_peri[] = {0x05, 0x00, 0x01};
 static uint8_t n64_cont_no_peri[]   = {0x05, 0x00, 0x02};
 static uint8_t n64_cont_crc_error[] = {0x05, 0x00, 0x04};
 
-//Only works with compatible ED64 flashcarts
-static n64_game_t current_game;
-const char *n64_get_current_game()
-{
-    if (current_game.crc_hi == 0)
-    {
-        return "";
-    }
-    if (current_game.name != NULL)
-    {
-        return current_game.name;
-    };
-    //Reverse the CRC for comparison
-    uint32_t __crc = (current_game.crc_hi >> 24 & 0xFF) << 0 |
-                     (current_game.crc_hi >> 16 & 0xFF) << 8 |
-                     (current_game.crc_hi >> 8 & 0xFF) << 16 |
-                     (current_game.crc_hi >> 0 & 0xFF) << 24;
+/* Currently only works with ED64 flashcarts with OS3.05 or (unofficial OS2.12.9.1) and above
+   Implementation is OSS and will hopefully be addopted by to other flashcarts! */
+static n64_rom_t current_rom;
 
-    for (int i = 0; i < (sizeof(game_crc_lookup) / sizeof(n64_game_crc_lookup_t)); i++)
+const char *n64_get_current_rom()
+{
+    if (current_rom.name != NULL)
     {
-        if (game_crc_lookup[i].crc_hi == __crc)
-        {
-            current_game.name = game_crc_lookup[i].name;
-            return current_game.name;
-        }
+        return current_rom.name;
     }
-    return "";
+    else if(current_rom.crc_hi != 0)
+    {
+        //Reverse the CRC for comparison
+        uint32_t __crc = (current_rom.crc_hi >> 24 & 0xFF) << 0 |
+                         (current_rom.crc_hi >> 16 & 0xFF) << 8 |
+                         (current_rom.crc_hi >> 8 & 0xFF) << 16 |
+                         (current_rom.crc_hi >> 0 & 0xFF) << 24;
+
+        for (int i = 0; i < (sizeof(rom_crc_lookup) / sizeof(n64_rom_crc_lookup_t)); i++)
+        {
+            if (rom_crc_lookup[i].crc_hi == __crc)
+            {
+                current_rom.name = rom_crc_lookup[i].name;
+                return current_rom.name;
+            }
+        }
+        return "ROM CRC NOT FOUND"; //current_rom.crc_hi; //TODO: return the CRC_HI, for indication.
+    }
+    return "NO ROM INFORMATION."; // Generic message, gnerally shown if flashcart does not support joybus ROM ID!.
 }
 
 void n64_subsystem_init(n64_input_dev_t *in_dev)
@@ -74,7 +77,7 @@ void n64_subsystem_init(n64_input_dev_t *in_dev)
                         (i == 3) ? N64_CONTROLLER_4_PIN : -1;
     }
 
-    memset(&current_game, 0, sizeof(current_game));
+    memset(&current_rom, 0, sizeof(current_rom));
 
     //Setup the Controller pin IO mapping and interrupts
     n64hal_hs_tick_init();
@@ -257,7 +260,7 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
             break;
         case N64_PERI_READ:
         case N64_PERI_WRITE:
-        case N64_ED64_GAMEID:
+        case N64_N64DIGITAL_ROM_ID:
             cont->peri_access = 1;
             break;
         default:
@@ -293,19 +296,19 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
     }
 
     //Ref https://gitlab.com/pixelfx-public/n64-game-id
-    //ED64 sends a 10 byte packet on game launch which contains the game CRC, ROM type and country code
-    if (cont->peri_access == 1 && (cont->data_buffer[N64_COMMAND_POS] == N64_ED64_GAMEID) && cont->current_byte == 1 /*Command byte*/ + 10)
+    //Flashccart sends a 10 byte packet on game launch which contains the ROM CRC, ROM type and country code
+    if (cont->peri_access == 1 && (cont->data_buffer[N64_COMMAND_POS] == N64_N64DIGITAL_ROM_ID) && cont->current_byte == 1 /*Command byte*/ + 10)
     {
-        n64_game_t *_game = (n64_game_t *)&cont->data_buffer[1];
-        current_game.crc_hi = _game->crc_hi;
-        current_game.crc_low = _game->crc_low;
-        current_game.media_format = _game->media_format;
-        current_game.country_code = _game->country_code;
-        current_game.name = NULL;
-        debug_print_n64("[N64] ED64 Packet received... Booting Game ...\n");
-        debug_print_n64("      CRC High: %08x Low: %08x\n", current_game.crc_hi, current_game.crc_low);
-        debug_print_n64("      Media Format: %02x\n", current_game.media_format);
-        debug_print_n64("      Country Code: %02x\n", current_game.country_code);
+        n64_rom_t *_rom = (n64_rom_t *)&cont->data_buffer[1];
+        current_rom.crc_hi = _rom->crc_hi;
+        current_rom.crc_low = _rom->crc_low;
+        current_rom.media_format = _rom->media_format;
+        current_rom.country_code = _rom->country_code;
+        current_rom.name = NULL;
+        debug_print_n64("[N64] N64Digital JOYBUS Packet intercepted... Booting ROM ...\n");
+        debug_print_n64("      CRC High: %08x Low: %08x\n", current_rom.crc_hi, current_rom.crc_low);
+        debug_print_n64("      Media Format: %02x\n", current_rom.media_format);
+        debug_print_n64("      Country Code: %02x\n", current_rom.country_code);
         cont->peri_access = 0;
         n64_reset_stream(cont);
     }

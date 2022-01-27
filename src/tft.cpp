@@ -264,8 +264,8 @@ void tft_force_update()
     n64_status.set_str(fileio_status_text);
     n64_status.show_window();
 
-    //Draw the current games name
-    n64_status_text = n64_get_current_game();
+    //Draw the current ROM name
+    n64_status_text = n64_get_current_rom();
     n64_status.set_surface(psurface_guilite);
     n64_status.set_bg_color(TFT_BG_COLOR);
     n64_status.set_font_color(GL_RGB(255, 255, 255));
