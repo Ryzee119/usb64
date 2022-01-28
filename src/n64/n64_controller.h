@@ -130,6 +130,8 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont);
 /* Currently only works with ED64 flashcarts with OS3.05 or (unofficial OS2.12.9.1) and above
    Implementation is OSS and will hopefully be added to others! */
 const char *n64_get_current_rom();
+uint8_t check_rom_info_changed();
+void reset_rom_info_changed();
 
 
 

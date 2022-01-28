@@ -24,6 +24,17 @@ static uint8_t n64_cont_crc_error[] = {0x05, 0x00, 0x04};
 /* Currently only works with ED64 flashcarts with OS3.05 or (unofficial OS2.12.9.1) and above
    Implementation is OSS and will hopefully be addopted by to other flashcarts! */
 static n64_rom_t current_rom;
+static uint8_t _rom_info_changed = 0;
+
+uint8_t check_rom_info_changed()
+{
+    return _rom_info_changed;
+}
+
+void reset_rom_info_changed()
+{
+    _rom_info_changed = 0;
+}
 
 const char *n64_get_current_rom()
 {
@@ -311,6 +322,7 @@ void n64_controller_hande_new_edge(n64_input_dev_t *cont)
         debug_print_n64("      Country Code: %02x\n", current_rom.country_code);
         cont->peri_access = 0;
         n64_reset_stream(cont);
+        _rom_info_changed = 1;
     }
 
     //If we are accessing the peripheral bus, let's handle that
