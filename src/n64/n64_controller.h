@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "n64_mempak.h"
+#include "n64_controllerpak.h"
 #include "n64_rumblepak.h"
 #include "n64_settings.h"
 #include "n64_virtualpak.h"
