@@ -4,7 +4,7 @@
 #include "n64_controller.h"
 #include "n64_rom_database.h"
 
-//Uncomment to enable mempak READ address CRC checks.
+//Uncomment to enable controllerpak READ address CRC checks.
 //May cause timing issues.
 //Address CRC check for WRITES are hardcoded on already.
 //#define USE_N64_ADDRESS_CRC
@@ -23,7 +23,7 @@ static uint8_t n64_cont_crc_error[] = {0x05, 0x00, 0x04};
 
 /* Currently only works with ED64 flashcarts with OS3.05 or (unofficial OS2.12.9.1) and above
    Implementation is OSS and will hopefully be addopted by to other flashcarts! */
-static n64_rom_t current_rom;
+static n64_rom_t current_rom = { .crc_hi = 0, .crc_low = 0, .media_format = 0, .country_code = 0 };
 static uint8_t _rom_info_changed = 0;
 
 uint8_t check_rom_info_changed()
@@ -36,11 +36,12 @@ void reset_rom_info_changed()
     _rom_info_changed = 0;
 }
 
-const char *n64_get_current_rom()
+const char *n64_get_current_rom() 
 {
-    if (current_rom.name != NULL)
+    if (current_rom.crc_hi == 67505422) // 0x04060d0e .. '4','6','D','E'
     {
-        return current_rom.name;
+        // TODO: Should now get CRC low etc. to work out OS and HW version?! Documentation required!
+        return "ED64 Flashcart Menu"; 
     }
     else if(current_rom.crc_hi != 0)
     {
@@ -60,7 +61,7 @@ const char *n64_get_current_rom()
         }
         return "ROM CRC NOT FOUND"; //current_rom.crc_hi; //TODO: return the CRC_HI, for indication.
     }
-    return "NO ROM INFORMATION."; // Generic message, gnerally shown if flashcart does not support joybus ROM ID!.
+    return "NO ROM INFORMATION"; // Generic message, shown if flashcart does not support joybus ROM ID!.
 }
 
 void n64_subsystem_init(n64_input_dev_t *in_dev)
