@@ -92,7 +92,9 @@ void loop()
 
     input_update_input_devices();
 
+#if (ENABLE_TFT_DISPLAY >= 1)
     tft_try_update();
+#endif
 
     for (uint32_t c = 0; c < MAX_CONTROLLERS; c++)
     {
@@ -458,6 +460,13 @@ void loop()
         }
 
     } //END FOR LOOP
+
+    if (check_rom_info_changed() == 1)
+    {
+        reset_rom_info_changed();
+        tft_flag_update(); 
+    }
+
 } // MAIN LOOP
 
 /* PRINTF HANDLING */
