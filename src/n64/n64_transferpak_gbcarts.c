@@ -7,14 +7,7 @@
  * Tranferpak emulation is my own RE.
  */
 
-#include <Arduino.h>
-#include "printf.h"
-#include "n64_mempak.h"
-#include "n64_virtualpak.h"
-#include "n64_settings.h"
-#include "n64_transferpak_gbcarts.h"
 #include "n64_controller.h"
-#include "n64_wrapper.h"
 
 static uint32_t _gb_get_rom_size(uint8_t rom_type)
 {
@@ -321,8 +314,8 @@ void gb_init_cart(gameboycart *cart, uint8_t *gb_header, char *filename)
 
     memcpy(cart->filename, filename, sizeof(cart->filename));
     debug_print_tpak("[TPAK] gb_init_cart: GB Name: %.15s\n", cart->title);
-    debug_print_tpak("[TPAK] gb_init_cart: ROM Bytes: %lu\n", cart->romsize);
-    debug_print_tpak("[TPAK] gb_init_cart: SRAM Bytes: %lu\n", cart->ramsize);
+    debug_print_tpak("[TPAK] gb_init_cart: ROM Bytes: %u\n", cart->romsize);
+    debug_print_tpak("[TPAK] gb_init_cart: SRAM Bytes: %u\n", cart->ramsize);
     debug_print_tpak("[TPAK] gb_init_cart: MBC Type: 0x%02x\n", cart->mbc);
 }
 

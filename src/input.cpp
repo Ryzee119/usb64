@@ -1,255 +1,193 @@
 // Copyright 2020, Ryan Wendland, usb64
 // SPDX-License-Identifier: MIT
 
-#include <Arduino.h>
-#include "USBHost_t36.h"
-#include "usb64_conf.h"
+#include "common.h"
 #include "n64_controller.h"
 #include "input.h"
-#include "printf.h"
 #include "tft.h"
+#include "tusb.h"
 
-//USB Host Interface
-USBHost usbh;
+#define MAX_USB_CONTROLLERS (CFG_TUH_DEVICE_MAX)
 
-#if (ENABLE_USB_HUB == 1)
-USBHub hub1(usbh);
-USBHub hub2(usbh);
-USBHub hub3(usbh);
-USBHub hub4(usbh);
-#endif
-
-JoystickController joy1(usbh);
-JoystickController joy2(usbh);
-JoystickController joy3(usbh);
-JoystickController joy4(usbh);
-JoystickController joy5(usbh);
-JoystickController joy6(usbh);
-JoystickController joy7(usbh);
-JoystickController joy8(usbh);
-
-USBHIDParser hid1(usbh);
-USBHIDParser hid2(usbh);
-USBHIDParser hid3(usbh);
-USBHIDParser hid4(usbh);
-MouseController mouse1(usbh);
-MouseController mouse2(usbh);
-MouseController mouse3(usbh);
-MouseController mouse4(usbh);
-KeyboardController kb1(usbh);
-KeyboardController kb2(usbh);
-KeyboardController kb3(usbh);
-KeyboardController kb4(usbh);
-
-JoystickController *gamecontroller[] = {&joy1, &joy2, &joy3, &joy4, &joy5, &joy6, &joy7, &joy8};
-MouseController *mousecontroller[] = {&mouse1, &mouse2, &mouse3, &mouse4};
-KeyboardController *kbcontroller[] = {&kb1, &kb2, &kb3, &kb4};
+input_driver_t input_devices[MAX_USB_CONTROLLERS];
 
 uint32_t hardwired1;
 
-#define MAX_USB_CONTROLLERS (8)
-static input input_devices[MAX_CONTROLLERS];
-static uint8_t kb_keys_pressed[RANDNET_MAX_BUTTONS];
-
-static void kb_pressed_cb(uint8_t keycode)
+static uint8_t kb_modifier_to_key(uint8_t modifier)
 {
-    //Check if its already pressed
-    for (int i = 0; i < RANDNET_MAX_BUTTONS; i++)
+    if (modifier & KEYBOARD_MODIFIER_LEFTCTRL)
+        return HID_KEY_CONTROL_LEFT;
+    if (modifier & KEYBOARD_MODIFIER_LEFTSHIFT)
+        return HID_KEY_SHIFT_LEFT;
+    if (modifier & KEYBOARD_MODIFIER_LEFTALT)
+        return HID_KEY_ALT_LEFT;
+    if (modifier & KEYBOARD_MODIFIER_LEFTGUI)
+        return HID_KEY_GUI_LEFT;
+    if (modifier & KEYBOARD_MODIFIER_RIGHTCTRL)
+        return HID_KEY_CONTROL_RIGHT;
+    if (modifier & KEYBOARD_MODIFIER_RIGHTSHIFT)
+        return HID_KEY_SHIFT_RIGHT;
+    if (modifier & KEYBOARD_MODIFIER_RIGHTALT)
+        return HID_KEY_ALT_RIGHT;
+    if (modifier & KEYBOARD_MODIFIER_RIGHTGUI)
+        return HID_KEY_GUI_RIGHT;
+    return 0;
+}
+
+static input_driver_t *find_slot(uint16_t uid)
+{
+    //See if input device already exists
+    for (int i = 0; i < MAX_USB_CONTROLLERS; i++)
     {
-        if (kb_keys_pressed[i] == keycode)
+        if (input_devices[i].uid == uid && uid > 0)
         {
-            return;
+            return &input_devices[i];
         }
     }
-    //Register the keypress
-    for (int i = 0; i < RANDNET_MAX_BUTTONS; i++)
+    //Allocate new input device
+    for (int i = 0; i < MAX_USB_CONTROLLERS; i++)
     {
-        if (kb_keys_pressed[i] == 0)
+        if (input_devices[i].type == INPUT_NONE && uid == 0)
         {
-            kb_keys_pressed[i] = keycode;
-            break;
+            input_devices[i].slot = i;
+            return &input_devices[i];
         }
+    }
+    return NULL;
+}
+
+void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_report, uint16_t desc_len)
+{
+    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+
+    if (itf_protocol != HID_ITF_PROTOCOL_NONE)
+    {
+        input_driver_t *in_dev = find_slot(0);
+
+        in_dev->type    = (itf_protocol == HID_ITF_PROTOCOL_MOUSE) ? INPUT_MOUSE : INPUT_KEYBOARD;
+        in_dev->backend = (itf_protocol == HID_ITF_PROTOCOL_MOUSE) ? BACKEND_HID_MOUSE : BACKEND_HID_KEYBOARD;
+        in_dev->uid = dev_addr << 8 | instance;
+        in_dev->set_rumble = NULL;
+        in_dev->set_led = NULL;
+        in_dev->data = in_dev->_data;
+
+        tuh_hid_receive_report(dev_addr, instance);
     }
 }
 
-static void kb_released_cb(uint8_t keycode)
+// Invoked when received report from device via interrupt endpoint
+static uint32_t hid_data_tick[MAX_USB_CONTROLLERS] = {0};
+void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *report, uint16_t len)
 {
-    for (int i = 0; i < RANDNET_MAX_BUTTONS; i++)
+    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+    input_driver_t *in_dev = find_slot(dev_addr << 8 | instance);
+
+    if (in_dev != NULL && itf_protocol != HID_ITF_PROTOCOL_NONE)
     {
-        if (kb_keys_pressed[i] == keycode)
+        hid_data_tick[in_dev->slot] = n64hal_millis();
+        memcpy(in_dev->data, report, TU_MIN(len, CFG_TUH_XINPUT_EPIN_BUFSIZE));
+    }
+
+    tuh_hid_receive_report(dev_addr, instance);
+}
+
+void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
+{
+    uint16_t uid = dev_addr << 8 | instance;
+    input_driver_t *in_dev = find_slot(uid);
+    while (in_dev != NULL)
+    {
+        memset(in_dev, 0, sizeof(input_driver_t));
+        in_dev = find_slot(uid);
+    }
+}
+
+void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *report, uint16_t len)
+{
+    xinputh_interface_t *xid_itf = (xinputh_interface_t *)report;
+    uint16_t uid = dev_addr << 8 | instance;
+    input_driver_t *in_dev = find_slot(uid);
+    if (in_dev != NULL && xid_itf->new_pad_data == true)
+    {
+        memcpy(in_dev->data, &xid_itf->pad, TU_MIN(len, CFG_TUH_XINPUT_EPIN_BUFSIZE));
+    }
+    else if (in_dev == NULL && xid_itf->type == XBOX360_WIRELESS)
+    {
+        if (xid_itf->connected == true)
         {
-            kb_keys_pressed[i] = 0;
+            tuh_xinput_mount_cb(dev_addr, instance, xid_itf);
         }
+    }
+    else if (in_dev != NULL && xid_itf->type == XBOX360_WIRELESS)
+    {
+        if (xid_itf->connected == false)
+        {
+            tuh_xinput_umount_cb(dev_addr, instance);
+        }
+    }
+    tuh_xinput_receive_report(dev_addr, instance);
+}
+
+void tuh_xinput_mount_cb(uint8_t dev_addr, uint8_t instance, const xinputh_interface_t *xinput_itf)
+{
+    //If this is a Xbox 360 Wireless controller, dont register yet. Need to wait for a connection packet
+    //on the in pipe.
+    if (xinput_itf->type == XBOX360_WIRELESS && xinput_itf->connected == false)
+    {
+        tuh_xinput_receive_report(dev_addr, instance);
+        return;
+    }
+
+    input_driver_t *in_dev = find_slot(0);
+
+    in_dev->type = INPUT_GAMECONTROLLER;
+    in_dev->backend = BACKEND_XINPUT;
+    in_dev->uid = dev_addr << 8 | instance;
+    in_dev->set_rumble = tuh_xinput_set_rumble;
+    in_dev->set_led = tuh_xinput_set_led;
+    in_dev->data = in_dev->_data;
+
+    tuh_xinput_set_led(dev_addr, instance, 0, true);
+    tuh_xinput_set_led(dev_addr, instance, in_dev->slot + 1, true);
+    tuh_xinput_set_rumble(dev_addr, instance, 0, 0, true);
+    tuh_xinput_receive_report(dev_addr, instance);
+}
+
+void tuh_xinput_umount_cb(uint8_t dev_addr, uint8_t instance)
+{
+    uint16_t uid = dev_addr << 8 | instance;
+    input_driver_t *in_dev = find_slot(uid);
+    while (in_dev != NULL)
+    {
+        memset(in_dev, 0, sizeof(input_driver_t));
+        in_dev = find_slot(uid);
     }
 }
 
 static int _check_id(uint8_t id)
 {
-    if (id > MAX_CONTROLLERS)
+    if (id >= MAX_USB_CONTROLLERS)
         return 0;
-    if (input_devices[id].driver == NULL)
+
+    if (input_devices[id].backend == BACKEND_NONE)
         return 0;
 
     return 1;
 }
 
-void input_init()
+FLASHMEM void input_init()
 {
-    usbh.begin();
-    for (int i = 0; i < MAX_CONTROLLERS; i++)
-    {
-        input_devices[i].driver = NULL;
-        input_devices[i].type = USB_GAMECONTROLLER;
-    }
+    tusb_init();
+    memset(input_devices, 0x00, sizeof(input_devices));
 }
 
 void input_update_input_devices()
 {
-    //Clear disconnected devices
-    for (int i = 0; i < MAX_CONTROLLERS; i++)
-    {
-        if (input_is_connected(i) == 0)
-        {
-            if (input_devices[i].driver != NULL)
-            {
-                debug_print_status("[INPUT] Cleared device from slot %u\n", i);
-                tft_flag_update();
-            }
-            input_devices[i].driver = NULL;
-        }
-    }
-
-#if (ENABLE_HARDWIRED_CONTROLLER >=1)
-    //Find hardwired game controller
-    if (digitalRead(HW_EN) == 0)
-    {
-        //Hardwired will always overwrite the first slot
-        if (input_devices[0].driver != &hardwired1)
-        {
-            input_devices[0].driver = &hardwired1;
-            input_devices[0].type = HW_GAMECONTROLLER;
-            debug_print_status("[INPUT] Registered hardwired gamecontroller to slot %u\n", 0);
-            tft_flag_update();
-        }
-    }
-#endif
-
-    //Find new game controllers
-    for (uint32_t i = 0; i < MAX_USB_CONTROLLERS; i++)
-    {
-        //Game controller is connected
-        if (*(gamecontroller[i]) == true)
-        {
-            //Is it already a registered input device
-            bool already_registered = false;
-            for (int j = 0; j < MAX_CONTROLLERS; j++)
-            {
-                if (gamecontroller[i] == input_devices[j].driver)
-                {
-                    already_registered = true;
-                    break;
-                }
-            }
-            //Its a new controller, find empty slot and register it now
-            if (already_registered == false)
-            {
-                for (int j = 0; j < MAX_CONTROLLERS; j++)
-                {
-                    if (input_devices[j].driver == NULL)
-                    {
-                        input_devices[j].driver = gamecontroller[i];
-                        input_devices[j].type = USB_GAMECONTROLLER;
-                        debug_print_status("[INPUT] Registered gamecontroller to slot %u\n", j);
-                        gamecontroller[i]->setLEDs(j + 2);
-                        tft_flag_update();
-                        break;
-                    }
-                }
-            }
-        }
-    }
-#if (MAX_MICE >= 1)
-    //Find new mice
-    for (int i = 0; i < MAX_MICE; i++)
-    {
-        //Mouse is connected
-        USBHIDInput *m = (USBHIDInput *)mousecontroller[i];
-        if (*m == true)
-        {
-            //Is it already a registered input device
-            bool already_registered = false;
-            for (int j = 0; j < MAX_CONTROLLERS; j++)
-            {
-                if (mousecontroller[i] == input_devices[j].driver)
-                {
-                    already_registered = true;
-                    break;
-                }
-            }
-            //Its a new mouse, find empty slot and register it now
-            if (already_registered == false)
-            {
-                for (int j = 0; j < MAX_CONTROLLERS; j++)
-                {
-                    if (input_devices[j].driver == NULL)
-                    {
-                        input_devices[j].driver = mousecontroller[i];
-                        input_devices[j].type = USB_MOUSE;
-                        debug_print_status("[INPUT] Register mouse to slot %u\n", j);
-                        tft_flag_update();
-                        break;
-                    }
-                }
-            }
-        }
-    }
-#endif
-#if (MAX_KB >= 1)
-    //Find new keyboard
-    for (int i = 0; i < MAX_KB; i++)
-    {
-        //Keyboard is connected
-        USBHIDInput *kb = (USBHIDInput *)kbcontroller[i];
-        if (*kb == true)
-        {
-            //Is it already a registered input device
-            bool already_registered = false;
-            for (int j = 0; j < MAX_CONTROLLERS; j++)
-            {
-                if (kbcontroller[i] == input_devices[j].driver)
-                {
-                    already_registered = true;
-                    break;
-                }
-            }
-            //Its a new keyboard, find empty slot and register it now
-            if (already_registered == false)
-            {
-                for (int j = 0; j < MAX_CONTROLLERS; j++)
-                {
-                    if (input_devices[j].driver == NULL)
-                    {
-                        input_devices[j].driver = kbcontroller[i];
-                        input_devices[j].type = USB_KB;
-                        debug_print_status("[INPUT] Register keyboard to slot %u\n", j);
-                        tft_flag_update();
-                        kbcontroller[i]->attachRawPress(kb_pressed_cb);
-                        kbcontroller[i]->attachRawRelease(kb_released_cb);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-#endif
+    tuh_task();
 }
 
 uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
 {
-    uint32_t _buttons = 0;
-    int32_t _axis[JoystickController::STANDARD_AXIS_COUNT] = {0};
-    int32_t right_axis[2] = {0};
-
     *combo_pressed = 0;
 
     if (_check_id(id) == 0)
@@ -258,199 +196,62 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
     if (response == NULL)
         return 0;
 
-    if (input_is_gamecontroller(id))
+    input_driver_t *in_dev = &input_devices[id];
+
+    if (in_dev == NULL)
+        return 0;
+
+    if (input_is(id, INPUT_GAMECONTROLLER))
     {
         //Prep N64 response
         n64_buttonmap *state = (n64_buttonmap *)response;
         state->dButtons = 0;
 
-        //Get latest info from USB devices
-        JoystickController *joy = (JoystickController *)input_devices[id].driver;
-        _buttons = joy->getButtons();
-
-        for (uint8_t i = 0; i < JoystickController::STANDARD_AXIS_COUNT; i++)
+        int32_t right_axis[2] = {0};
+        if (in_dev->backend == BACKEND_XINPUT)
         {
-            _axis[i] = joy->getAxis(i);
-        }
-        joy->joystickDataClear();
+            xinput_gamepad_t *pad = (xinput_gamepad_t *)in_dev->data;
+            if (pad->wButtons & XINPUT_GAMEPAD_DPAD_UP)         state->dButtons |= N64_DU;  //DUP
+            if (pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN)       state->dButtons |= N64_DD;  //DDOWN
+            if (pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT)       state->dButtons |= N64_DL;  //DLEFT
+            if (pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT)      state->dButtons |= N64_DR;  //DRIGHT
+            if (pad->wButtons & XINPUT_GAMEPAD_START)           state->dButtons |= N64_ST;  //START
+            if (pad->wButtons & XINPUT_GAMEPAD_BACK)            state->dButtons |= 0;       //BACK
+            if (pad->wButtons & XINPUT_GAMEPAD_LEFT_THUMB)      state->dButtons |= 0;       //LS
+            if (pad->wButtons & XINPUT_GAMEPAD_RIGHT_THUMB)     state->dButtons |= 0;       //RS
+            if (pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER)   state->dButtons |= N64_LB;  //LB
+            if (pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER)  state->dButtons |= N64_RB;  //RB
+            if (pad->wButtons & (1 << 10))                      state->dButtons |= 0;       //XBOX BUTTON
+            if (pad->wButtons & (1 << 11))                      state->dButtons |= 0;       //XBOX SYNC
+            if (pad->wButtons & XINPUT_GAMEPAD_A)               state->dButtons |= N64_A;   //A
+            if (pad->wButtons & XINPUT_GAMEPAD_B)               state->dButtons |= N64_B;   //B
+            if (pad->wButtons & XINPUT_GAMEPAD_X)               state->dButtons |= N64_B;   //X
+            if (pad->wButtons & XINPUT_GAMEPAD_Y)               state->dButtons |= 0;       //Y
+            if (pad->wButtons & XINPUT_GAMEPAD_RIGHT_THUMB)     state->dButtons |= N64_CU | //RS triggers
+                                                                                   N64_CD | //all C usb_buttons
+                                                                                   N64_CL |
+                                                                                   N64_CR;
 
-        switch (joy->joystickType())
-        {
-        case JoystickController::XBOX360:
-        case JoystickController::XBOX360_WIRED:
-            //Digital usb_buttons
-            //FIXME Modifier to make A,B,X,Y be C buttons
-            if (_buttons & (1 << 0))  state->dButtons |= N64_DU;  //DUP
-            if (_buttons & (1 << 1))  state->dButtons |= N64_DD;  //DDOWN
-            if (_buttons & (1 << 2))  state->dButtons |= N64_DL;  //DLEFT
-            if (_buttons & (1 << 3))  state->dButtons |= N64_DR;  //DRIGHT
-            if (_buttons & (1 << 4))  state->dButtons |= N64_ST;  //START
-            if (_buttons & (1 << 5))  state->dButtons |= 0;       //BACK
-            if (_buttons & (1 << 6))  state->dButtons |= 0;       //LS
-            if (_buttons & (1 << 7))  state->dButtons |= 0;       //RS
-            if (_buttons & (1 << 8))  state->dButtons |= N64_LB;  //LB
-            if (_buttons & (1 << 9))  state->dButtons |= N64_RB;  //RB
-            if (_buttons & (1 << 10)) state->dButtons |= 0;       //XBOX BUTTON
-            if (_buttons & (1 << 11)) state->dButtons |= 0;       //XBOX SYNC
-            if (_buttons & (1 << 12)) state->dButtons |= N64_A;   //A
-            if (_buttons & (1 << 13)) state->dButtons |= N64_B;   //B
-            if (_buttons & (1 << 14)) state->dButtons |= N64_B;   //X
-            if (_buttons & (1 << 15)) state->dButtons |= 0;       //Y
-            if (_buttons & (1 << 7))  state->dButtons |= N64_CU | //RS triggers
-                                                      N64_CD | //all C usb_buttons
-                                                      N64_CL |
-                                                      N64_CR;
             //Analog stick (Normalise 0 to +/-100)
-            state->x_axis = _axis[0] * 100 / 32768;
-            state->y_axis = _axis[1] * 100 / 32768;
+            state->x_axis = pad->sThumbLX * 100 / 32768;
+            state->y_axis = pad->sThumbLY * 100 / 32768;
 
             //Z button
-            if (_axis[4] > 10) state->dButtons |= N64_Z; //LT
-            if (_axis[5] > 10) state->dButtons |= N64_Z; //RT
+            if (pad->bLeftTrigger > 10) state->dButtons |= N64_Z; //LT
+            if (pad->bRightTrigger > 10) state->dButtons |= N64_Z; //RT
 
             //C usb_buttons
-            if (_axis[2] > 16000)  state->dButtons |= N64_CR;
-            if (_axis[2] < -16000) state->dButtons |= N64_CL;
-            if (_axis[3] > 16000)  state->dButtons |= N64_CU;
-            if (_axis[3] < -16000) state->dButtons |= N64_CD;
+            if (pad->sThumbRX > 16000)  state->dButtons |= N64_CR;
+            if (pad->sThumbRX < -16000) state->dButtons |= N64_CL;
+            if (pad->sThumbRY > 16000)  state->dButtons |= N64_CU;
+            if (pad->sThumbRY < -16000) state->dButtons |= N64_CD;
 
             //Button to hold for 'combos'
-            if (combo_pressed)
-                *combo_pressed = (_buttons & (1 << 5)); //back
+            *combo_pressed = (pad->wButtons & XINPUT_GAMEPAD_BACK); //back
 
             //Map right axis for dual stick mode
-            right_axis[0] = _axis[2] * 100 / 32768;
-            right_axis[1] = _axis[3] * 100 / 32768;
-
-            break;
-        case JoystickController::XBOXONE:
-            if (_buttons & (1 << 8))   state->dButtons |= N64_DU;   //DUP
-            if (_buttons & (1 << 9))   state->dButtons |= N64_DD;   //DDOWN
-            if (_buttons & (1 << 10))  state->dButtons |= N64_DL;   //DLEFT
-            if (_buttons & (1 << 11))  state->dButtons |= N64_DR;   //DRIGHT
-            if (_buttons & (1 << 2))   state->dButtons |= N64_ST;   //START
-            if (_buttons & (1 << 3))   state->dButtons |= 0;        //BACK
-            if (_buttons & (1 << 14))  state->dButtons |= 0;        //LS
-            if (_buttons & (1 << 15))  state->dButtons |= 0;        //RS
-            if (_buttons & (1 << 12))  state->dButtons |= N64_LB;   //LB
-            if (_buttons & (1 << 13))  state->dButtons |= N64_RB;   //RB
-            if (_buttons & (1 << 4))   state->dButtons |= N64_A;    //A
-            if (_buttons & (1 << 5))   state->dButtons |= N64_B;    //B
-            if (_buttons & (1 << 6))   state->dButtons |= N64_B;    //X
-            if (_buttons & (1 << 7))   state->dButtons |= 0;        //Y
-            if (_buttons & (1 << 15))   state->dButtons |= N64_CU | //RS triggers
-                                                        N64_CD | //all C usb_buttons
-                                                        N64_CL |
-                                                        N64_CR;
-            //Analog stick (Normalise 0 to +/-100)
-            state->x_axis = _axis[0] * 100 / 32768;
-            state->y_axis = _axis[1] * 100 / 32768;
-
-            //Z button
-            if (_axis[3] > 10) state->dButtons |= N64_Z; //LT
-            if (_axis[4] > 10) state->dButtons |= N64_Z; //RT
-
-            //C usb_buttons
-            if (_axis[2] > 16000)  state->dButtons |= N64_CR;
-            if (_axis[2] < -16000) state->dButtons |= N64_CL;
-            if (_axis[5] > 16000)  state->dButtons |= N64_CU;
-            if (_axis[5] < -16000) state->dButtons |= N64_CD;
-
-            //Button to hold for 'combos'
-            if (combo_pressed)
-                *combo_pressed = (_buttons & (1 << 3)); //back
-
-            right_axis[0] = _axis[2] * 100 / 32768;
-            right_axis[1] = _axis[5] * 100 / 32768;
-            break;
-        case JoystickController::PS4:
-            if (_buttons & (1 << 9))  state->dButtons |= N64_ST;  //START
-            if (_buttons & (1 << 4))  state->dButtons |= N64_LB;  //L1
-            if (_buttons & (1 << 5))  state->dButtons |= N64_RB;  //R1
-            if (_buttons & (1 << 6))  state->dButtons |= N64_Z;   //L2
-            if (_buttons & (1 << 7))  state->dButtons |= N64_Z;   //R2
-            if (_buttons & (1 << 1))  state->dButtons |= N64_A;   //X
-            if (_buttons & (1 << 0))  state->dButtons |= N64_B;   //SQUARE
-            if (_buttons & (1 << 2))  state->dButtons |= N64_B;   //CIRCLE
-            if (_buttons & (1 << 11)) state->dButtons |= N64_CU | //RS triggers
-                                                      N64_CD | //all C usb_buttons
-                                                      N64_CL |
-                                                      N64_CR;
-            //Analog stick (Normalise 0 to +/-100)
-            state->x_axis =  (_axis[0] - 127) * 100 / 127;
-            state->y_axis = -(_axis[1] - 127) * 100 / 127;
-
-            //D Pad button
-            switch(_axis[9])
-            {
-                case 0: state->dButtons |= N64_DU; break;
-                case 1: state->dButtons |= N64_DU | N64_DR; break;
-                case 2: state->dButtons |= N64_DR; break;
-                case 3: state->dButtons |= N64_DR | N64_DD; break;
-                case 4: state->dButtons |= N64_DD; break;
-                case 5: state->dButtons |= N64_DD | N64_DL; break;
-                case 6: state->dButtons |= N64_DL; break;
-                case 7: state->dButtons |= N64_DL | N64_DU; break;
-            }
-
-            //C usb_buttons
-            if (_axis[2] > 256/2 + 64)  state->dButtons |= N64_CR;
-            if (_axis[2] < 256/2 - 64)  state->dButtons |= N64_CL;
-            if (_axis[5] > 256/2 + 64)  state->dButtons |= N64_CD;
-            if (_axis[5] < 256/2 - 64)  state->dButtons |= N64_CU;
-
-            //Button to hold for 'combos'
-            if (combo_pressed)
-                *combo_pressed = (_buttons & (1 << 8)); //back
-
-            //Map right axis for dual stick mode
-            right_axis[0] =  (_axis[2] - 127) * 100 / 127;
-            right_axis[1] = -(_axis[5] - 127) * 100 / 127;
-            break;
-        case JoystickController::UNKNOWN:
-            #if (0)
-            //Mapper helper
-            static uint32_t print_slower = 0;
-            if (millis() - print_slower > 100)
-            {
-                debug_print_status("%04x %04i %04i %04i %04i\n", _buttons, _axis[0], _axis[1], _axis[2], _axis[3]);
-                if (_buttons)
-                {
-                    int bit = 0;
-                    while ((_buttons & (1 << bit++)) == 0);
-                    debug_print_status("button bit: %i\n", bit-1);
-                }
-                print_slower = millis();
-            }
-            #endif
-            //Generic HID controllers //FIXME: Load from file?
-            //Example of a basic Chinese NES HID Controller. The button mapping nubmers are from a bit of trial and error.
-            //You can use the mapper helper above to assist.
-            //The controller doesnt have enough buttons, so we're missing alot here.
-            //NEXT SNES Controller
-            if (joy->idVendor() == 0x0810 && joy->idProduct() == 0xE501)
-            {
-                if (_buttons & (1 << 9))  state->dButtons |= N64_ST;
-                if (_buttons & (1 << 4))  state->dButtons |= N64_Z;
-                if (_buttons & (1 << 6))  state->dButtons |= N64_RB;
-                if (_buttons & (1 << 2)) state->dButtons |= N64_A;
-                if (_buttons & (1 << 1)) state->dButtons |= N64_B;
-                if (_buttons & (1 << 3)) state->dButtons |= N64_B;
-
-                //Button to hold for 'combos'
-                if (combo_pressed)
-                    *combo_pressed = (_buttons & (1 << 8)); //back
-
-                //Analog stick (Normalise 0 to +/-100)
-                state->x_axis = (_axis[0] - 127) * 100 / 127;
-                state->y_axis = - (_axis[1] - 127) * 100 / 127;
-            }
-            break;
-        //TODO: OTHER USB CONTROLLERS
-        case JoystickController::PS3:
-        case JoystickController::PS3_MOTION:
-        default:
-            break;
+            right_axis[0] = pad->sThumbRX * 100 / 32768;
+            right_axis[1] = pad->sThumbRY * 100 / 32768;
         }
 
         //Use 2.4 GOODHEAD layout, axis not inverted
@@ -480,327 +281,149 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
             state->dButtons |= N64_RES;
         }
     }
-#if (MAX_MICE >= 1)
-    else if (input_is_mouse(id))
+    else if (input_is(id, INPUT_MOUSE))
     {
-        //Prep N64 response
+        //N64 report is basically a n64 controller response
         n64_buttonmap *state = (n64_buttonmap *)response;
+        hid_mouse_report_t *report = (hid_mouse_report_t *)in_dev->data;
+
         state->dButtons = 0;
+        state->x_axis = report->x;
+        state->y_axis = -report->y;
 
-        //Get latest info from USB devices
-        MouseController *mouse = (MouseController *)input_devices[id].driver;
-        _buttons = mouse->getButtons();
+        if (report->buttons & (1 << 0)) state->dButtons |= N64_A;   //A left click
+        if (report->buttons & (1 << 1)) state->dButtons |= N64_B;   //B right click
+        if (report->buttons & (1 << 2)) state->dButtons |= N64_ST;  //ST middle click
 
-        _axis[0] = mouse->getMouseX();
-        _axis[1] = mouse->getMouseY();
-
-        static uint32_t idle_timer[4] = {0};
-        if (mouse->available()) idle_timer[id] = millis();
-        mouse->mouseDataClear();
-        if (millis() - idle_timer[id] > 100)
+        //Need to do this for stale data and mouse wont send a 0 byte if its not moving
+        if (n64hal_millis() - hid_data_tick[in_dev->slot] > 10)
         {
-            _axis[0] = 0;
-            _axis[1] = 0;
+            report->x = 0;
+            report->y = 0;
         }
-
-        //Mouse input is pretty standard, Map to N64 mouse
-        if (_axis[0] * MOUSE_SENSITIVITY > 127) _axis[0] = 127;
-        if (_axis[1] * MOUSE_SENSITIVITY > 127) _axis[1] = 127;
-        if (_axis[0] * MOUSE_SENSITIVITY < -128) _axis[0] = -128;
-        if (_axis[1] * MOUSE_SENSITIVITY < -128) _axis[1] = -128;
-        state->x_axis =  _axis[0] * MOUSE_SENSITIVITY;
-        state->y_axis = -_axis[1] * MOUSE_SENSITIVITY;
-        if (_buttons & (1 << 0)) state->dButtons |= N64_A;   //A
-        if (_buttons & (1 << 1)) state->dButtons |= N64_B;   //B
-        if (_buttons & (1 << 2)) state->dButtons |= N64_ST;  //ST
     }
-#endif
-
-#if (MAX_KB >= 1)
-    else if (input_is_kb(id))
+    else if (input_is(id, INPUT_KEYBOARD))
     {
-        //Prep N64 response
-        n64_randnet_kb *state = (n64_randnet_kb *)response;
+        n64_randnet_kb *new_state = (n64_randnet_kb *)response;
+        hid_keyboard_report_t *report = (hid_keyboard_report_t *)in_dev->data;
+        memset(new_state->buttons, 0, sizeof(new_state->buttons));
+        new_state->flags = 0;
 
-        //Get latest info from USB devices
-        KeyboardController *kb = (KeyboardController *)input_devices[id].driver;
-
-        kb->capsLock((state->led_state & RANDNET_LED_CAPSLOCK) != 0);
-        kb->numLock((state->led_state & RANDNET_LED_NUMLOCK)  != 0);
-        kb->scrollLock((state->led_state & RANDNET_LED_POWER) != 0);
-        uint8_t home_key_flag = 0;
-        //Map up to 3 keys to the randnet response packet
-        for (int i = 0; i < RANDNET_MAX_BUTTONS; i++)
+        //https://sites.google.com/site/consoleprotocols/home/nintendo-joy-bus-documentation/n64-specific/randnet-keyboard
+        uint8_t a = 0, b = 0, c = 0;
+        uint8_t mod = report->modifier;
+        uint8_t hid_keyboard_press = kb_modifier_to_key(mod & (1 << c));
+        mod &= ~(1 << c);
+        while (a < RANDNET_MAX_BUTTONS && b < sizeof(report->keycode))
         {
-            state->buttons[i] = 0;
-            if (kb_keys_pressed[i] == 0)
-                continue;
-
-            if (kb_keys_pressed[i] == (uint8_t)(KEY_HOME & 0xFF))
+            if (hid_keyboard_press != 0)
             {
-                home_key_flag = 1;
-                continue;
-            }
-
-            //Keyboard is pressed, get the corressponding randnet code and put it in the response
-            uint16_t randnet_code = 0;
-            for (uint32_t j = 0; j < (sizeof(randnet_map) / sizeof(randnet_map_t)); j++)
-            {
-                if (kb_keys_pressed[i] == (uint8_t)(randnet_map[j].keypad & 0xFF))
+                //report outputs 1 if too many keys are pressed on the keyboard
+                if (hid_keyboard_press == 1)
                 {
-                    randnet_code = randnet_map[j].randnet_matrix;
+                    new_state->flags |= RANDNET_FLAG_EXCESS_BUTTONS;
+                    break;
+                }
+                //Randnet has a status flag for the home button.
+                if (hid_keyboard_press == HID_KEY_HOME)
+                {
+                    new_state->flags |= RANDNET_FLAG_HOME_KEY;
+                    break;
+                }
+                //Handle all other key presses
+                for (uint32_t d = 0; d < (sizeof(randnet_map) / sizeof(randnet_map_t)); d++)
+                {
+                    if (hid_keyboard_press == randnet_map[d].keypad)
+                    {
+                        new_state->buttons[a++] = randnet_map[d].randnet_matrix;
+                        break;
+                    }
                 }
             }
-            state->buttons[i] = randnet_code;
+            //Get the next key (modifier or normal key)
+            if (mod)
+            {
+                c++;
+                hid_keyboard_press = kb_modifier_to_key(mod & (1 << c));
+                mod &= ~(1 << c);
+            }
+            else
+            {
+                hid_keyboard_press = report->keycode[b++];
+            }
         }
-
-        (home_key_flag) ? state->flags |= RANDNET_FLAG_HOME_KEY :
-                          state->flags &= ~RANDNET_FLAG_HOME_KEY;
     }
-#endif
-
-#if (ENABLE_HARDWIRED_CONTROLLER >=1)
-    else if (input_is_hw_gamecontroller(id))
-    {
-        n64_buttonmap *state = (n64_buttonmap *)response;
-        state->dButtons = 0;
-
-        if (!digitalRead(HW_A)) state->dButtons |= N64_A;
-        if (!digitalRead(HW_B)) state->dButtons |= N64_B;
-        if (!digitalRead(HW_CU)) state->dButtons |= N64_CU;
-        if (!digitalRead(HW_CD)) state->dButtons |= N64_CD;
-        if (!digitalRead(HW_CL)) state->dButtons |= N64_CL;
-        if (!digitalRead(HW_CR)) state->dButtons |= N64_CR;
-        if (!digitalRead(HW_DU)) state->dButtons |= N64_DU;
-        if (!digitalRead(HW_DD)) state->dButtons |= N64_DD;
-        if (!digitalRead(HW_DL)) state->dButtons |= N64_DL;
-        if (!digitalRead(HW_DR)) state->dButtons |= N64_DR;
-        if (!digitalRead(HW_START)) state->dButtons |= N64_ST;
-        if (!digitalRead(HW_Z)) state->dButtons |= N64_Z;
-        if (!digitalRead(HW_L)) state->dButtons |= N64_LB;
-        if (!digitalRead(HW_R)) state->dButtons |= N64_RB;
-        
-        //10bit ADC
-        state->x_axis = analogRead(HW_X) * 200 / 1024 - 100; //+/-100
-        state->y_axis = analogRead(HW_Y) * 200 / 1024 - 100; //+/-100
-        
-        if (combo_pressed)
-            *combo_pressed = !digitalRead(HW_L) && !digitalRead(HW_R); //FIXME: ADD A COMBO INPUT?
-    }
-#endif
-    else
-    {
-        return 0;
-    }
-
     return 1;
 }
 
 void input_apply_rumble(int id, uint8_t strength)
 {
-    JoystickController *joy;
-    if (input_is_gamecontroller(id))
+    if (_check_id(id) == 0)
+        return;
+
+    input_driver_t *in_dev = &input_devices[id];
+    if (in_dev->set_rumble)
     {
-        joy = (JoystickController *)input_devices[id].driver;
-        joy->setRumble(strength, strength, 20);
+        uint8_t dev_addr = in_dev->uid >> 8;
+        uint8_t instance = in_dev->uid & 0xFF;
+        in_dev->set_rumble(dev_addr, instance, strength, strength, true);
     }
-#if (ENABLE_HARDWIRED_CONTROLLER >=1)
-    else if (input_is_hw_gamecontroller(id))
-    {
-        (strength > 0) ? digitalWrite(HW_RUMBLE, HIGH) : digitalWrite(HW_RUMBLE, LOW);
-    }
-#endif
 }
 
 bool input_is_connected(int id)
 {
-    bool connected = false;
-    if (_check_id(id) == 0)
+    if (id >= MAX_USB_CONTROLLERS)
         return false;
 
-    if (input_is_gamecontroller(id))
-    {
-        JoystickController *joy = (JoystickController *)input_devices[id].driver;
-        if (*joy == true)
-            connected = true;
-    }
-
-#if (MAX_MICE >=1)   
-    else if (input_is_mouse(id))
-    {
-        USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
-        if (*mouse == true)
-            connected = true;
-    }
-#endif
-
-#if (MAX_KB >=1)   
-    else if (input_is_kb(id))
-    {
-        USBHIDInput *kb = (USBHIDInput *)input_devices[id].driver;
-        if (*kb == true)
-            connected = true;
-    }
-#endif
-    
-#if (ENABLE_HARDWIRED_CONTROLLER >=1)
-    else if (input_is_hw_gamecontroller(id))
-    {
-        if (digitalRead(HW_EN) == 0)
-            connected = true;
-    }
-#endif
-
-    return connected;
+    return (input_devices[id].backend != BACKEND_NONE);
 }
 
-bool input_is_mouse(int id)
+bool input_is(int id, input_type_t type)
 {
-    if (_check_id(id) == 0)
+    if (id >= MAX_USB_CONTROLLERS)
         return false;
-    if (input_devices[id].type == USB_MOUSE)
-        return true;
-    return false;
-}
 
-bool input_is_kb(int id)
-{
-    if (_check_id(id) == 0)
-        return false;
-    if (input_devices[id].type == USB_KB)
-        return true;
-    return false;
-}
-
-bool input_is_gamecontroller(int id)
-{
-    if (_check_id(id) == 0)
-        return false;
-    if (input_devices[id].type == USB_GAMECONTROLLER)
-        return true;
-    return false;
-}
-
-bool input_is_hw_gamecontroller(int id)
-{
-    if (_check_id(id) == 0)
-        return false;
-    if (input_devices[id].type == HW_GAMECONTROLLER)
-        return true;
-    return false;
+    return (input_devices[id].type == type);
 }
 
 uint16_t input_get_id_product(int id)
 {
-    if (_check_id(id) == 0 || input_is_connected(id) == 0)
+    if (_check_id(id) == 0)
         return 0;
 
-    if (input_is_gamecontroller(id))
-    {
-        JoystickController *joy = (JoystickController *)input_devices[id].driver;
-        return joy->idProduct();
-    }
-    else if (input_is_mouse(id))
-    {
-        USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
-        return mouse->idProduct();
-    }
-    else if (input_is_kb(id))
-    {
-        USBHIDInput *kb = (USBHIDInput *)input_devices[id].driver;
-        return kb->idProduct();
-    }
-    else if (input_is_hw_gamecontroller(id))
-    {
-        return 0xBEEF;
-    }
+    input_driver_t *in_dev = &input_devices[id];
 
-    return 0;
+    uint16_t pid, vid;
+    tuh_vid_pid_get(in_dev->uid >> 8, &vid, &pid);
+    return pid;
 }
 
 uint16_t input_get_id_vendor(int id)
 {
-    if (_check_id(id) == 0 || input_is_connected(id) == 0)
+    if (_check_id(id) == 0)
         return 0;
 
-    if (input_is_gamecontroller(id))
-    {
-        JoystickController *joy = (JoystickController *)input_devices[id].driver;
-        return joy->idVendor();
-    }
-    else if (input_is_mouse(id))
-    {
-        USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
-        return mouse->idVendor();
-    }
-    else if (input_is_kb(id))
-    {
-        USBHIDInput *kb = (USBHIDInput *)input_devices[id].driver;
-        return kb->idVendor();
-    }
-    else if (input_is_hw_gamecontroller(id))
-    {
-        return 0xDEAD;
-    }
+    input_driver_t *in_dev = &input_devices[id];
 
-    return 0;
+    uint16_t pid, vid;
+    tuh_vid_pid_get(in_dev->uid >> 8, &vid, &pid);
+    return vid;
 }
 
 const char *input_get_manufacturer_string(int id)
 {
+    //FIXME
     static const char NC[] = "NOT CONNECTED";
     if (_check_id(id) == 0 || input_is_connected(id) == false)
         return NC;
 
-    if (input_is_gamecontroller(id))
-    {
-        JoystickController *joy = (JoystickController *)input_devices[id].driver;
-        return (const char *)joy->manufacturer();
-    }
-    else if (input_is_mouse(id))
-    {
-        USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
-        return (const char *)mouse->manufacturer();
-    }
-    else if (input_is_kb(id))
-    {
-        USBHIDInput *kb = (USBHIDInput *)input_devices[id].driver;
-        return (const char *)kb->manufacturer();
-    }
-    else if (input_is_hw_gamecontroller(id))
-    {
-        return "USB64";
-    }
-
-    return NC;
+    return "USB64";
 }
 
 const char *input_get_product_string(int id)
 {
+    //FIXME
     static const char NC[] = "";
-    if (_check_id(id) == 0 || input_is_connected(id) == 0)
-        return NC;
-
-    if (input_is_gamecontroller(id))
-    {
-        JoystickController *joy = (JoystickController *)input_devices[id].driver;
-        return (const char *)joy->product();
-    }
-    else if (input_is_mouse(id))
-    {
-        USBHIDInput *mouse = (USBHIDInput *)input_devices[id].driver;
-        return (const char *)mouse->product();
-    }
-    else if (input_is_kb(id))
-    {
-        USBHIDInput *kb = (USBHIDInput *)input_devices[id].driver;
-        return (const char *)kb->product();
-    }
-    else if (input_is_hw_gamecontroller(id))
-    {
-        return "HARDWIRED";
-    }
-
     return NC;
 }
 
@@ -814,7 +437,7 @@ void input_enable_dualstick_mode(int id)
         return;
 
     //Copy driver into the next slot to make a 'fake' input
-    memcpy(&input_devices[id + 1], &input_devices[id], sizeof(input));
+    memcpy(&input_devices[id + 1], &input_devices[id], sizeof(input_driver_t));
 }
 
 void input_disable_dualstick_mode(int id)
@@ -826,8 +449,7 @@ void input_disable_dualstick_mode(int id)
         return;
 
     //Clear the 'fake' controller driver
-    input_devices[id + 1].driver = NULL;
-
+    memset(&input_devices[id + 1], 0, sizeof(input_driver_t ));
 }
 
 bool input_is_dualstick_mode(int id)
@@ -836,14 +458,14 @@ bool input_is_dualstick_mode(int id)
         return false;
 
     //Check if this is a 'fake' mirror of a main controller
-    if ((id == 1 || id == 3) && input_devices[id].driver == input_devices[id - 1].driver)
+    if ((id == 1 || id == 3) && input_devices[id].uid == input_devices[id - 1].uid)
         return true;
 
     if (id + 1 >= MAX_CONTROLLERS)
         return false;
 
     //Check if this is a main controller that is mirrored
-    if (input_devices[id].driver == input_devices[id + 1].driver)
+    if (input_devices[id].uid == input_devices[id + 1].uid)
         return true;
     
     return false;

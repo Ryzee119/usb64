@@ -1,15 +1,7 @@
 // Copyright 2020, Ryan Wendland, usb64
 // SPDX-License-Identifier: MIT
 
-#include <Arduino.h>
-#include "printf.h"
-#include "usb64_conf.h"
-#include "n64_mempak.h"
-#include "n64_virtualpak.h"
-#include "n64_settings.h"
-#include "n64_transferpak_gbcarts.h"
 #include "n64_controller.h"
-#include "n64_wrapper.h"
 
 #define HEADING MENU_LINE1
 #define SUBHEADING MENU_LINE2
@@ -38,9 +30,9 @@ uint8_t n64_virtualpak_scratch[0x20] = {
     0x81, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
     0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F};
 
-//First 0x300 bytes of mempak. I took this from a mempak I generated on my n64.
+//First 0x300 bytes of controller pak. I took this from a controller pak I generated on my n64.
 //const as the console only needs to read from this area
-const uint8_t n64_virtualpak_header[0x300] = {
+const uint8_t n64_virtualpak_header[0x300] PROGMEM = {
     0x81, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
     0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
     0xFF, 0xFF, 0xFF, 0xFF, 0x05, 0x1A, 0x5F, 0x13, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -90,7 +82,7 @@ const uint8_t n64_virtualpak_header[0x300] = {
     0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03,
     0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03};
 
-//This is the notesTable located at address 0x300 to 0x500 in the mempack address space.
+//This is the notesTable located at address 0x300 to 0x500 in the cpak address space.
 //This initialises the title blocks as all blank titles using 1 page each.
 //Basically what is displayed on the mempak manager page.
 /* 0x4E = N (Media Type Cartridge)
@@ -150,7 +142,7 @@ uint8_t n64_virtualpak_note_table[0x200] = {
 static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
 {
     //Obtained from pulling known save titles and a bit of trial and error
-    static const uint8_t MEMPACK_CHARMAP[] =
+    static const uint8_t CPAK_CHARMAP[] =
         {
             '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
             ' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -181,9 +173,9 @@ static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
             msg[i] = '-'; //replace _ with -
 
         //Find a match in the CHARMAP
-        for (uint32_t j = 0; j < sizeof(MEMPACK_CHARMAP); j++)
+        for (uint32_t j = 0; j < sizeof(CPAK_CHARMAP); j++)
         {
-            if (msg[i] == MEMPACK_CHARMAP[j])
+            if (msg[i] == CPAK_CHARMAP[j])
                 n64char = j;
         }
 
@@ -203,7 +195,7 @@ static void n64_virtualpak_write_string(char *msg, uint8_t line, uint8_t ext)
     }
 }
 
-void n64_virtualpak_init(n64_mempack *vpak)
+void n64_virtualpak_init(n64_controllerpak *vpak)
 {
     vpak->virtual_is_active = 1;
     vpak->virtual_selected_row = MENU_MAIN;
@@ -213,9 +205,9 @@ void n64_virtualpak_init(n64_mempack *vpak)
     for (uint32_t i = 0; i < num_roms; i++)
     {
         if (gbrom_filenames[i] != NULL)
-            free(gbrom_filenames[i]);
+            n64hal_free(gbrom_filenames[i]);
         if (gbrom_titlenames[i] != NULL)
-            free(gbrom_titlenames[i]);
+            n64hal_free(gbrom_titlenames[i]);
 
         gbrom_filenames[i] = NULL;
         gbrom_titlenames[i] = NULL;
@@ -233,7 +225,7 @@ void n64_virtualpak_init(n64_mempack *vpak)
         gb_init_cart(&gb_cart, gb_header, gbrom_filenames[i]);
 
         //Copy the gb cart title (from the rom header into an array)
-        gbrom_titlenames[i] = (char *)malloc(strlen(gb_cart.title) + 1);
+        gbrom_titlenames[i] = (char *)n64hal_malloc(strlen(gb_cart.title) + 1);
         strcpy(gbrom_titlenames[i], gb_cart.title);
     }
     n64_virtualpak_update(vpak);
@@ -260,7 +252,7 @@ void n64_virtualpak_write32(uint16_t address, uint8_t *tx_buff)
         memcpy(&n64_virtualpak_scratch[address], tx_buff, 32);
 }
 
-void n64_virtualpak_update(n64_mempack *vpak)
+void n64_virtualpak_update(n64_controllerpak *vpak)
 {
     n64_settings *settings = n64_settings_get();
     if (settings == NULL)
@@ -292,7 +284,7 @@ void n64_virtualpak_update(n64_mempack *vpak)
 
     //Print generic headers and footers
     n64_virtualpak_write_string("USB64 - RYZEE119", HEADING, MENU_NAME_FIELD);
-    sprintf(buff, "CONTROLLER %u", controller_page + 1);
+    usb64_sprintf(buff, "CONTROLLER %u", controller_page + 1);
     n64_virtualpak_write_string(buff, SUBHEADING, MENU_NAME_FIELD);
     n64_virtualpak_write_string("________________", SUBHEADING + 1, MENU_NAME_FIELD);
     n64_virtualpak_write_string("CHANGE CONT", CHANGE_CONTROLLER, MENU_NAME_FIELD);
@@ -355,7 +347,7 @@ void n64_virtualpak_update(n64_mempack *vpak)
 
     if (current_menu == MENU_CONTROLLER_SETTINGS)
     {
-        sprintf(buff, "CONTROLLER %u", controller_page + 1);
+        usb64_sprintf(buff, "CONTROLLER %u", controller_page + 1);
         n64_virtualpak_write_string(buff, SUBHEADING + 0, MENU_NAME_FIELD);
         n64_virtualpak_write_string("________________", SUBHEADING + 1, MENU_NAME_FIELD);
         n64_virtualpak_write_string("CONT SETTINGS", SUBHEADING + 2, MENU_NAME_FIELD);
@@ -398,16 +390,16 @@ void n64_virtualpak_update(n64_mempack *vpak)
         }
 
         //Print the current values of each setting
-        sprintf(buff, "%u\0", settings->sensitivity[controller_page]);
+        usb64_sprintf(buff, "%u", settings->sensitivity[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 4, MENU_EXT_FIELD);
 
-        sprintf(buff, "%u\0", settings->deadzone[controller_page]);
+        usb64_sprintf(buff, "%u", settings->deadzone[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 7, MENU_EXT_FIELD);
 
-        sprintf(buff, "%u\0", settings->snap_axis[controller_page]);
+        usb64_sprintf(buff, "%u", settings->snap_axis[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 10, MENU_EXT_FIELD);
 
-        sprintf(buff, "%u\0", settings->octa_correct[controller_page]);
+        usb64_sprintf(buff, "%u", settings->octa_correct[controller_page]);
         n64_virtualpak_write_string(buff, SUBHEADING + 11, MENU_EXT_FIELD);
 
         vpak->virtual_selected_row = -1;
@@ -450,12 +442,12 @@ void n64_virtualpak_update(n64_mempack *vpak)
 
 void n64_virtualpak_write_info_1(char *msg)
 {
-    strncpy(info_text_0, msg, sizeof(info_text_0));
+    strncpy(info_text_0, msg, sizeof(info_text_0) - 1);
 }
 
 void n64_virtualpak_write_info_2(char *msg)
 {
-    strncpy(info_text_1, msg, sizeof(info_text_1));
+    strncpy(info_text_1, msg, sizeof(info_text_1) - 1);
 }
 
 uint8_t n64_virtualpak_get_controller_page()

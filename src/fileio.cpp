@@ -1,20 +1,22 @@
 // Copyright 2020, Ryan Wendland, usb64
 // SPDX-License-Identifier: MIT
 
-#include <Arduino.h>
-#include <SD.h>
-#include "usb64_conf.h"
-#include "printf.h"
+#include "common.h"
+#include "fileio.h"
+#include "memory.h"
 
-void fileio_init()
+static bool fileio_ok = false;
+
+FLASHMEM void fileio_init()
 {
-    if (!SD.sdfs.begin(SdioConfig(FIFO_SDIO)))
+    if (!fileio_dev_init())
     {
         debug_print_error("[FILEIO] ERROR: Could not open SD Card\n");
     }
     else
     {
-        debug_print_fatfs("[FILEIO] Opened SD card OK! Size: %lld MB\n", SD.totalSize()/1024/1024);
+        debug_print_fatfs("[FILEIO] Opened SD card OK!\n");
+        fileio_ok = true;
     }
 }
 
@@ -31,30 +33,31 @@ void fileio_init()
 uint32_t fileio_list_directory(char **list, uint32_t max)
 {
     int file_count = 0;
-    File root = SD.open("/");
+    int root = fileio_dev_open_dir("/");
 
-    if (root == false)
+    if (root == 0)
     {
         debug_print_error("[FILEIO] ERROR: Could not read SD Card\n");
         return 0;
     }
 
+    debug_print_fatfs("[FILEIO] fileio_list_directory %08x!\n", root);
+
     while (true)
     {
-        File entry = root.openNextFile();
-        if (entry == false)
-            break;
+        const char* filename = fileio_dev_get_next_filename(root);
 
-        if (!entry.isDirectory())
+        if (filename == NULL)
         {
-            debug_print_fatfs("Found file: %s\n", entry.name());
-            list[file_count] = (char *)malloc(strlen(entry.name()) + 1);
-            strcpy(list[file_count], entry.name());
-            file_count++;
+            break;
         }
-        entry.close();
+
+        debug_print_fatfs("Found file: %s\n", filename);
+        list[file_count] = (char *)memory_dev_malloc(strlen(filename) + 1);
+        strcpy(list[file_count], filename);
+        file_count++;
     }
-    root.close();
+    fileio_dev_close_dir(root);
     return file_count;
 }
 
@@ -69,13 +72,12 @@ uint32_t fileio_list_directory(char **list, uint32_t max)
  */
 void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
 {
-    FsFile fil = SD.sdfs.open(filename, O_WRITE | O_CREAT);
-    if (fil == false)
+    int ret = fileio_dev_write(filename, data, len);
+    if (ret == -1)
     {
         debug_print_error("[FILEIO] ERROR: Could not open %s for WRITE\n", filename);
-        return;
     }
-    if (fil.write(data, len) != len)
+    else if (ret == -2)
     {
         debug_print_error("[FILEIO] ERROR: Could not write %s\n", filename);
     }
@@ -83,7 +85,6 @@ void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
     {
         debug_print_status("[FILEIO] Writing %s for %u bytes ok!\n", filename, len);
     }
-    fil.close();
 }
 
 /*
@@ -99,16 +100,13 @@ void fileio_write_to_file(char *filename, uint8_t *data, uint32_t len)
  */
 void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, uint32_t len)
 {
-    FsFile fil = SD.sdfs.open(filename, O_READ);
-    if (fil == false)
+    int ret = fileio_dev_read(filename, file_offset, data, len);
+
+    if (ret == -1)
     {
         debug_print_error("[FILEIO] ERROR: Could not open %s for READ\n", filename);
-        return;
     }
-
-    fil.seekSet(file_offset);
-
-    if (fil.read(data, len) != (int)len)
+    else if (ret == -2)
     {
         debug_print_error("[FILEIO] ERROR: Could not read %s\n", filename);
     }
@@ -116,5 +114,9 @@ void fileio_read_from_file(char *filename, uint32_t file_offset, uint8_t *data, 
     {
         debug_print_status("[FILEIO] Reading %s for %u bytes ok!\n", filename, len);
     }
-    fil.close();
+}
+
+bool fileio_detected()
+{
+    return fileio_ok;
 }

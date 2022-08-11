@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - master
+      - dev*
 
 jobs:
   build:
@@ -16,12 +17,24 @@ jobs:
       BUILD_TAG: 0
 
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        board: [teensy41,disco_f769ni,disco_f750n8,template]
 
     steps:
     - name: Checkout repo
       uses: actions/checkout@v1
-      with:
-        submodules: recursive
+
+    - name: Get submoduiles
+      run: |
+        git submodule init
+        git submodule update
+        # If manually get TinyUSBs submodules we need otherwise its a huge repo
+        cd src/lib/tinyusb
+        # Teensy41 Specific
+        git submodule init hw/mcu/nxp/mcux-sdk
+        git submodule update
+        cd ../../../
 
     - name: Set up Python
       uses: actions/setup-python@v1
@@ -34,9 +47,23 @@ jobs:
         echo "BUILD_TAG=$BUILD_TAG" >> $GITHUB_ENV
         
     - name: Compile code
-      run: platformio run -e teensy41
+      run: |
+        platformio platform update
+        platformio run -e ${{ matrix.board }}
+        # platformio system prune --force
 
-    - if: github.event_name == 'push' 
+    - if: matrix.board != 'template'
+      name: Upload firmware artifact to current run
+      uses: actions/upload-artifact@v2
+      with:
+        name: test-firmware-${{ matrix.board }}
+        path: |
+          .pio/build/**/*.hex
+          # .pio/build/**/*.bin # Should not be required for any boards, and makes upload file size incorrect!
+          .pio/build/**/*.elf
+          # .pio/build/**/*.map # Currently not generated.
+
+    - if: github.event_name == 'push' && github.ref == 'refs/heads/master' #TODO handle previews
       name: Create Release
       id: create_release
       uses: "actions/create-release@v1"
@@ -46,12 +73,12 @@ jobs:
         draft: false
         prerelease: false
 
-    - if: github.event_name == 'push' 
-      name: Upload binary to release
+    - if: github.event_name == 'push' && github.ref == 'refs/heads/master' && matrix.board != 'template' #TODO handle previews
+      name: Upload binary for release
       id: upload-release-asset 
       uses: actions/upload-release-asset@v1
       with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: .pio/build/teensy41/firmware.hex
-          asset_name: firmware-teensy41.hex
+          asset_path: .pio/build/${{ matrix.board }}/firmware.hex
+          asset_name: firmware-${{ matrix.board }}.hex
           asset_content_type: application/hex
