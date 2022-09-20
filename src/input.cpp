@@ -247,7 +247,7 @@ void input_update_input_devices()
 uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
 {
     uint32_t _buttons = 0;
-    int32_t _axis[JoystickController::STANDARD_AXIS_COUNT] = {0};
+    int32_t _axis[JoystickController::TOTAL_AXIS_COUNT] = {0};
     int32_t right_axis[2] = {0};
 
     *combo_pressed = 0;
@@ -268,7 +268,7 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
         JoystickController *joy = (JoystickController *)input_devices[id].driver;
         _buttons = joy->getButtons();
 
-        for (uint8_t i = 0; i < JoystickController::STANDARD_AXIS_COUNT; i++)
+        for (uint8_t i = 0; i < JoystickController::TOTAL_AXIS_COUNT; i++)
         {
             _axis[i] = joy->getAxis(i);
         }
@@ -362,6 +362,48 @@ uint16_t input_get_state(uint8_t id, void *response, bool *combo_pressed)
 
             right_axis[0] = _axis[2] * 100 / 32768;
             right_axis[1] = _axis[5] * 100 / 32768;
+            break;
+        case JoystickController::XBOXDUKE:
+            //Digital usb_buttons
+            //FIXME Modifier to make A,B,X,Y be C buttons
+            if (_buttons & (1 << 0))  state->dButtons |= N64_DU;  //DUP
+            if (_buttons & (1 << 1))  state->dButtons |= N64_DD;  //DDOWN
+            if (_buttons & (1 << 2))  state->dButtons |= N64_DL;  //DLEFT
+            if (_buttons & (1 << 3))  state->dButtons |= N64_DR;  //DRIGHT
+            if (_buttons & (1 << 4))  state->dButtons |= N64_ST;  //START
+            if (_buttons & (1 << 5))  state->dButtons |= 0;       //BACK
+            if (_buttons & (1 << 6))  state->dButtons |= 0;       //LS
+            if (_buttons & (1 << 7))  state->dButtons |= 0;       //RS
+
+            if (_axis[0] > 0x20) state->dButtons |= N64_A;
+            if (_axis[1] > 0x20) state->dButtons |= N64_B;
+            if (_axis[2] > 0x20) state->dButtons |= N64_B;        //X
+            if (_axis[3] > 0x20) state->dButtons |= 0;            //Y
+            if (_axis[4] > 0x20) state->dButtons |= N64_RB;       //Black
+            if (_axis[5] > 0x20) state->dButtons |= N64_LB; //White
+
+            //Analog stick (Normalise 0 to +/-100)
+            state->x_axis = _axis[8] * 100 / 32768;
+            state->y_axis = _axis[9] * 100 / 32768;
+
+            //Z button
+            if (_axis[6] > 10) state->dButtons |= N64_Z; //LT
+            if (_axis[7] > 10) state->dButtons |= N64_Z; //RT
+
+            //C usb_buttons
+            if (_axis[10] > 16000)  state->dButtons |= N64_CR;
+            if (_axis[10] < -16000) state->dButtons |= N64_CL;
+            if (_axis[11] > 16000)  state->dButtons |= N64_CU;
+            if (_axis[11] < -16000) state->dButtons |= N64_CD;
+
+            //Button to hold for 'combos'
+            if (combo_pressed)
+                *combo_pressed = (_buttons & (1 << 5)); //back
+
+            //Map right axis for dual stick mode
+            right_axis[0] = _axis[10] * 100 / 32768;
+            right_axis[1] = _axis[11] * 100 / 32768;
+
             break;
         case JoystickController::PS4:
             if (_buttons & (1 << 9))  state->dButtons |= N64_ST;  //START
