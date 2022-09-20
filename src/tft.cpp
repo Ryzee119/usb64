@@ -8,39 +8,34 @@
 #include "tft.h"
 #include "fileio.h"
 
-#define GUILITE_ON
-#include "GuiLite.h"
-
+#include "lvgl.h"
 #include "controller_icon.h"
 #include "usb64_logo.h"
 
 static const int WIDTH = TFT_FRAMEBUFFER_WIDTH;
 static const int HEIGHT = TFT_FRAMEBUFFER_HEIGHT;
 static uint8_t _tft_page = 0;
-static uint8_t _tft_page_changed = 1;
-static uint8_t _tft_max_pages = 2;
-static uint8_t _tft_update_needed = 0;
+static const uint8_t _tft_max_pages = 2;
 
 static const uint8_t _tft_log_max_lines = 15;
 static char *_tft_log_text_lines[_tft_log_max_lines];
 
 extern n64_input_dev_t n64_in_dev[MAX_CONTROLLERS];
 extern n64_transferpak n64_tpak[MAX_CONTROLLERS];
-
 extern n64_input_dev_t n64_in_dev[MAX_CONTROLLERS];
 extern n64_transferpak n64_tpak[MAX_CONTROLLERS];
 
-static char text_buff[32];
-
-extern const LATTICE_FONT_INFO Arial_14_GL;
-extern const LATTICE_FONT_INFO Arial_19_GL;
-extern c_surface *psurface_guilite;
-static c_label n64_status;
-static c_label fileio_status;
-static c_label extram_size;
-static c_label controller_status[4];
-static c_label controller_id[4];
-static c_label tft_log[_tft_log_max_lines];
+static bool input_dirty[MAX_CONTROLLERS];
+static bool log_dirty = true;
+static bool n64_status;
+static lv_obj_t *log_page;
+static lv_obj_t *log_lines[_tft_log_max_lines];
+static lv_obj_t *main_page;
+static lv_obj_t *ram_label;
+static lv_obj_t *sd_label;
+static lv_obj_t *n64_status_label;
+static lv_obj_t *controller_status_label[4];
+static const char *NOT_CONNECTED = "NOT CONNECTED\n0x0000/0x0000";
 
 static const char *n64_peri_to_string(n64_input_dev_t *c)
 {
@@ -86,202 +81,179 @@ static const char *n64_peri_to_string(n64_input_dev_t *c)
     }
 }
 
-FLASHMEM void tft_init()
+void lvgl_putstring(const char *buf)
 {
-    tft_dev_init();
-
-    if (psurface_guilite == NULL)
-    {
-        return;
-    }
-    
-    psurface_guilite->fill_rect(0, 0, WIDTH, HEIGHT, TFT_BG_COLOR, Z_ORDER_LEVEL_0);
-
-    static c_image usb64_image;
-    memset(&usb64_image, 0, sizeof(c_image));
-    BITMAP_INFO _image;
-    _image.color_bits = 16;
-    _image.height = 35;
-    _image.width = 120;
-    _image.pixel_color_array = usb64_logo;
-    usb64_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 0, TFT_BG_COLOR);
-
-    //Draw RAM status
-    snprintf(text_buff, sizeof(text_buff), "Detected RAM: %uMB", memory_get_ext_ram_size());
-    extram_size.set_surface(psurface_guilite);
-    extram_size.set_bg_color(TFT_BG_COLOR);
-    extram_size.set_font_color(GL_RGB(255, 255, 255));
-    extram_size.set_wnd_pos(125, 0, 1, Arial_14_GL.height);
-    extram_size.set_font_type(&Arial_14_GL);
-    extram_size.set_str(text_buff);
-    extram_size.show_window();
-
-    tft_force_update();
+    usb64_printf("%s", buf);
 }
 
-void tft_try_update()
+FLASHMEM void tft_init()
 {
-#if (0)
-    //Dump the framebuffer to a file on the SD Card, 10 seconds after power up. Assuming 16bit display.
-    //Convert to png with
-    //ffmpeg -vcodec rawvideo -f rawvideo -pix_fmt rgb565le -s 320x240 -i tft_dump.bin -f image2 -vcodec png tft_dump.png
-    if (n64hal_millis() > 10000)
-    {
-        fileio_write_to_file("tft_dump.bin", (uint8_t *)tft_dev_get_fb(), WIDTH * HEIGHT * 2);
-        debug_print_status("TFT framebuffer dumped\n");
-        while (1) yield();
-    }
-#endif
+    lv_init();
+    lv_log_register_print_cb(lvgl_putstring);
+    tft_dev_init();
 
-    if (_tft_update_needed == 0)
+    lv_obj_t *scr = lv_scr_act();
+
+    lv_obj_t *usb64_image = lv_canvas_create(scr);
+    lv_canvas_set_buffer(usb64_image, (void *)usb64_logo, 120, 35, LV_IMG_CF_TRUE_COLOR);
+    lv_obj_update_layout(usb64_image);
+
+    main_page = lv_obj_create(scr);
+    lv_obj_set_size(main_page, lv_obj_get_width(scr), lv_obj_get_height(scr) - lv_obj_get_height(usb64_image));
+    lv_obj_set_style_pad_all(main_page, 0, LV_PART_MAIN);
+    lv_obj_set_style_border_width(main_page, 0, LV_PART_MAIN);
+    lv_obj_set_style_bg_color(main_page, LV_COLOR_MAKE(17,20,16), LV_PART_MAIN);
+    lv_obj_set_pos(main_page, 0, lv_obj_get_height(usb64_image));
+
+    log_page = lv_obj_create(scr);
+    lv_obj_set_size(log_page, lv_obj_get_width(scr), lv_obj_get_height(scr) - lv_obj_get_height(usb64_image));
+    lv_obj_set_style_pad_all(log_page, 0, LV_PART_MAIN);
+    lv_obj_set_style_pad_row(log_page, 0, LV_PART_MAIN);
+    lv_obj_set_style_border_width(log_page, 0, LV_PART_MAIN);
+    lv_obj_set_style_bg_color(log_page, LV_COLOR_MAKE(17,20,16), LV_PART_MAIN);
+    lv_obj_set_pos(log_page, 0, lv_obj_get_height(usb64_image));
+    lv_obj_add_flag(log_page, LV_OBJ_FLAG_HIDDEN);
+
+    ram_label = lv_label_create(scr);
+    sd_label = lv_label_create(scr);
+    n64_status_label = lv_label_create(scr);
+
+    lv_label_set_text_fmt(ram_label, "RAM: %uMB", memory_get_ext_ram_size());
+
+    if (fileio_detected())
     {
-        return;
+        lv_label_set_text_fmt(sd_label, "SD: Detected");
+        lv_obj_set_style_text_color(sd_label, LV_COLOR_MAKE(0,255,0), LV_PART_MAIN);
+    }
+    else
+    {
+        lv_label_set_text_fmt(sd_label, "SD: Not Detected");
+        lv_obj_set_style_text_color(sd_label, LV_COLOR_MAKE(255,0,0), LV_PART_MAIN);
     }
 
-    if (tft_dev_is_busy())
+    lv_label_set_text_fmt(n64_status_label, "N64 is OFF");
+    lv_obj_set_style_text_color(n64_status_label, LV_COLOR_MAKE(255,0,0), LV_PART_MAIN);
+
+    lv_obj_update_layout(ram_label);
+    lv_obj_update_layout(sd_label);
+    lv_obj_update_layout(n64_status_label);
+
+    lv_obj_align(ram_label, LV_ALIGN_TOP_RIGHT, 0, 0);
+    lv_obj_align(sd_label,  LV_ALIGN_TOP_RIGHT, 0, 10);
+    lv_obj_align(n64_status_label, LV_ALIGN_TOP_RIGHT, 0, 20);
+
+    lv_obj_t *n64_icon[MAX_CONTROLLERS];
+    for (int i = 0; i < MAX_CONTROLLERS; i++)
     {
-        return;
+        lv_coord_t h = lv_obj_get_height(main_page);
+        n64_icon[i] = lv_canvas_create(main_page);
+        lv_canvas_set_buffer(n64_icon[i], (void *)controller_icon, 48, 45, LV_IMG_CF_TRUE_COLOR);
+        lv_obj_align(n64_icon[i], LV_ALIGN_TOP_LEFT, 0, 0 + ((h - 0) * i / 4));
+
+        controller_status_label[i] = lv_label_create(main_page);
+        lv_obj_align(controller_status_label[i], LV_ALIGN_TOP_LEFT, 50, 0 + ((h - 0) * i / 4));
+        lv_obj_set_style_text_font(controller_status_label[i], &lv_font_montserrat_18, LV_PART_MAIN);
+        lv_obj_set_style_text_color(controller_status_label[i], LV_COLOR_MAKE(255,255,255), LV_PART_MAIN);
+        lv_label_set_text(controller_status_label[i], NOT_CONNECTED);
+        input_dirty[i] = true;
     }
 
-    tft_force_update();
+    lv_obj_set_layout(log_page, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(log_page, LV_FLEX_FLOW_COLUMN);
+    for (int i = 0; i < _tft_log_max_lines; i++)
+    {
+        log_lines[i] = lv_label_create(log_page);
+        lv_obj_set_style_pad_all(log_lines[i], 0, LV_PART_MAIN);
+        lv_obj_set_style_border_width(log_lines[i], 0, LV_PART_MAIN);
+        lv_obj_align(log_lines[i], LV_ALIGN_LEFT_MID, 0, 0);
+        lv_label_set_text(log_lines[i], "");
+    }
+
+    n64_status = false;
+
+    lv_obj_update_layout(scr);
+    tft_update();
 }
 
 uint8_t tft_change_page(uint8_t page)
 {
     _tft_page = (_tft_page + 1) % _tft_max_pages;
-    _tft_page_changed = 1;
+    if (_tft_page == 0)
+    {
+        lv_obj_add_flag(log_page, LV_OBJ_FLAG_HIDDEN); 
+        lv_obj_clear_flag(main_page, LV_OBJ_FLAG_HIDDEN); 
+    }
+    else
+    {
+        lv_obj_clear_flag(log_page, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(main_page, LV_OBJ_FLAG_HIDDEN); 
+    }
     return _tft_page;
 }
 
-void tft_force_update()
+void tft_update()
 {
-    //These are drawn once when the TFT page has changed.
-    if (_tft_page_changed)
+    lv_task_handler();
+    if (lv_obj_is_visible(main_page))
     {
-        _tft_page_changed = 0;
-        if (_tft_page == 0)
+        for (int i = 0; i < MAX_CONTROLLERS; i++)
         {
-            psurface_guilite->fill_rect(0, 40, WIDTH, HEIGHT, TFT_BG_COLOR, Z_ORDER_LEVEL_0);
-            static c_image controller_image;
-            BITMAP_INFO _image;
-            memset(&controller_image, 0, sizeof(c_image));
-            _image.color_bits = 16;
-            _image.height = 45;
-            _image.width = 48;
-            _image.pixel_color_array = controller_icon;
-            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((HEIGHT - 45) * 0 / 4), TFT_BG_COLOR);
-            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((HEIGHT - 45) * 1 / 4), TFT_BG_COLOR);
-            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((HEIGHT - 45) * 2 / 4), TFT_BG_COLOR);
-            controller_image.draw_image(psurface_guilite, Z_ORDER_LEVEL_0, &_image, 0, 45 + ((HEIGHT - 45) * 3 / 4), TFT_BG_COLOR);
+            if (input_dirty[i] == false)
+            {
+                continue;
+            }
+            input_dirty[i] = false;
+            lv_color_t colour;
+            if (input_is_connected(i))
+                colour = LV_COLOR_MAKE(0, 255, 0);
+            else
+                colour = LV_COLOR_MAKE(255, 255, 255);
+            const char *peri_str = n64_peri_to_string(&n64_in_dev[i]);
+            lv_obj_set_style_text_color(controller_status_label[i], colour, LV_PART_MAIN);
+            lv_label_set_text_fmt(controller_status_label[i], "%s\n0x%04x/0x%04x", peri_str,
+                                  input_get_id_vendor(i), input_get_id_product(i));
         }
-        else if (_tft_page == 1)
+
+        if (n64_status != n64hal_input_read(N64_CONSOLE_SENSE_PIN))
         {
-            psurface_guilite->fill_rect(0, 40, WIDTH, HEIGHT, TFT_BG_COLOR, Z_ORDER_LEVEL_0);
+            lv_color_t colour;
+            const char *n64_status_text;
+            n64_status = n64hal_input_read(N64_CONSOLE_SENSE_PIN);
+            if (n64_status)
+            {
+                n64_status_text = "N64 is ON";
+                colour = LV_COLOR_MAKE(0, 255, 0);
+            }
+            else
+            {
+                n64_status_text = "N64 is OFF";
+                colour = LV_COLOR_MAKE(255, 0, 0);
+            }
+            lv_obj_set_style_text_color(n64_status_label, colour, LV_PART_MAIN);
+            lv_label_set_text(n64_status_label, n64_status_text);
         }
     }
-
-    //Draw dynamic items here. There are drawn everytime a TFT update is flagged.
-    if (_tft_page == 0)
+    else if (lv_obj_is_visible(log_page) && log_dirty)
     {
-        //Draw controller status and peripheral type
-        for (int i = 0; i < 4; i++)
-        {
-            uint32_t colour = input_is_connected(i) ? GL_RGB(0, 255, 0) : GL_RGB(255, 255, 255);
-            controller_status[i].set_surface(psurface_guilite);
-            controller_status[i].set_bg_color(TFT_BG_COLOR);
-            controller_status[i].set_font_color(colour);
-            controller_status[i].set_wnd_pos(50, (45 + 0) + ((HEIGHT - 45) * i / 4), WIDTH, Arial_19_GL.height);
-            controller_status[i].set_font_type(&Arial_19_GL);
-            controller_status[i].set_str(n64_peri_to_string(&n64_in_dev[i]));
-            controller_status[i].show_window();
-
-            snprintf(text_buff, sizeof(text_buff), "0x%04x/0x%04x", input_get_id_vendor(i), input_get_id_product(i));
-            controller_id[i].set_surface(psurface_guilite);
-            controller_id[i].set_font_color(colour);
-            controller_id[i].set_bg_color(TFT_BG_COLOR);
-            controller_id[i].set_wnd_pos(50, (45 + 20) + ((HEIGHT - 45) * i / 4), WIDTH, Arial_19_GL.height);
-            controller_id[i].set_font_type(&Arial_19_GL);
-            controller_id[i].set_str(text_buff);
-            controller_id[i].show_window();
-        }
-    }
-    else if (_tft_page == 1)
-    {
-        psurface_guilite->fill_rect(0, 40, WIDTH, HEIGHT, TFT_BG_COLOR, Z_ORDER_LEVEL_0);
+        log_dirty = false;
         for (int i = 0; i < _tft_log_max_lines; i++)
         {
-            if (_tft_log_text_lines[i] == NULL)
-                break;
-
-            tft_log[i].set_surface(psurface_guilite);
-            tft_log[i].set_bg_color(TFT_BG_COLOR);
-            tft_log[i].set_font_color(GL_RGB(255, 255, 255));
-            tft_log[i].set_wnd_pos(0, 45 + i * Arial_14_GL.height, WIDTH, Arial_14_GL.height);
-            tft_log[i].set_font_type(&Arial_14_GL);
-            tft_log[i].set_str(_tft_log_text_lines[i]);
-            tft_log[i].show_window();
+            if (_tft_log_text_lines[i] == NULL) break;
+            lv_label_set_text(log_lines[i], _tft_log_text_lines[i]);
         }
     }
-
-    //Draw N64 console status
-    uint32_t colour;
-    const char *n64_status_text;
-    if (n64hal_input_read(N64_CONSOLE_SENSE_PIN) == 0)
-    {
-        n64_status_text = "N64 is OFF";
-        colour = GL_RGB(255, 0, 0);
-    }
-    else
-    {
-        n64_status_text = "N64 is ON";
-        colour = GL_RGB(0, 255, 0);
-    }
-    n64_status.set_surface(psurface_guilite);
-    n64_status.set_bg_color(TFT_BG_COLOR);
-    n64_status.set_font_color(colour);
-    n64_status.set_wnd_pos(WIDTH - (10 * 8), 0, 100, Arial_14_GL.height);
-    n64_status.set_font_type(&Arial_14_GL);
-    n64_status.set_str(n64_status_text);
-    n64_status.show_window();
-
-    //Draw SD Card status
-    const char *fileio_status_text;
-    if (fileio_detected() == 0)
-    {
-        fileio_status_text = "SD Not Detected";
-        colour = GL_RGB(255, 0, 0);
-    }
-    else
-    {
-        fileio_status_text = "SD Detected";
-        colour = GL_RGB(0, 255, 0);
-    }
-    n64_status.set_surface(psurface_guilite);
-    n64_status.set_bg_color(TFT_BG_COLOR);
-    n64_status.set_font_color(colour);
-    n64_status.set_wnd_pos(125, Arial_14_GL.height, 100, Arial_14_GL.height);
-    n64_status.set_font_type(&Arial_14_GL);
-    n64_status.set_str(fileio_status_text);
-    n64_status.show_window();
-
-    //Draw the current games name
-    n64_status_text = n64_get_current_game();
-    n64_status.set_surface(psurface_guilite);
-    n64_status.set_bg_color(TFT_BG_COLOR);
-    n64_status.set_font_color(GL_RGB(255, 255, 255));
-    n64_status.set_wnd_pos(125, Arial_14_GL.height * 2, 200, Arial_14_GL.height);
-    n64_status.set_font_type(&Arial_14_GL);
-    n64_status.set_str(n64_status_text);
-    n64_status.show_window();
-
-    tft_dev_draw(true);
-
-    _tft_update_needed = 0;
 }
 
-void tft_flag_update()
+void tft_flag_update(uint8_t controller)
 {
-    _tft_update_needed = 1;
+    if (controller >=0 && controller < sizeof(input_dirty))
+    {
+        input_dirty[controller] = true;
+    }
+    else
+    {
+        log_dirty = true;
+    }
 }
 
 void tft_add_log(char c)
@@ -304,7 +276,6 @@ void tft_add_log(char c)
             tft_log_line_num++;
         }
         tft_log_pos = 0;
-        tft_flag_update();
     }
     else
     {

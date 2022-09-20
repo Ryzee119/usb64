@@ -61,6 +61,7 @@ typedef struct
     n64_rumblepak *rpak;              //Pointer to installed rumblepak
     n64_controllerpak *cpak;          //Pointer to installed controllerpak
                                       //
+    uint8_t  connected;               //Flag is set when this controller is connected
     uint32_t interrupt_attached;      //Flag is set when this controller is connected to an ext int.
     uint32_t bus_idle_timer_clks;     //Timer counter for bus idle timing
     usb64_pin_t  pin;                 //What pin is this controller connected to

@@ -15,6 +15,7 @@ void n64hal_system_init()
 void n64hal_debug_init()
 {
     serial_port.begin(256000);
+    serial_port.print(CrashReport);
 }
 
 void n64hal_gpio_init()

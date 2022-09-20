@@ -92,12 +92,18 @@ void loop()
 
     input_update_input_devices();
 
-    tft_try_update();
+    tft_update();
 
     for (uint32_t c = 0; c < MAX_CONTROLLERS; c++)
     {
         if (input_is_connected(c))
         {
+            if (n64_in_dev[c].connected == 0)
+            {
+                n64_in_dev[c].connected = 1;
+                tft_flag_update(c);
+            }
+
             if (n64_is_on && !n64_in_dev[c].interrupt_attached)
             {
                 switch (c)
@@ -108,7 +114,7 @@ void loop()
                     case 3: n64hal_attach_interrupt(n64_in_dev[c].pin, n64_controller4_clock_edge, N64_INTMODE_FALLING); break;
                 }
                 n64_in_dev[c].interrupt_attached = true;
-                tft_flag_update();
+                tft_flag_update(c);
             }
             if (input_is(c, INPUT_GAMECONTROLLER))
             {
@@ -118,7 +124,7 @@ void loop()
                 if(n64_in_dev[c].type != N64_CONTROLLER)
                 {
                     n64_in_dev[c].type = N64_CONTROLLER;
-                    tft_flag_update();
+                    tft_flag_update(c);
                 }
                 n64_settings *settings = n64_settings_get();
                 float x, y, range;
@@ -158,7 +164,7 @@ void loop()
                 if(n64_in_dev[c].type != N64_MOUSE)
                 {
                     n64_in_dev[c].type = N64_MOUSE;
-                    tft_flag_update();
+                    tft_flag_update(c);
                 }
                 n64_in_dev[c].b_state.dButtons = new_state->dButtons;
                 n64_in_dev[c].b_state.x_axis = new_state->x_axis;
@@ -177,18 +183,26 @@ void loop()
                 if(n64_in_dev[c].type != N64_RANDNET)
                 {
                     n64_in_dev[c].type = N64_RANDNET;
-                    tft_flag_update();
+                    tft_flag_update(c);
                 }
                 memcpy(&n64_in_dev[c].kb_state, new_state, sizeof(n64_randnet_kb));
             }
 #endif
+        }
+        else
+        {
+            if (n64_in_dev[c].connected == 1)
+            {
+                n64_in_dev[c].connected = 0;
+                tft_flag_update(c);
+            }
         }
 
         if ((!input_is_connected(c) || !n64_is_on) && n64_in_dev[c].interrupt_attached)
         {
             n64_in_dev[c].interrupt_attached = false;
             n64hal_detach_interrupt(n64_in_dev[c].pin);
-            tft_flag_update();
+            tft_flag_update(c);
         }
 
         //Get a copy of the latest n64 button presses to handle the below combos
@@ -237,12 +251,12 @@ void loop()
                 memory_flush_all();
                 debug_print_status("[MAIN] Flushed RAM to SD card as required\n");
                 flushing_toggle[c] = 1;
-                tft_flag_update();
+                tft_flag_update(c);
             }
         }
         else
         {
-            if (flushing_toggle[c]) tft_flag_update();
+            if (flushing_toggle[c]) tft_flag_update(c);
             flushing_toggle[c] = 0;
         }
 
@@ -256,7 +270,7 @@ void loop()
             {
                 tft_page = tft_change_page(++tft_page);
                 tft_toggle[c] = 1;
-                tft_flag_update();
+                tft_flag_update(c);
             }
         }
         else
@@ -312,7 +326,7 @@ void loop()
 
             /* HANDLE NEXT PERIPHERAL */
             n64_in_dev[c].current_peripheral = PERI_NONE; //Go to none whilst changing
-            tft_force_update();
+            tft_update();
 
             //Changing peripheral to RUMBLEPAK
             if (n64_buttons & N64_LB)
@@ -435,7 +449,7 @@ void loop()
         if (n64_in_dev[c].current_peripheral == PERI_NONE && (n64hal_millis() - timer_peri_change[c]) > PERI_CHANGE_TIME)
         {
             n64_in_dev[c].current_peripheral = n64_in_dev[c].next_peripheral;
-            tft_flag_update();
+            tft_flag_update(c);
         }
 
         //Update the virtual pak if required
@@ -483,5 +497,6 @@ static void ring_buffer_flush()
         tft_add_log(ring_buffer[_print_cursor]);
         ring_buffer[_print_cursor] = 0xFF;
         _print_cursor = (_print_cursor + 1) % sizeof(ring_buffer);
+        tft_flag_update(0xFF);
     }
 }
