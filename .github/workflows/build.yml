@@ -30,6 +30,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install platformio
+        pip install wheel
         export BUILD_TAG=build-$(date -u +'%Y%m%d%H%M')
         echo "BUILD_TAG=$BUILD_TAG" >> $GITHUB_ENV
         
