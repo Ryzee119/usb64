@@ -17,6 +17,7 @@ USBHub hub1(usbh);
 USBHub hub2(usbh);
 USBHub hub3(usbh);
 USBHub hub4(usbh);
+USBHub hub5(usbh);
 #endif
 
 JoystickController joy1(usbh);
