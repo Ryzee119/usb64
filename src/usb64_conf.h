@@ -6,7 +6,7 @@
 
 /* DEBUGGING OUTPUT - WARNING SOME OF THESE MAY BREAK TIMING AND CAUSE ISSUES
    USE ONLY FOR DEBUGGING */
-#define serial_port Serial
+#define serial_port Serial1
 #define DEBUG_STATUS 1  //General information
 #define DEBUG_N64 0     //For debugging N64 low level info
 #define DEBUG_TPAK 0    //For debugging N64 TPAK low level info. It's complex so has its own flag

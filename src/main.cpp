@@ -48,22 +48,18 @@ void n64_controller4_clock_edge()
 }
 #endif
 
-extern "C" {
-FLASHMEM void startup_early_hook(void)
+void setup()
 {
+    //Init the serial port and ring buffer
+    serial_port.begin(256000);
+
     //Get these up as early as possible.
     pinMode(N64_CONTROLLER_1_PIN, INPUT_PULLUP);
     pinMode(N64_CONTROLLER_2_PIN, INPUT_PULLUP);
     pinMode(N64_CONTROLLER_3_PIN, INPUT_PULLUP);
     pinMode(N64_CONTROLLER_4_PIN, INPUT_PULLUP);
     pinMode(N64_CONSOLE_SENSE, INPUT_PULLDOWN);
-}
-}
 
-void setup()
-{
-    //Init the serial port and ring buffer
-    serial_port.begin(256000);
     ring_buffer_init();
     fileio_init();
     memory_init();
